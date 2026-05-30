@@ -1,191 +1,185 @@
 # REACH Church App
 
-A modern web application for **REACH Church**, built to connect the congregation, share church life, and deliver a fast, accessible experience on every device.
+Ứng dụng web dành cho **REACH Church** — nền tảng số giúp hội thánh kết nối, chia sẻ thông tin và mang trải nghiệm mượt mà trên mọi thiết bị.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-Private-red?style=flat-square)](#license)
 
 ---
 
-## Table of Contents
+## Mục lục
 
-- [About](#about)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Available Scripts](#available-scripts)
-- [Project Structure](#project-structure)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## About
-
-**REACH Church App** is the official digital platform for REACH Church. The project is built with [Next.js App Router](https://nextjs.org/docs/app) and TypeScript, providing a scalable foundation for church-facing features such as announcements, events, media, and community engagement.
-
-This repository is actively under development. The current release focuses on project setup, core architecture, and development workflow.
+- [Giới thiệu](#giới-thiệu)
+- [Tính năng](#tính-năng)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
+- [Cài đặt & chạy dự án](#cài-đặt--chạy-dự-án)
+- [Biến môi trường](#biến-môi-trường)
+- [Các lệnh thường dùng](#các-lệnh-thường-dùng)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Triển khai](#triển-khai)
+- [Đóng góp](#đóng-góp)
+- [Liên hệ](#liên-hệ)
 
 ---
 
-## Features
+## Giới thiệu
 
-### Current
+**REACH Church App** là dự án ứng dụng web chính thức của REACH Church, được xây dựng trên nền tảng [Next.js App Router](https://nextjs.org/docs/app) và TypeScript.
 
-- Next.js 16 App Router with React 19
-- TypeScript for type-safe development
-- ESLint configuration for consistent code quality
-- Responsive layout and optimized fonts via `next/font`
-- Environment-based configuration (secrets kept local)
-
-### Planned
-
-- Church homepage and service information
-- Events and announcements
-- Sermon and media library
-- Member resources and contact forms
-- Admin content management
+Dự án đang trong giai đoạn phát triển ban đầu, tập trung thiết lập kiến trúc nền tảng và quy trình làm việc. Trong tương lai, ứng dụng sẽ hỗ trợ các tính năng phục vụ cộng đồng hội thánh như thông báo, sự kiện, thư viện media và tài nguyên dành cho thành viên.
 
 ---
 
-## Tech Stack
+## Tính năng
 
-| Category        | Technology                          |
-| --------------- | ----------------------------------- |
-| Framework       | [Next.js 16](https://nextjs.org/)   |
-| UI Library      | [React 19](https://react.dev/)      |
-| Language        | [TypeScript 5](https://www.typescriptlang.org/) |
-| Linting         | ESLint + `eslint-config-next`       |
-| Package Manager | npm                                 |
+### Hiện có
 
----
+- Next.js 16 App Router kết hợp React 19
+- TypeScript — code an toàn, dễ bảo trì
+- ESLint — kiểm tra chất lượng mã nguồn
+- Font tối ưu qua `next/font`
+- Cấu hình môi trường qua file `.env.local` (không đẩy lên Git)
 
-## Prerequisites
+### Dự kiến phát triển
 
-Before you begin, ensure you have the following installed:
-
-- **Node.js** 20.x or later ([Download](https://nodejs.org/))
-- **npm** 10.x or later (included with Node.js)
-- **Git** ([Download](https://git-scm.com/))
+- Trang chủ và thông tin nhà thờ
+- Sự kiện & thông báo
+- Thư viện bài giảng / media
+- Tài nguyên thành viên & form liên hệ
+- Quản trị nội dung (admin)
 
 ---
 
-## Getting Started
+## Công nghệ sử dụng
 
-### 1. Clone the repository
+| Hạng mục        | Công nghệ |
+| --------------- | --------- |
+| Framework       | [Next.js 16](https://nextjs.org/) |
+| Thư viện UI     | [React 19](https://react.dev/) |
+| Ngôn ngữ        | [TypeScript 5](https://www.typescriptlang.org/) |
+| Kiểm tra code   | ESLint + `eslint-config-next` |
+| Quản lý gói     | npm |
+
+---
+
+## Yêu cầu hệ thống
+
+- **Node.js** 20 trở lên — [nodejs.org](https://nodejs.org/)
+- **npm** 10 trở lên (đi kèm Node.js)
+- **Git** — [git-scm.com](https://git-scm.com/)
+
+---
+
+## Cài đặt & chạy dự án
+
+### 1. Clone repository
 
 ```bash
 git clone https://github.com/truonga-dev/REACH_Church_App.git
 cd REACH_Church_App
 ```
 
-### 2. Install dependencies
+### 2. Cài đặt dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure environment variables
-
-Create a local environment file:
+### 3. Cấu hình biến môi trường
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and fill in the required values. See [Environment Variables](#environment-variables) for details.
+Chỉnh sửa `.env.local` theo môi trường của bạn. Chi tiết xem mục [Biến môi trường](#biến-môi-trường).
 
-> **Important:** Never commit `.env.local` or any file containing secrets. These files are excluded via `.gitignore`.
+> **Lưu ý:** Không bao giờ commit file `.env.local` hoặc bất kỳ file nào chứa secret. Các file này đã được loại trừ trong `.gitignore`.
 
-### 4. Run the development server
+### 4. Chạy server phát triển
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+Mở trình duyệt tại [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## Environment Variables
+## Biến môi trường
 
-Copy `.env.example` to `.env.local` and configure the variables for your environment.
+Sao chép `.env.example` thành `.env.local` và điền giá trị phù hợp.
 
-| Variable | Description | Required |
-| -------- | ----------- | -------- |
-| —        | Add variables here as the project grows | — |
+| Biến | Mô tả | Bắt buộc |
+| ---- | ----- | -------- |
+| — | Bổ sung thêm khi dự án phát triển | — |
 
-`.env.local` is loaded automatically by Next.js during local development and is **never** pushed to GitHub.
-
----
-
-## Available Scripts
-
-| Command         | Description                              |
-| --------------- | ---------------------------------------- |
-| `npm run dev`   | Start the development server             |
-| `npm run build` | Create an optimized production build     |
-| `npm run start` | Run the production build locally         |
-| `npm run lint`  | Run ESLint across the project            |
+File `.env.local` chỉ dùng trên máy local và **không** được đẩy lên GitHub.
 
 ---
 
-## Project Structure
+## Các lệnh thường dùng
+
+| Lệnh | Mô tả |
+| ---- | ----- |
+| `npm run dev` | Chạy server phát triển |
+| `npm run build` | Build phiên bản production |
+| `npm run start` | Chạy bản build production trên local |
+| `npm run lint` | Kiểm tra code với ESLint |
+
+---
+
+## Cấu trúc thư mục
 
 ```
 reach-church/
-├── public/              # Static assets (images, icons, fonts)
+├── public/              # Tài nguyên tĩnh (hình ảnh, icon)
 ├── src/
-│   └── app/             # Next.js App Router pages and layouts
-│       ├── layout.tsx   # Root layout and global metadata
-│       ├── page.tsx     # Home page
-│       └── globals.css  # Global styles
-├── .gitignore           # Git ignore rules (committed — protects secrets)
-├── eslint.config.mjs    # ESLint configuration
-├── next.config.ts       # Next.js configuration
-├── package.json         # Dependencies and scripts
-└── tsconfig.json        # TypeScript configuration
+│   └── app/             # Trang & layout (Next.js App Router)
+│       ├── layout.tsx   # Layout gốc và metadata
+│       ├── page.tsx     # Trang chủ
+│       └── globals.css  # CSS toàn cục
+├── .env.example         # Mẫu biến môi trường (được commit)
+├── .gitignore           # Quy tắc loại trừ file khỏi Git
+├── eslint.config.mjs    # Cấu hình ESLint
+├── next.config.ts       # Cấu hình Next.js
+├── package.json         # Dependencies và scripts
+└── tsconfig.json        # Cấu hình TypeScript
 ```
 
 ---
 
-## Deployment
+## Triển khai
 
-The recommended deployment platform for Next.js is [Vercel](https://vercel.com/).
+Nền tảng được khuyến nghị cho Next.js là [Vercel](https://vercel.com/):
 
-1. Push your branch to GitHub.
-2. Import the repository in Vercel.
-3. Add environment variables in the Vercel project settings.
-4. Deploy.
+1. Push code lên GitHub
+2. Import repository vào Vercel
+3. Thêm biến môi trường trong cài đặt dự án
+4. Deploy
 
-For other platforms, refer to the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
-
----
-
-## Contributing
-
-This is a private church project. If you are a team member:
-
-1. Create a feature branch from `main`.
-2. Make your changes and run `npm run lint`.
-3. Commit with a clear, descriptive message.
-4. Open a pull request for review.
+Xem thêm [tài liệu triển khai Next.js](https://nextjs.org/docs/app/building-your-application/deploying).
 
 ---
 
-## License
+## Đóng góp
 
-This project is **private** and proprietary to REACH Church. Unauthorized copying, distribution, or use is prohibited.
+Dự án thuộc REACH Church. Nếu bạn là thành viên team:
+
+1. Tạo branch mới từ `main`
+2. Thực hiện thay đổi và chạy `npm run lint`
+3. Commit với message rõ ràng
+4. Tạo Pull Request để review
 
 ---
 
-## Contact
+## Liên hệ
 
 **Repository:** [github.com/truonga-dev/REACH_Church_App](https://github.com/truonga-dev/REACH_Church_App)
 
-For questions about this project, please contact the REACH Church development team.
+Mọi thắc mắc về dự án, vui lòng liên hệ team phát triển REACH Church.
+
+---
+
+> Dự án thuộc sở hữu riêng của REACH Church. Không sao chép hoặc phân phối trái phép.
