@@ -1,0 +1,73 @@
+.bible-container {
+  padding: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.bible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.book-selector {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  outline: none;
+}
+
+.book-selector option {
+  background-color: #1a1d24;
+  color: white;
+}
+
+.chapter-selector {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+}
+
+.bible-reader {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  padding: 1.5rem;
+  line-height: 1.8;
+  font-size: 1.1rem;
+}
+
+.verse {
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.verse-num {
+  font-size: 0.8em;
+  color: #48BCE1;
+  font-weight: bold;
+  margin-right: 8px;
+  vertical-align: super;
+}
+
+.api-notice {
+  background: rgba(244, 204, 48, 0.1);
+  border-left: 4px solid #F4CC30;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #F4CC30;
+}

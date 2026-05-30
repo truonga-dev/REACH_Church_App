@@ -1,0 +1,93 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 var(--spacing-xs);
+  z-index: 1000;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  flex: 1;
+  height: 100%;
+  transition: color 0.2s;
+}
+
+.nav-item:hover {
+  color: var(--color-primary);
+}
+
+.nav-item.active {
+  color: var(--color-primary);
+}
+
+.nav-icon {
+  margin-bottom: 4px;
+}
+
+.nav-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    height: 100vh;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: var(--spacing-xl);
+    border-top: none;
+    border-right: 1px solid var(--color-border);
+    align-items: stretch;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+  }
+
+  .bottom-nav::before {
+    content: 'R.E.A.C.H';
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--color-primary);
+    padding: 0 var(--spacing-xl) var(--spacing-xl);
+    letter-spacing: 1px;
+  }
+  
+  .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: var(--spacing-md) var(--spacing-xl);
+    height: auto;
+    flex: none;
+    border-left: 3px solid transparent;
+  }
+  
+  .nav-item.active {
+    background-color: rgba(72, 188, 225, 0.1);
+    border-left-color: var(--color-primary);
+  }
+  
+  .nav-icon {
+    margin-bottom: 0;
+    margin-right: var(--spacing-md);
+  }
+  
+  .nav-label {
+    font-size: 1.05rem;
+  }
+}
