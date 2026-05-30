@@ -514,3 +514,85 @@
   background-color: rgba(72,188,225,0.1);
   color: var(--color-primary);
 }
+
+.profile-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #48BCE1;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  z-index: 9999;
+  font-weight: bold;
+}
+
+.btn-primary {
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, #48bce1, #2a9fc4);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.settings-panel label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.settings-bio {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.75rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.notif-list {
+  margin-bottom: var(--spacing-md);
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.notif-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.notif-type {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

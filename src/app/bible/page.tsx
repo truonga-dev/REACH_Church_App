@@ -41,6 +41,8 @@ export default function BiblePage() {
       const data = await res.json();
       if (!data.verses || data.error) throw new Error('No verses');
       setVerses(data.verses);
+      const { recordChapterRead } = await import('@/lib/reading-tracker');
+      recordChapterRead(bIndex, cIndex);
     } catch (err) {
       console.error(err);
       setError(true);

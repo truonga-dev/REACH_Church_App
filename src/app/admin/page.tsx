@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { 
   LayoutDashboard, Users, FileText,
   Heart, Plus, Trash2, Video, Newspaper,
-  Upload, File, CheckCircle, Edit, Headphones, BookOpen, X, LogOut
+  Upload, File, CheckCircle, Edit, Headphones, BookOpen, X, LogOut,
+  ArrowLeft, Lock, Shield,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import './page.css';
@@ -25,9 +27,15 @@ const quillModules = {
 };
 
 export default function AdminDashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => typeof window !== 'undefined' && sessionStorage.getItem('adminAuth') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(sessionStorage.getItem('adminAuth') === 'true');
+    setAuthReady(true);
+  }, []);
 
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -44,7 +52,7 @@ export default function AdminDashboard() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') {
+    if (password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123')) {
       setIsAuthenticated(true);
       sessionStorage.setItem('adminAuth', 'true');
       setLoginError(false);
@@ -487,17 +495,50 @@ export default function AdminDashboard() {
     }
   };
 
+  if (!authReady) {
+    return (
+      <div className="admin-login-container">
+        <div className="admin-auth-loading">
+          <div className="admin-auth-spinner" />
+          <p>Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="admin-login-container">
+        <div className="admin-login-topbar">
+          <Link href="/" className="admin-login-back">
+            <ArrowLeft size={16} /> Về trang chủ
+          </Link>
+        </div>
         <div className="login-card">
-          <Image src="/logo.png" alt="Logo" width={80} height={80} style={{ margin: '0 auto 1.5rem', display: 'block' }} />
-          <h2>Đăng nhập Ban điều hành</h2>
-          <p>Nhập mật khẩu quản trị để tiếp tục</p>
+          <div className="admin-login-logo-ring">
+            <Image src="/logo.png" alt="REACH Admin" width={72} height={72} />
+          </div>
+          <span className="admin-login-badge">
+            <Shield size={14} /> Ban điều hành
+          </span>
+          <h2>REACH Admin</h2>
+          <p>Đăng nhập hệ thống quản trị nội dung hội thánh</p>
           <form onSubmit={handleLogin} className="login-form">
-            <input type="password" placeholder="Mật khẩu Admin" value={password} onChange={e => setPassword(e.target.value)} className={loginError ? 'error' : ''} required />
+            <label className="admin-login-label" htmlFor="admin-password">Mật khẩu quản trị</label>
+            <div className="admin-login-input-wrap">
+              <Lock size={18} className="admin-login-input-icon" />
+              <input
+                id="admin-password"
+                type="password"
+                placeholder="Nhập mật khẩu admin"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={loginError ? 'error' : ''}
+                required
+              />
+            </div>
             {loginError && <p className="error-msg">Mật khẩu không chính xác!</p>}
-            <button type="submit" className="btn-primary w-full">Xác nhận</button>
+            <button type="submit" className="btn-primary w-full">Vào bảng điều khiển</button>
           </form>
         </div>
       </div>
