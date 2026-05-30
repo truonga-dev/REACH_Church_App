@@ -1,10 +1,13 @@
-# REACH Church App
+# R.E.A.C.H Church Vietnam
 
-Ứng dụng web dành cho **REACH Church** — nền tảng số giúp hội thánh kết nối, chia sẻ thông tin và mang trải nghiệm mượt mà trên mọi thiết bị.
+Ứng dụng web di động dành cho **Hội Thánh R.E.A.C.H Vietnam** — nền tảng dưỡng linh, kết nối cộng đồng và truy cập tài nguyên hội thánh mọi lúc, mọi nơi.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+
+**Repository:** [github.com/truonga-dev/REACH_Church_App](https://github.com/truonga-dev/REACH_Church_App)
 
 ---
 
@@ -26,49 +29,75 @@
 
 ## Giới thiệu
 
-**REACH Church App** là dự án ứng dụng web chính thức của REACH Church, được xây dựng trên nền tảng [Next.js App Router](https://nextjs.org/docs/app) và TypeScript.
+**R.E.A.C.H Church Vietnam** là ứng dụng web được thiết kế theo hướng **mobile-first**, giúp tín hữu và khách thăm:
 
-Dự án đang trong giai đoạn phát triển ban đầu, tập trung thiết lập kiến trúc nền tảng và quy trình làm việc. Trong tương lai, ứng dụng sẽ hỗ trợ các tính năng phục vụ cộng đồng hội thánh như thông báo, sự kiện, thư viện media và tài nguyên dành cho thành viên.
+- Cập nhật bản tin, sự kiện và bài giảng của hội thánh
+- Đọc Kinh Thánh tiếng Việt trực tuyến
+- Theo dõi chương trình dưỡng linh hàng ngày
+- Khám phá các ban ngành và mục vụ
+- Gửi nhu cầu cầu nguyện và quản lý hồ sơ cá nhân
+
+Ứng dụng hỗ trợ **PWA** (Progressive Web App), có thể cài đặt lên màn hình điện thoại như app native.
 
 ---
 
 ## Tính năng
 
-### Hiện có
+### Trang người dùng
 
-- Next.js 16 App Router kết hợp React 19
-- TypeScript — code an toàn, dễ bảo trì
-- ESLint — kiểm tra chất lượng mã nguồn
-- Font tối ưu qua `next/font`
-- Cấu hình môi trường qua file `.env.local` (không đẩy lên Git)
+| Trang | Đường dẫn | Mô tả |
+| ----- | --------- | ----- |
+| **Trang chủ** | `/` | Bản tin, sự kiện sắp tới, bài giảng, dưỡng linh, thông báo |
+| **Kinh Thánh** | `/bible` | Đọc Kinh Thánh tiếng Việt theo sách & chương |
+| **Thư viện** | `/library` | Tài liệu PDF, sách nói, video (tích hợp Supabase) |
+| **Mục vụ** | `/ministry` | Danh sách các ban ngành và hoạt động mục vụ |
+| **Hồ sơ** | `/profile` | Thông tin cá nhân, đề mục cầu nguyện, quyên góp |
+| **Cầu nguyện** | `/prayer` | Gửi nhu cầu cầu nguyện đến ban cầu nguyện |
+| **Dưỡng linh** | `/devotional` | Bài đọc dưỡng linh chi tiết, chia sẻ |
+| **Tin tức** | `/news/[id]` | Chi tiết bản tin / sự kiện |
 
-### Dự kiến phát triển
+### Quản trị
 
-- Trang chủ và thông tin nhà thờ
-- Sự kiện & thông báo
-- Thư viện bài giảng / media
-- Tài nguyên thành viên & form liên hệ
-- Quản trị nội dung (admin)
+| Trang | Đường dẫn | Mô tả |
+| ----- | --------- | ----- |
+| **Admin** | `/admin` | Quản lý bài giảng, sách nói, PDF, dưỡng linh, sự kiện, tín hữu, cầu nguyện |
+
+### API nội bộ
+
+| Endpoint | Mô tả |
+| -------- | ----- |
+| `GET /api/bible?book=&chapter=` | Trả về các câu Kinh Thánh từ file `public/bible_vie.json` |
+
+### Điều hướng
+
+- **Bottom Navigation** cố định 5 tab: Trang chủ · Kinh Thánh · Thư viện · Mục vụ · Hồ sơ
+- Giao diện tiếng Việt (`lang="vi"`)
+- Màu chủ đạo: `#48BCE1` (REACH Blue)
 
 ---
 
 ## Công nghệ sử dụng
 
-| Hạng mục        | Công nghệ |
-| --------------- | --------- |
-| Framework       | [Next.js 16](https://nextjs.org/) |
-| Thư viện UI     | [React 19](https://react.dev/) |
-| Ngôn ngữ        | [TypeScript 5](https://www.typescriptlang.org/) |
-| Kiểm tra code   | ESLint + `eslint-config-next` |
-| Quản lý gói     | npm |
+| Hạng mục | Công nghệ |
+| -------- | --------- |
+| Framework | [Next.js 16](https://nextjs.org/) (App Router + Turbopack) |
+| UI Library | [React 19](https://react.dev/) |
+| Ngôn ngữ | [TypeScript 5](https://www.typescriptlang.org/) |
+| Backend / Database | [Supabase](https://supabase.com/) |
+| Icons | [Lucide React](https://lucide.dev/) |
+| Rich Text Editor | react-quill-new (trang Admin) |
+| PWA | next-pwa |
+| Linting | ESLint + eslint-config-next |
+| Package Manager | npm |
 
 ---
 
 ## Yêu cầu hệ thống
 
 - **Node.js** 20 trở lên — [nodejs.org](https://nodejs.org/)
-- **npm** 10 trở lên (đi kèm Node.js)
+- **npm** 10 trở lên
 - **Git** — [git-scm.com](https://git-scm.com/)
+- Tài khoản **Supabase** (URL + Anon Key)
 
 ---
 
@@ -84,8 +113,10 @@ cd REACH_Church_App
 ### 2. Cài đặt dependencies
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
+
+> Dùng `--legacy-peer-deps` vì `react-quill` chưa hỗ trợ đầy đủ React 19.
 
 ### 3. Cấu hình biến môi trường
 
@@ -93,9 +124,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Chỉnh sửa `.env.local` theo môi trường của bạn. Chi tiết xem mục [Biến môi trường](#biến-môi-trường).
-
-> **Lưu ý:** Không bao giờ commit file `.env.local` hoặc bất kỳ file nào chứa secret. Các file này đã được loại trừ trong `.gitignore`.
+Điền các giá trị Supabase vào `.env.local` (xem mục [Biến môi trường](#biến-môi-trường)).
 
 ### 4. Chạy server phát triển
 
@@ -109,13 +138,19 @@ Mở trình duyệt tại [http://localhost:3000](http://localhost:3000).
 
 ## Biến môi trường
 
-Sao chép `.env.example` thành `.env.local` và điền giá trị phù hợp.
-
 | Biến | Mô tả | Bắt buộc |
 | ---- | ----- | -------- |
-| — | Bổ sung thêm khi dự án phát triển | — |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL dự án Supabase | ✅ |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon / public key Supabase | ✅ |
 
-File `.env.local` chỉ dùng trên máy local và **không** được đẩy lên GitHub.
+Ví dụ trong `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+> **Lưu ý:** File `.env.local` **không** được commit lên GitHub. Chỉ `.env.example` (mẫu trống) được đưa vào repo.
 
 ---
 
@@ -123,9 +158,9 @@ File `.env.local` chỉ dùng trên máy local và **không** được đẩy l�
 
 | Lệnh | Mô tả |
 | ---- | ----- |
-| `npm run dev` | Chạy server phát triển |
+| `npm run dev` | Chạy server dev (lắng nghe `0.0.0.0:3000`) |
 | `npm run build` | Build phiên bản production |
-| `npm run start` | Chạy bản build production trên local |
+| `npm run start` | Chạy bản build production |
 | `npm run lint` | Kiểm tra code với ESLint |
 
 ---
@@ -134,32 +169,47 @@ File `.env.local` chỉ dùng trên máy local và **không** được đẩy l�
 
 ```
 reach-church/
-├── public/              # Tài nguyên tĩnh (hình ảnh, icon)
+├── public/
+│   ├── logo.png              # Logo hội thánh
+│   ├── manifest.json         # Cấu hình PWA
+│   └── bible_vie.json        # Dữ liệu Kinh Thánh tiếng Việt
 ├── src/
-│   └── app/             # Trang & layout (Next.js App Router)
-│       ├── layout.tsx   # Layout gốc và metadata
-│       ├── page.tsx     # Trang chủ
-│       └── globals.css  # CSS toàn cục
-├── .env.example         # Mẫu biến môi trường (được commit)
-├── .gitignore           # Quy tắc loại trừ file khỏi Git
-├── eslint.config.mjs    # Cấu hình ESLint
-├── next.config.ts       # Cấu hình Next.js
-├── package.json         # Dependencies và scripts
-└── tsconfig.json        # Cấu hình TypeScript
+│   ├── app/
+│   │   ├── page.tsx          # Trang chủ
+│   │   ├── layout.tsx        # Layout gốc + BottomNav
+│   │   ├── globals.css       # CSS toàn cục
+│   │   ├── admin/            # Trang quản trị
+│   │   ├── api/bible/        # API Kinh Thánh
+│   │   ├── bible/            # Đọc Kinh Thánh
+│   │   ├── devotional/       # Dưỡng linh
+│   │   ├── library/          # Thư viện tài liệu
+│   │   ├── ministry/         # Ban ngành / mục vụ
+│   │   ├── news/[id]/        # Chi tiết tin tức
+│   │   ├── prayer/           # Cầu nguyện
+│   │   └── profile/          # Hồ sơ cá nhân
+│   ├── components/
+│   │   └── BottomNav.tsx     # Thanh điều hướng dưới
+│   └── lib/
+│       └── supabase.ts       # Client Supabase
+├── .env.example              # Mẫu biến môi trường
+├── .gitignore
+├── next.config.mjs           # Cấu hình Next.js + PWA
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
 ## Triển khai
 
-Nền tảng được khuyến nghị cho Next.js là [Vercel](https://vercel.com/):
+Nền tảng khuyến nghị: [Vercel](https://vercel.com/)
 
 1. Push code lên GitHub
 2. Import repository vào Vercel
-3. Thêm biến môi trường trong cài đặt dự án
+3. Thêm biến môi trường Supabase trong Project Settings
 4. Deploy
 
-Xem thêm [tài liệu triển khai Next.js](https://nextjs.org/docs/app/building-your-application/deploying).
+PWA sẽ tự kích hoạt ở môi trường production (`next-pwa`).
 
 ---
 
@@ -182,4 +232,4 @@ Mọi thắc mắc về dự án, vui lòng liên hệ team phát triển REACH 
 
 ---
 
-> Dự án thuộc sở hữu riêng của REACH Church. Không sao chép hoặc phân phối trái phép.
+> Dự án thuộc sở hữu riêng của R.E.A.C.H Church Vietnam. Không sao chép hoặc phân phối trái phép.
