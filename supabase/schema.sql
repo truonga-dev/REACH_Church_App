@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS public.sermons (
   date         TEXT,
   youtube_url  TEXT,
   youtube_id   TEXT,
+  content      TEXT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -99,6 +100,7 @@ ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS series      TEXT;
 ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS date        TEXT;
 ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS youtube_id  TEXT;
+ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS content     TEXT;
 ALTER TABLE public.sermons ADD COLUMN IF NOT EXISTS updated_at  TIMESTAMPTZ DEFAULT NOW();
 
 CREATE INDEX IF NOT EXISTS idx_sermons_created ON public.sermons(created_at DESC);
@@ -125,6 +127,10 @@ ALTER TABLE public.news ADD COLUMN IF NOT EXISTS image_url  TEXT;
 ALTER TABLE public.news ADD COLUMN IF NOT EXISTS pdf_url    TEXT;
 ALTER TABLE public.news ADD COLUMN IF NOT EXISTS audio_url  TEXT;
 ALTER TABLE public.news ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.news ADD COLUMN IF NOT EXISTS categories TEXT DEFAULT '[]';
+ALTER TABLE public.news ADD COLUMN IF NOT EXISTS status     TEXT DEFAULT 'published';
+
+CREATE INDEX IF NOT EXISTS idx_news_status ON public.news(status);
 
 CREATE INDEX IF NOT EXISTS idx_news_type     ON public.news(type);
 CREATE INDEX IF NOT EXISTS idx_news_created  ON public.news(created_at DESC);

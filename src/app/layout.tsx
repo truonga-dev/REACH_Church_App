@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: 'R.E.A.C.H Church Vietnam',
   description: 'Ứng dụng Dưỡng Linh & Kết Nối Hội Thánh R.E.A.C.H Vietnam',
   manifest: '/manifest.json',
+  icons: {
+    icon: [{ url: '/logo.png', type: 'image/png' }],
+    apple: [{ url: '/logo.png', type: 'image/png' }],
+    shortcut: '/logo.png',
+  },
 };
 
 export default function RootLayout({

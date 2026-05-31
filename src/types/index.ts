@@ -33,6 +33,7 @@ export interface Sermon {
   date?: string;
   youtube_url?: string;
   youtube_id?: string;
+  content?: string;
   created_at?: string;
 }
 
@@ -44,6 +45,8 @@ export interface NewsItem {
   image_url?: string;
   pdf_url?: string;
   audio_url?: string;
+  categories?: string[] | string;
+  status?: 'published' | 'draft' | string;
   created_at?: string;
 }
 

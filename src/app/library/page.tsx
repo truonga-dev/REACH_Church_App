@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FileText, Headphones, Video, BookOpen, Loader2, PlayCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Sermon, NewsItem } from '@/types';
+import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
 import './page.css';
 
 type Tab = 'sermons' | 'audiobooks' | 'pdfs' | 'devotionals';
@@ -15,13 +16,6 @@ const TABS: { id: Tab; label: string; icon: typeof Video }[] = [
   { id: 'pdfs', label: 'Sách PDF', icon: FileText },
   { id: 'devotionals', label: 'Dưỡng linh', icon: BookOpen },
 ];
-
-function getYoutubeId(source: string | null | undefined): string | null {
-  if (!source) return null;
-  if (source.length === 11 && /^[A-Za-z0-9_-]+$/.test(source)) return source;
-  const match = source.match(/(?:v=|youtu\.be\/|embed\/)([^&?/]+)/);
-  return match ? match[1] : null;
-}
 
 export default function Library() {
   const [activeTab, setActiveTab] = useState<Tab>('sermons');
@@ -47,8 +41,8 @@ export default function Library() {
       if (sermonsRes.data) setSermons(sermonsRes.data as Sermon[]);
       if (newsRes.data) {
         const news = newsRes.data as NewsItem[];
-        setAudiobooks(news.filter((n) => n.type === 'Sách Nói' || (n.audio_url && !n.pdf_url)));
-        setPdfs(news.filter((n) => n.pdf_url));
+        setAudiobooks(news.filter((n) => n.type === 'Sách Nói'));
+        setPdfs(news.filter((n) => n.type === 'Tài liệu'));
         setDevotionals(news.filter((n) => n.type?.toLowerCase().includes('dưỡng linh')));
       }
     } catch (err) {
@@ -79,15 +73,25 @@ export default function Library() {
       }
       return (
         <div className="media-list">
-          {sermons.map((s) => (
-            <div key={s.id} className="media-item" onClick={() => setPlayingSermon(s)}>
-              <div className="media-icon video-bg"><PlayCircle size={24} /></div>
-              <div className="media-info">
-                <h4>{s.title}</h4>
-                <p>{s.speaker} • {s.series} • {s.date}</p>
+          {sermons.map((s) => {
+            const thumb = getYoutubeThumbnailUrl(s.youtube_url || s.youtube_id);
+            return (
+              <div key={s.id} className="media-item" onClick={() => setPlayingSermon(s)}>
+                <div className="media-icon video-bg sermon-thumb-wrap">
+                  {thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt="" className="sermon-thumb-img" />
+                  ) : (
+                    <PlayCircle size={24} />
+                  )}
+                </div>
+                <div className="media-info">
+                  <h4>{s.title}</h4>
+                  <p>{s.speaker} • {s.series} • {s.date}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
@@ -199,6 +203,9 @@ export default function Library() {
               />
             ) : (
               <p className="lib-empty">Không có video YouTube cho bài giảng này.</p>
+            )}
+            {playingSermon.content && (
+              <div className="sermon-modal-content rich-text-content" dangerouslySetInnerHTML={{ __html: playingSermon.content }} />
             )}
           </div>
         </div>

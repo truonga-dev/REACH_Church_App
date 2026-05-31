@@ -9,6 +9,9 @@ import {
   ArrowRight, FileText, X, ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
+import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
+import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import './page.css';
 
 const bulletins = [
@@ -102,11 +105,18 @@ export default function Home() {
   const fetchHomeData = async () => {
     try {
       const [newsRes, sermonsRes, prayerRes] = await Promise.all([
-        supabase.from('news').select('*').order('created_at', { ascending: false }).limit(3),
+        supabase.from('news').select('*').order('created_at', { ascending: false }).limit(12),
         supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(2),
         supabase.from('prayers').select('id', { count: 'exact' }).eq('status', 'ongoing'),
       ]);
-      if (newsRes.data) setDbNews(newsRes.data);
+      if (newsRes.data) {
+        const posts = newsRes.data.filter(
+          (n) =>
+            (POST_CONTENT_TYPES as readonly string[]).includes(n.type) &&
+            n.status !== 'draft',
+        );
+        setDbNews(posts.slice(0, 3));
+      }
       if (sermonsRes.data) setDbSermons(sermonsRes.data);
       if (prayerRes.count !== null) setPrayerCount(prayerRes.count);
     } catch (error) {
@@ -122,12 +132,7 @@ export default function Home() {
     setNotifs(notifs.map(n => ({ ...n, read: true })));
   };
 
-  const getYoutubeEmbedId = (source: string | null | undefined) => {
-    if (!source) return null;
-    if (source.length === 11 && /^[A-Za-z0-9_-]+$/.test(source)) return source;
-    const match = source.match(/(?:v=|youtu\.be\/|embed\/)([^&?/]+)/);
-    return match ? match[1] : null;
-  };
+  const getYoutubeEmbedId = getYoutubeId;
 
   const handleSermonClick = (sermon: any) => {
     const source = sermon.youtube_url || sermon.youtube_id;
@@ -165,10 +170,13 @@ export default function Home() {
                 <X size={18} />
               </button>
             </div>
-            {getYoutubeEmbedId(playingSermon.youtube_url) ? (
-              <iframe width="100%" height="280" src={`https://www.youtube.com/embed/${getYoutubeEmbedId(playingSermon.youtube_url)}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen style={{ display: 'block', border: 'none' }} />
+            {getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id) ? (
+              <iframe width="100%" height="280" src={`https://www.youtube.com/embed/${getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id)}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen style={{ display: 'block', border: 'none' }} />
             ) : (
               <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Không tìm thấy video.</div>
+            )}
+            {playingSermon.content && (
+              <div className="rich-text-content" style={{ padding: '1rem 1.25rem', color: '#ccc', lineHeight: 1.6, fontSize: '0.95rem' }} dangerouslySetInnerHTML={{ __html: playingSermon.content }} />
             )}
           </div>
         </div>
@@ -268,21 +276,30 @@ export default function Home() {
           <Link href="/library" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
         </div>
         <div className="sermons-list">
-          {loading ? <p>Đang tải...</p> : displaySermons.map(sermon => (
-            <div key={sermon.id} className="sermon-item" onClick={() => handleSermonClick(sermon)} style={{ cursor: 'pointer' }}>
-              <div className="sermon-thumb">
-                <PlayCircle size={30} className="play-icon" />
+          {loading ? <p>Đang tải...</p> : displaySermons.map(sermon => {
+            const thumb = getYoutubeThumbnailUrl(sermon.youtube_url || sermon.youtube_id);
+            return (
+              <div key={sermon.id} className="sermon-item" onClick={() => handleSermonClick(sermon)} style={{ cursor: 'pointer' }}>
+                <div className="sermon-thumb">
+                  {thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt="" className="sermon-thumb-image" />
+                  ) : (
+                    <PlayCircle size={30} className="play-icon" />
+                  )}
+                  {thumb && <PlayCircle size={22} className="play-icon play-icon-overlay" />}
+                </div>
+                <div className="sermon-info">
+                  <span className="sermon-series">{sermon.series}</span>
+                  <h3 className="sermon-title">{sermon.title}</h3>
+                  <p className="sermon-meta">{sermon.speaker} • {sermon.created_at ? new Date(sermon.created_at).toLocaleDateString('vi-VN') : sermon.date}</p>
+                </div>
+                <div style={{ paddingRight: '12px', color: '#48BCE1' }}>
+                  <PlayCircle size={18} />
+                </div>
               </div>
-              <div className="sermon-info">
-                <span className="sermon-series">{sermon.series}</span>
-                <h3 className="sermon-title">{sermon.title}</h3>
-                <p className="sermon-meta">{sermon.speaker} • {sermon.created_at ? new Date(sermon.created_at).toLocaleDateString('vi-VN') : sermon.date}</p>
-              </div>
-              <div style={{ paddingRight: '12px', color: '#48BCE1' }}>
-                <PlayCircle size={18} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -318,23 +335,20 @@ export default function Home() {
         )}
 
         <div className="bulletin-list">
-          {loading ? <p>Đang tải...</p> : displayNews.map(item => (
-            <div key={item.id} className="bulletin-card" onClick={() => {
-              // Nếu là DB item (có uuid dạng dài), điều hướng tới trang chi tiết
-              if (item.created_at) {
-                setSelectedNews(item);
-              } else {
-                setSelectedNews(item);
-              }
-            }} style={{ cursor: 'pointer' }}>
+          {loading ? <p>Đang tải...</p> : displayNews.map(item => {
+            const cats = parseCategories(item.categories);
+            const displayTag = cats[0] || item.type || item.tag;
+            return (
+            <div key={item.id} className="bulletin-card" onClick={() => setSelectedNews(item)} style={{ cursor: 'pointer' }}>
               {item.image_url && (
-                <div style={{ width: '100%', height: '160px', overflow: 'hidden', borderRadius: '12px 12px 0 0', marginBottom: '12px' }}>
-                  <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div className="bulletin-featured-image">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.image_url} alt={item.title} />
                 </div>
               )}
               <div className="bulletin-top" style={item.image_url ? { marginTop: 0 } : {}}>
-                <span className="bulletin-tag" style={{ backgroundColor: `${tagColors[item.type || item.tag] || '#48BCE1'}22`, color: tagColors[item.type || item.tag] || '#48BCE1' }}>
-                  {item.type || item.tag}
+                <span className="bulletin-tag" style={{ backgroundColor: `${tagColors[displayTag] || tagColors[item.type || item.tag] || '#48BCE1'}22`, color: tagColors[displayTag] || tagColors[item.type || item.tag] || '#48BCE1' }}>
+                  {displayTag}
                 </span>
                 <span className="bulletin-date">
                   {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : item.date}
@@ -342,7 +356,7 @@ export default function Home() {
               </div>
               <h3 className="bulletin-title">{item.title}</h3>
               {item.author && <p className="bulletin-meta" style={{ marginBottom: '0.35rem' }}>Bởi {item.author} • {item.location || 'REACH Church'}</p>}
-              <p className="bulletin-summary">{item.content ? `${item.content.slice(0, 110)}...` : item.summary}</p>
+              <p className="bulletin-summary">{htmlExcerpt(item.content || item.summary || '', 120)}</p>
               {item.audio_url && (
                 <div style={{ marginTop: '12px' }} onClick={e => e.stopPropagation()}>
                   <audio controls style={{ width: '100%', height: '40px' }} src={item.audio_url}></audio>
@@ -359,7 +373,7 @@ export default function Home() {
                 )}
               </div>
             </div>
-          ))}
+          );})}
         </div>
       </section>
 

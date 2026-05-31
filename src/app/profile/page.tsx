@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   User, Heart, Bell, BookOpen, Settings, ChevronRight, LogOut,
-  Edit3, CheckCircle, Clock, Plus, X, Gift, Copy,
+  Edit3, CheckCircle, Clock, Plus, X, Gift, Copy, Trash2, ArrowLeft,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/lib/profile-service';
 import { getReadingStreak, getTotalReadingDays } from '@/lib/reading-tracker';
+import SettingsPanel from '@/components/profile/SettingsPanel';
+import WeeklyBibleSchedule from '@/components/profile/WeeklyBibleSchedule';
 import type { Prayer } from '@/types';
 import '../login/auth.css';
 import './page.css';
@@ -19,8 +21,8 @@ export default function ProfilePage() {
   const { user, profile, loading: authLoading, signOut, refreshProfile } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'info' | 'prayer' | 'donation'>('info');
+  const [infoView, setInfoView] = useState<'main' | 'settings' | 'weekly-bible' | 'notifications'>('main');
   const [showAddPrayer, setShowAddPrayer] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [newPrayer, setNewPrayer] = useState('');
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,7 @@ export default function ProfilePage() {
     full_name: '', username: '', role: 'Hội viên', avatar_url: '', bio: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [toast, setToast] = useState('');
   const [readingDays, setReadingDays] = useState(0);
   const [readingStreak, setReadingStreak] = useState(0);
@@ -117,9 +120,43 @@ export default function ProfilePage() {
     setIsSaving(false);
     if (ok) {
       await refreshProfile();
+      setIsEditingProfile(false);
       showToast('Lưu hồ sơ thành công!');
     } else {
       showToast('Không lưu được hồ sơ.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (profile) {
+      setProfileInfo({
+        full_name: profile.full_name || '',
+        username: profile.username || '',
+        role: profile.role || 'Hội viên',
+        avatar_url: profile.avatar_url || '',
+        bio: profile.bio || '',
+      });
+    }
+    setIsEditingProfile(false);
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!user || !profileInfo.avatar_url) return;
+    if (!window.confirm('Xóa ảnh đại diện của bạn?')) return;
+
+    setProfileInfo((prev) => ({ ...prev, avatar_url: '' }));
+    setIsSaving(true);
+    const ok = await updateProfile(user.id, {
+      full_name: profileInfo.full_name,
+      avatar_url: '',
+      bio: profileInfo.bio,
+    });
+    setIsSaving(false);
+    if (ok) {
+      await refreshProfile();
+      showToast('Đã xóa ảnh đại diện.');
+    } else {
+      showToast('Không xóa được ảnh.');
     }
   };
 
@@ -165,7 +202,14 @@ export default function ProfilePage() {
   const answeredCount = prayers.filter((p) => p.status === 'answered' || p.status === 'completed').length;
 
   if (authLoading) {
-    return <div className="profile-container"><p style={{ textAlign: 'center', padding: '2rem' }}>Đang tải...</p></div>;
+    return (
+      <div className="profile-container">
+        <div className="profile-loading">
+          <div className="profile-loading-spinner" />
+          <p>Đang tải hồ sơ...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -216,26 +260,80 @@ export default function ProfilePage() {
             {profileInfo.avatar_url ? (
               <img src={profileInfo.avatar_url} alt="Ảnh đại diện" className="avatar-img" />
             ) : (
-              <User size={40} color="white" />
+              <div className="avatar-placeholder">
+                <User size={40} color="white" />
+              </div>
             )}
           </div>
-          <button className="avatar-edit-btn" type="button" aria-label="Chỉnh sửa ảnh" onClick={() => avatarInputRef.current?.click()}>
-            <Edit3 size={14} />
-          </button>
+          {isEditingProfile && (
+            <>
+              <button
+                className="avatar-edit-btn"
+                type="button"
+                aria-label="Đổi ảnh đại diện"
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                <Edit3 size={14} />
+              </button>
+              {profileInfo.avatar_url && (
+                <button
+                  className="avatar-delete-btn"
+                  type="button"
+                  aria-label="Xóa ảnh đại diện"
+                  onClick={handleDeleteAvatar}
+                  disabled={isSaving}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </>
+          )}
           <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
         </div>
 
-        <div className="profile-edit-row">
-          <input
-            className="profile-name-input"
-            value={profileInfo.full_name}
-            onChange={(e) => setProfileInfo((prev) => ({ ...prev, full_name: e.target.value }))}
-            placeholder="Nhập tên của bạn"
-          />
-          <button className="btn-primary" type="button" onClick={handleSaveProfile} disabled={isSaving}>
-            {isSaving ? 'Đang lưu...' : 'Lưu hồ sơ'}
-          </button>
-        </div>
+        {isEditingProfile ? (
+          <div className="profile-edit-block">
+            <label className="profile-edit-label" htmlFor="profile-name">Họ và tên</label>
+            <input
+              id="profile-name"
+              className="profile-name-input"
+              value={profileInfo.full_name}
+              onChange={(e) => setProfileInfo((prev) => ({ ...prev, full_name: e.target.value }))}
+              placeholder="Nhập tên của bạn"
+            />
+            <div className="profile-edit-actions">
+              <button className="btn-primary" type="button" onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? 'Đang lưu...' : 'Lưu'}
+              </button>
+              <button className="btn-secondary" type="button" onClick={handleCancelEdit} disabled={isSaving}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="profile-name-block">
+            <h1 className="profile-name">{profileInfo.full_name || 'Thành viên REACH'}</h1>
+            <div className="profile-hero-actions">
+              <button
+                className="profile-action-btn edit"
+                type="button"
+                onClick={() => setIsEditingProfile(true)}
+              >
+                <Edit3 size={14} /> Sửa
+              </button>
+              {profileInfo.avatar_url && (
+                <button
+                  className="profile-action-btn delete"
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={isSaving}
+                >
+                  <Trash2 size={14} /> Xóa ảnh
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <p className="profile-role">{profileInfo.role} • {user.email}</p>
         <div className="profile-stats">
@@ -257,7 +355,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="profile-tabs">
-        <button className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>Hồ sơ</button>
+        <button className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} onClick={() => { setActiveTab('info'); setInfoView('main'); }}>Hồ sơ</button>
         <button className={`tab-btn ${activeTab === 'prayer' ? 'active' : ''}`} onClick={() => setActiveTab('prayer')}>
           <Heart size={14} style={{ marginRight: 4, display: 'inline' }} />Cầu nguyện
         </button>
@@ -268,8 +366,56 @@ export default function ProfilePage() {
 
       {activeTab === 'info' && (
         <div className="tab-content">
+          {infoView === 'settings' && (
+            <SettingsPanel
+              email={user.email || ''}
+              bio={profileInfo.bio}
+              onBioChange={(bio) => setProfileInfo((prev) => ({ ...prev, bio }))}
+              onSaveAccount={handleSaveProfile}
+              isSaving={isSaving}
+              onBack={() => setInfoView('main')}
+              onOpenDonation={() => {
+                setInfoView('main');
+                setActiveTab('donation');
+              }}
+            />
+          )}
+
+          {infoView === 'weekly-bible' && (
+            <WeeklyBibleSchedule
+              onBack={() => setInfoView('main')}
+              readingStreak={readingStreak}
+              readingDays={readingDays}
+            />
+          )}
+
+          {infoView === 'notifications' && (
+            <div className="settings-screen">
+              <button type="button" className="settings-back" onClick={() => setInfoView('main')}>
+                <ArrowLeft size={18} /> Thông báo
+              </button>
+              {recentNews.length > 0 ? (
+                <div className="notif-list">
+                  {recentNews.map((n) => (
+                    <Link key={n.id} href={`/news/${n.id}`} className="notif-item">
+                      <Bell size={16} />
+                      <div>
+                        <p className="notif-title">{n.title}</p>
+                        <p className="notif-type">{n.type}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="settings-hint">Chưa có thông báo mới từ hội thánh.</p>
+              )}
+            </div>
+          )}
+
+          {infoView === 'main' && (
+            <>
           <div className="menu-list">
-            <button className="menu-item" onClick={() => setShowSettings(!showSettings)}>
+            <button className="menu-item" onClick={() => setInfoView('notifications')}>
               <div className="menu-icon-wrap"><Bell size={20} className="menu-icon" /></div>
               <div className="menu-text">
                 <span className="menu-label">Thông báo</span>
@@ -277,53 +423,23 @@ export default function ProfilePage() {
               </div>
               <ChevronRight size={18} className="menu-arrow" />
             </button>
-            <Link href="/bible" className="menu-item">
+            <button type="button" className="menu-item" onClick={() => setInfoView('weekly-bible')}>
               <div className="menu-icon-wrap"><BookOpen size={20} className="menu-icon" /></div>
               <div className="menu-text">
                 <span className="menu-label">Lịch đọc Kinh Thánh</span>
                 <span className="menu-desc">Chuỗi {readingStreak} ngày • {readingDays} ngày tổng</span>
               </div>
               <ChevronRight size={18} className="menu-arrow" />
-            </Link>
-            <button className="menu-item" onClick={() => setShowSettings(!showSettings)}>
+            </button>
+            <button className="menu-item" onClick={() => setInfoView('settings')}>
               <div className="menu-icon-wrap"><Settings size={20} className="menu-icon" /></div>
               <div className="menu-text">
                 <span className="menu-label">Cài đặt</span>
-                <span className="menu-desc">Bio, tài khoản</span>
+                <span className="menu-desc">Thông báo, ngôn ngữ, tài khoản...</span>
               </div>
               <ChevronRight size={18} className="menu-arrow" />
             </button>
           </div>
-
-          {showSettings && (
-            <div className="settings-panel">
-              <label htmlFor="bio">Giới thiệu bản thân</label>
-              <textarea
-                id="bio"
-                rows={3}
-                className="settings-bio"
-                placeholder="Chia sẻ vài dòng về bạn..."
-                value={profileInfo.bio}
-                onChange={(e) => setProfileInfo((prev) => ({ ...prev, bio: e.target.value }))}
-              />
-              <button type="button" className="btn-primary" onClick={handleSaveProfile}>Lưu cài đặt</button>
-            </div>
-          )}
-
-          {recentNews.length > 0 && (
-            <div className="notif-list">
-              <h3 className="section-title-sm">Thông báo gần đây</h3>
-              {recentNews.map((n) => (
-                <Link key={n.id} href={`/news/${n.id}`} className="notif-item">
-                  <Bell size={16} />
-                  <div>
-                    <p className="notif-title">{n.title}</p>
-                    <p className="notif-type">{n.type}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
 
           <div className="devotion-streak">
             <BookOpen size={20} className="streak-icon" />
@@ -336,6 +452,8 @@ export default function ProfilePage() {
           <button className="btn-logout" type="button" onClick={handleLogout}>
             <LogOut size={18} /> Đăng xuất
           </button>
+            </>
+          )}
         </div>
       )}
 

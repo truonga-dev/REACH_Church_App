@@ -5,11 +5,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   LayoutDashboard, Users, FileText,
-  Heart, Plus, Trash2, Video, Newspaper,
+  Heart, Plus, Trash2, Video,
   Upload, File, CheckCircle, Edit, Headphones, BookOpen, X, LogOut,
-  ArrowLeft, Lock, Shield,
+  ArrowLeft, Lock, Shield, PenLine,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import AdminNewsTabPanel from '@/components/admin/AdminNewsTabPanel';
+import { POST_CONTENT_TYPES, POST_CATEGORIES } from '@/lib/post-categories';
+import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
 import './page.css';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
@@ -45,10 +48,18 @@ export default function AdminDashboard() {
     audiobooks: 'Sách Nói',
     pdfs: 'Sách PDF',
     devotionals: 'Dưỡng Linh',
-    events: 'Sự kiện & Bản tin',
+    posts: 'Thêm bài viết',
     users: 'Hồ sơ tín hữu',
     prayers: 'Đề mục cầu nguyện',
   };
+
+  const LIBRARY_TAB_TYPES: Record<string, string> = {
+    audiobooks: 'Sách Nói',
+    pdfs: 'Tài liệu',
+    devotionals: 'Dưỡng linh',
+  };
+
+  const libraryTabs = Object.keys(LIBRARY_TAB_TYPES);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +88,7 @@ export default function AdminDashboard() {
     date?: string;
     youtube_url?: string;
     youtube_id?: string;
+    content?: string;
   };
 
   type NewsItem = {
@@ -87,6 +99,9 @@ export default function AdminDashboard() {
     image_url?: string;
     pdf_url?: string;
     audio_url?: string;
+    categories?: string[] | string;
+    status?: string;
+    created_at?: string;
   };
 
   type Prayer = {
@@ -123,11 +138,22 @@ export default function AdminDashboard() {
   const [roleUpdating, setRoleUpdating] = useState(false);
 
   // Forms
-  const defaultSermon = { title: '', speaker: '', series: '', date: '', youtube_url: '' };
-  const defaultNews = { title: '', type: 'Sự kiện', content: '', image_url: '', pdf_url: '', audio_url: '' };
+  const defaultSermon = { title: '', speaker: '', series: '', date: '', youtube_url: '', content: '' };
+  const defaultNews = {
+    title: '',
+    type: 'Bài viết',
+    content: '',
+    image_url: '',
+    pdf_url: '',
+    audio_url: '',
+    categories: [] as string[],
+    status: 'published' as 'published' | 'draft',
+  };
   
   const [newSermon, setNewSermon] = useState<Sermon>(defaultSermon);
   const [newNews, setNewNews] = useState<NewsItem>(defaultNews);
+  const [sermonFormKey, setSermonFormKey] = useState(0);
+  const [newsFormKey, setNewsFormKey] = useState(0);
   const [uploading, setUploading] = useState(false);
 
   // Edit states
@@ -155,7 +181,14 @@ export default function AdminDashboard() {
 
   const fetchNews = async () => {
     const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
-    if (data) setNews(data.filter(Boolean));
+    if (data) {
+      setNews(
+        data.filter(Boolean).map((n) => ({
+          ...n,
+          categories: parseCategories(n.categories),
+        })),
+      );
+    }
   };
 
   const fetchPrayers = async () => {
@@ -181,8 +214,8 @@ export default function AdminDashboard() {
         type: item.type || 'Bản tin',
         author: item.author || item.created_by || item.username || 'REACH',
         created_at: item.created_at,
-        excerpt: item.content ? item.content.replace(/<[^>]+>/g, '').slice(0, 120) : '',
-        source: 'Tin tức'
+        excerpt: item.content ? htmlExcerpt(item.content, 120) : '',
+        source: item.type || 'Tin tức'
       })),
       ...(sermonData || []).map((item: any) => ({
         id: item.id,
@@ -190,7 +223,11 @@ export default function AdminDashboard() {
         type: 'Bài giảng',
         author: item.speaker || 'Chưa rõ',
         created_at: item.created_at || item.date,
-        excerpt: item.series ? `Loạt: ${item.series}` : '',
+        excerpt: item.content
+          ? htmlExcerpt(item.content, 120)
+          : item.series
+            ? `Loạt: ${item.series}`
+            : '',
         source: 'Bài giảng',
         date: item.date
       }))
@@ -236,13 +273,28 @@ export default function AdminDashboard() {
         fetchStats(),
         fetchRecentPosts(),
         activeTab === 'sermons' ? fetchSermons() : Promise.resolve(),
-        ['audiobooks', 'pdfs', 'devotionals', 'events'].includes(activeTab) ? fetchNews() : Promise.resolve(),
+        ['audiobooks', 'pdfs', 'devotionals', 'posts'].includes(activeTab) ? fetchNews() : Promise.resolve(),
         activeTab === 'prayers' ? fetchPrayers() : Promise.resolve(),
         activeTab === 'users' ? fetchProfiles() : Promise.resolve(),
       ]);
     };
 
     void Promise.resolve().then(loadAdminData);
+  }, [activeTab, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab === 'sermons') {
+      setNewSermon({ ...defaultSermon });
+      setSermonFormKey((k) => k + 1);
+    }
+    if (activeTab === 'posts') {
+      setNewNews({ ...defaultNews, type: 'Bài viết' });
+      setNewsFormKey((k) => k + 1);
+    } else if (libraryTabs.includes(activeTab)) {
+      setNewNews({ ...defaultNews, type: LIBRARY_TAB_TYPES[activeTab] });
+      setNewsFormKey((k) => k + 1);
+    }
   }, [activeTab, isAuthenticated]);
 
   const extractYoutubeId = (url: string) => {
@@ -262,7 +314,8 @@ export default function AdminDashboard() {
         series: newSermon.series,
         date: newSermon.date,
         youtube_url: newSermon.youtube_url,
-        youtube_id
+        youtube_id,
+        content: newSermon.content || '',
       }]).select();
 
       if (error) {
@@ -276,9 +329,11 @@ export default function AdminDashboard() {
         return;
       }
 
-      setSermons([data[0], ...sermons]);
-      setNewSermon(defaultSermon);
+      await fetchSermons();
+      setNewSermon({ ...defaultSermon });
+      setSermonFormKey((k) => k + 1);
       fetchStats();
+      fetchRecentPosts();
       alert('Đã thêm bài giảng thành công!');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -291,14 +346,17 @@ export default function AdminDashboard() {
     e.preventDefault();
     try {
       const itemType = type;
-      const { data, error } = await supabase.from('news').insert([{
+      const payload = {
         title: newNews.title,
         type: itemType,
         content: newNews.content,
-        image_url: newNews.image_url,
-        pdf_url: newNews.pdf_url,
-        audio_url: newNews.audio_url
-      }]).select();
+        image_url: newNews.image_url || '',
+        pdf_url: itemType === 'Tài liệu' ? newNews.pdf_url : '',
+        audio_url: itemType === 'Sách Nói' ? newNews.audio_url : '',
+        categories: JSON.stringify(newNews.categories || []),
+        status: newNews.status || 'published',
+      };
+      const { data, error } = await supabase.from('news').insert([payload]).select();
 
       if (error) {
         console.error('Lỗi thêm bài viết:', error);
@@ -311,9 +369,11 @@ export default function AdminDashboard() {
         return;
       }
 
-      setNews([data[0], ...news]);
-      setNewNews(defaultNews);
+      await fetchNews();
+      setNewNews({ ...defaultNews, type: itemType });
+      setNewsFormKey((k) => k + 1);
       fetchStats();
+      fetchRecentPosts();
       alert('Đã đăng bài thành công!');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -382,7 +442,8 @@ export default function AdminDashboard() {
           series: sermonEdit.series,
           date: sermonEdit.date,
           youtube_url: sermonEdit.youtube_url,
-          youtube_id
+          youtube_id,
+          content: sermonEdit.content || '',
         }).eq('id', sermonEdit.id).select();
 
         if (error) {
@@ -408,7 +469,9 @@ export default function AdminDashboard() {
           content: newsEdit.content,
           image_url: newsEdit.image_url,
           pdf_url: newsEdit.pdf_url,
-          audio_url: newsEdit.audio_url
+          audio_url: newsEdit.audio_url,
+          categories: JSON.stringify(parseCategories(newsEdit.categories)),
+          status: newsEdit.status || 'published',
         }).eq('id', newsEdit.id).select();
 
         if (error) {
@@ -550,6 +613,8 @@ export default function AdminDashboard() {
   const editingSermon = editingItem as Sermon;
   const editingNews = editingItem as NewsItem;
 
+  const getPosts = () => getFilteredNews([...POST_CONTENT_TYPES]);
+
   return (
     <div className="admin-layout">
       {/* Sidebar Navigation */}
@@ -581,9 +646,9 @@ export default function AdminDashboard() {
             <BookOpen size={20} /> Dưỡng Linh
           </button>
 
-          <div className="nav-section-title">THÔNG TIN KHÁC</div>
-          <button className={`nav-item ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>
-            <Newspaper size={20} /> Sự kiện & Bản tin
+          <div className="nav-section-title">NỘI DUNG</div>
+          <button className={`nav-item ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>
+            <PenLine size={20} /> Thêm bài viết
           </button>
 
           <div className="nav-section-title">THÀNH VIÊN</div>
@@ -686,6 +751,10 @@ export default function AdminDashboard() {
                     <div className="form-group"><label>Ngày giảng</label><input required type="date" value={newSermon.date} onChange={e => setNewSermon({...newSermon, date: e.target.value})} /></div>
                     <div className="form-group"><label>Đường dẫn YouTube</label><input required placeholder="https://youtube.com/watch?v=..." value={newSermon.youtube_url} onChange={e => setNewSermon({...newSermon, youtube_url: e.target.value})} /></div>
                   </div>
+                  <div className="form-group">
+                    <label>Nội dung / Mô tả bài giảng</label>
+                    <ReactQuill key={sermonFormKey} theme="snow" modules={quillModules} value={newSermon.content || ''} onChange={val => setNewSermon({...newSermon, content: val})} className="quill-editor" placeholder="Tóm tắt hoặc ghi chú nội dung bài giảng..." />
+                  </div>
                   <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng bài giảng</button>
                 </form>
               </div>
@@ -714,7 +783,7 @@ export default function AdminDashboard() {
                 <div className="panel-header"><h3>Thêm Sách Nói Mới</h3></div>
                 <form onSubmit={e => handleAddNews(e, 'Sách Nói')} className="cms-form">
                   <div className="form-group"><label>Tiêu đề sách / Bài nghe</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Mô tả ngắn</label><ReactQuill theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
+                  <div className="form-group"><label>Mô tả ngắn</label><ReactQuill key={`audio-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
                   <div className="upload-box">
                     <Upload size={24} className="upload-icon text-yellow" />
                     <div className="upload-info"><strong>File Audio (MP3)</strong><span>{newNews.audio_url ? 'Đã đính kèm Audio' : 'Chưa có file'}</span></div>
@@ -747,7 +816,7 @@ export default function AdminDashboard() {
                 <div className="panel-header"><h3>Thêm Sách PDF / Tài liệu</h3></div>
                 <form onSubmit={e => handleAddNews(e, 'Tài liệu')} className="cms-form">
                   <div className="form-group"><label>Tên sách / Tài liệu</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Mô tả nội dung</label><ReactQuill theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
+                  <div className="form-group"><label>Mô tả nội dung</label><ReactQuill key={`pdf-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
                   <div className="upload-box">
                     <File size={24} className="upload-icon text-red" />
                     <div className="upload-info"><strong>File PDF</strong><span>{newNews.pdf_url ? 'Đã đính kèm PDF' : 'Chưa có file'}</span></div>
@@ -780,7 +849,7 @@ export default function AdminDashboard() {
                 <div className="panel-header"><h3>Thêm Bài Dưỡng Linh</h3></div>
                 <form onSubmit={e => handleAddNews(e, 'Dưỡng linh')} className="cms-form">
                   <div className="form-group"><label>Chủ đề dưỡng linh</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Nội dung bài học / Lời Chúa</label><ReactQuill theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" placeholder="Nhập nội dung bài tĩnh nguyện hoặc đoạn Kinh Thánh..." /></div>
+                  <div className="form-group"><label>Nội dung bài học / Lời Chúa</label><ReactQuill key={`dev-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" placeholder="Nhập nội dung bài tĩnh nguyện hoặc đoạn Kinh Thánh..." /></div>
                   <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng bài Dưỡng linh</button>
                 </form>
               </div>
@@ -801,48 +870,25 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* EVENTS & NEWS */}
-          {activeTab === 'events' && (
-            <div className="admin-panel-grid">
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Đăng Sự Kiện / Thông Báo</h3></div>
-                <form onSubmit={e => handleAddNews(e, newNews.type || 'Sự kiện')} className="cms-form">
-                  <div className="form-row">
-                    <div className="form-group flex-2"><label>Tiêu đề</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                    <div className="form-group"><label>Loại</label>
-                      <select value={newNews.type} onChange={e => setNewNews({...newNews, type: e.target.value})}>
-                        <option value="Sự kiện">Sự kiện</option>
-                        <option value="Thông báo">Thông báo</option>
-                        <option value="Bản tin">Bản tin chung</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-group"><label>Nội dung chi tiết</label><ReactQuill theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
-                  <div className="upload-box" style={{ flexWrap: 'wrap' }}>
-                    <File size={24} className="upload-icon text-blue" />
-                    <div className="upload-info"><strong>Ảnh đính kèm (URL)</strong><span>{newNews.image_url ? 'Đã có ảnh' : 'Chưa có ảnh'}</span></div>
-                    <label className="btn-upload">{uploading ? 'Đang tải...' : 'Chọn File'}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'image')} disabled={uploading} hidden /></label>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {newNews.image_url && <img src={newNews.image_url} alt="Preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />}
-                  </div>
-                  <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng bài</button>
-                </form>
-              </div>
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Danh sách ({getFilteredNews(['Sự kiện', 'Thông báo', 'Bản tin']).length})</h3></div>
-                <div className="data-list">
-                  {getFilteredNews(['Sự kiện', 'Thông báo', 'Bản tin']).filter(Boolean).map(n => (
-                    <div key={n.id} className="data-item">
-                      <div className="data-item-content"><strong><span className="badge">{n.type}</span> {n.title}</strong></div>
-                      <div style={{display:'flex', gap: '8px'}}>
-                        <button onClick={() => handleOpenEdit(n, 'news')} className="btn-icon-edit"><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteNews(n.id)} className="btn-icon-danger"><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          {/* THÊM BÀI VIẾT — Sự kiện, Thông báo, Bản tin, Bài viết */}
+          {activeTab === 'posts' && (
+            <AdminNewsTabPanel
+              listTitle="Danh sách bài viết"
+              items={getPosts()}
+              form={newNews}
+              onFormChange={setNewNews}
+              onSubmit={(e) => handleAddNews(e, newNews.type || 'Bài viết')}
+              onImageUpload={(e) => handleFileUpload(e, 'image')}
+              onRemoveImage={() => setNewNews({ ...newNews, image_url: '' })}
+              onEdit={(item) => handleOpenEdit(item, 'news')}
+              onDelete={handleDeleteNews}
+              uploading={uploading}
+              quillKey={newsFormKey}
+              quillModules={quillModules}
+              submitLabel="Xuất bản"
+              showCategories
+              showFeaturedImage
+            />
           )}
 
           {/* PRAYERS & USERS */}
@@ -918,6 +964,10 @@ export default function AdminDashboard() {
                     <div className="form-group"><label>Loạt bài</label><input value={editingSermon.series || ''} onChange={e => setEditingItem({...editingSermon, series: e.target.value})} /></div>
                   </div>
                   <div className="form-group"><label>YouTube Link (chỉ sửa nếu đổi video)</label><input placeholder="Nhập đường dẫn YouTube mới..." value={editingSermon.youtube_url || ''} onChange={e => setEditingItem({...editingSermon, youtube_url: e.target.value})} /></div>
+                  <div className="form-group">
+                    <label>Nội dung / Mô tả bài giảng</label>
+                    <ReactQuill theme="snow" modules={quillModules} value={editingSermon.content || ''} onChange={val => setEditingItem({...editingSermon, content: val})} className="quill-editor" />
+                  </div>
                 </>
               ) : (
                 <>
@@ -937,12 +987,33 @@ export default function AdminDashboard() {
                       <label className="btn-upload">{uploading ? 'Đang tải...' : 'Tải File Mới'}<input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, 'pdf', true)} disabled={uploading} hidden /></label>
                     </div>
                   )}
-                  {(!['Sách Nói', 'Tài liệu', 'Dưỡng linh'].includes(editingNews.type)) && (
+                  {editingNews.type !== 'Tài liệu' && (
                     <div className="upload-box" style={{ flexWrap: 'wrap' }}>
-                      <div className="upload-info"><strong>Cập nhật Ảnh</strong><span>{editingNews.image_url ? 'Đã có ảnh' : 'Chưa có'}</span></div>
+                      <div className="upload-info"><strong>Ảnh đại diện</strong><span>{editingNews.image_url ? 'Đã có ảnh' : 'Chưa có'}</span></div>
                       <label className="btn-upload">{uploading ? 'Đang tải...' : 'Tải Ảnh Mới'}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'image', true)} disabled={uploading} hidden /></label>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       {editingNews.image_url && <img src={editingNews.image_url} alt="Preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />}
+                    </div>
+                  )}
+                  {(['Dưỡng linh', ...POST_CONTENT_TYPES] as readonly string[]).includes(editingNews.type) && (
+                    <div className="form-group">
+                      <label>Danh mục</label>
+                      <div className="wp-category-list">
+                        {POST_CATEGORIES.map((cat) => (
+                          <label key={cat} className="wp-category-item">
+                            <input
+                              type="checkbox"
+                              checked={parseCategories(editingNews.categories).includes(cat)}
+                              onChange={() => {
+                                const cats = parseCategories(editingNews.categories);
+                                const next = cats.includes(cat) ? cats.filter((c) => c !== cat) : [...cats, cat];
+                                setEditingItem({ ...editingNews, categories: next });
+                              }}
+                            />
+                            <span>{cat}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>

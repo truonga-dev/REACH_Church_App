@@ -16,7 +16,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         children
       ) : (
         <div className="app-container">
-          <main className="main-content">{children}</main>
+          <main className={`main-content${pathname?.startsWith('/profile') ? ' main-content--profile' : ''}`}>
+            {children}
+          </main>
           <BottomNav />
         </div>
       )}
