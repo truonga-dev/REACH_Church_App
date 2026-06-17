@@ -1,0 +1,150 @@
+.comment-section {
+  margin-top: 40px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 20px;
+}
+
+.comment-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 20px;
+}
+
+.comment-form {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.comment-submit {
+  align-self: flex-end;
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.comment-submit:hover:not(:disabled) {
+  background: #059669;
+}
+
+.comment-submit:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.comment-content {
+  flex-grow: 1;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #374151;
+}
+
+.comment-text {
+  color: #1f2937;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.comment-action-btn:hover {
+  color: #10b981;
+}
+
+.comment-action-btn.delete:hover {
+  color: #ef4444;
+}
+
+.auth-prompt {
+  background: #f3f4f6;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: #4b5563;
+  margin-bottom: 30px;
+}
+
+.auth-prompt a {
+  color: #10b981;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-prompt a:hover {
+  text-decoration: underline;
+}

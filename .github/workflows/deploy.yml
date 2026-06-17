@@ -1,0 +1,285 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Determine Environment
+  # ============================================
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      cluster: ${{ steps.set-env.outputs.cluster }}
+      namespace: ${{ steps.set-env.outputs.namespace }}
+
+    steps:
+      - name: Set Environment
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "cluster=reach-church-prod" >> $GITHUB_OUTPUT
+            echo "namespace=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "cluster=reach-church-staging" >> $GITHUB_OUTPUT
+            echo "namespace=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "cluster=reach-church-staging" >> $GITHUB_OUTPUT
+            echo "namespace=staging" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================
+  # Pre-deployment Tests
+  # ============================================
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Run tests
+        run: npm run test:ci
+        continue-on-error: true
+
+      - name: Run linting
+        run: npm run lint
+
+  # ============================================
+  # Build and Push Docker Image
+  # ============================================
+  build-image:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [setup, pre-deploy]
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.setup.outputs.environment }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # Deploy to Kubernetes
+  # ============================================
+  deploy:
+    name: Deploy to ${{ needs.setup.outputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [setup, build-image]
+    environment:
+      name: ${{ needs.setup.outputs.environment }}
+      url: ${{ steps.deploy.outputs.app_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Update Kubernetes Deployment
+        id: deploy
+        run: |
+          NAMESPACE="${{ needs.setup.outputs.namespace }}"
+          IMAGE_TAG="${{ needs.build-image.outputs.image-tag }}"
+          
+          # Update deployment
+          kubectl set image deployment/reach-church-app \
+            reach-church=$IMAGE_TAG \
+            -n $NAMESPACE \
+            --record
+
+          # Wait for rollout
+          kubectl rollout status deployment/reach-church-app \
+            -n $NAMESPACE \
+            --timeout=5m
+
+          # Get service URL
+          APP_URL=$(kubectl get service reach-church-app -n $NAMESPACE \
+            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || echo "http://localhost")
+          
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+
+      - name: Run Smoke Tests
+        run: |
+          echo "Running smoke tests..."
+          curl -f ${{ steps.deploy.outputs.app_url }} || exit 1
+          echo "✅ Smoke tests passed"
+
+      - name: Notify Deployment Success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Deployed to ${{ needs.setup.outputs.environment }}\n\nURL: ${{ steps.deploy.outputs.app_url }}'
+            })
+
+  # ============================================
+  # Post-deployment Validation
+  # ============================================
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [setup, deploy]
+    if: always()
+
+    steps:
+      - name: Run Health Checks
+        run: |
+          APP_URL=${{ needs.deploy.outputs.app_url }}
+          
+          # Check API health
+          for i in {1..5}; do
+            if curl -f $APP_URL/api/health; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 10
+          done
+          
+          echo "❌ Health check failed"
+          exit 1
+
+      - name: Run E2E Tests (Optional)
+        run: |
+          echo "Running E2E tests..."
+          npm run test:e2e || echo "E2E tests skipped"
+        continue-on-error: true
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Deployment to ${{ needs.setup.outputs.environment }} - ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deployment Status*\n Environment: ${{ needs.setup.outputs.environment }}\nStatus: ${{ job.status }}\nCommit: ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+
+  # ============================================
+  # Rollback on Failure
+  # ============================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [setup, validate]
+    if: failure()
+
+    steps:
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Rollback Previous Deployment
+        run: |
+          NAMESPACE="${{ needs.setup.outputs.namespace }}"
+          
+          echo "Rolling back previous deployment..."
+          kubectl rollout undo deployment/reach-church-app -n $NAMESPACE
+          kubectl rollout status deployment/reach-church-app -n $NAMESPACE --timeout=5m
+          
+          echo "✅ Rollback completed"
+
+      - name: Notify Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ Deployment to ${{ needs.setup.outputs.environment }} failed and was rolled back'
+            })

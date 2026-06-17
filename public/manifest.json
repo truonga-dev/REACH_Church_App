@@ -1,21 +1,69 @@
 {
   "name": "REACH Church Vietnam",
   "short_name": "REACH",
-  "description": "Trải nghiệm mục vụ di động của REACH Church",
+  "description": "Ứng dụng nhà thờ REACH - Dưỡng linh, Bài giảng, Tin tức, Cầu nguyện",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#48BCE1",
+  "theme_color": "#0EA5E9",
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity", "religion"],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dưỡng Linh",
+      "short_name": "Dưỡng Linh",
+      "description": "Xem bài dưỡng linh hôm nay",
+      "url": "/devotional",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cầu Nguyện",
+      "short_name": "Cầu Nguyện",
+      "description": "Gửi lời cầu nguyện",
+      "url": "/prayer",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bài Giảng",
+      "short_name": "Bài Giảng",
+      "description": "Xem các bài giảng",
+      "url": "/library",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
     }
   ]
 }

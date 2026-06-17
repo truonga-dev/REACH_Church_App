@@ -1,93 +1,89 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   Calendar, PlayCircle, BookOpen, Heart,
   Newspaper, ChevronRight, Bell, Sun, Music,
-  ArrowRight, FileText, X, ExternalLink
+  ArrowRight, FileText, X, Search, Loader2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
 import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
+import { useAuth } from '@/contexts/AuthContext';
 import './page.css';
-
-const bulletins = [
-  {
-    id: 1,
-    title: 'Bản Tin Hội Thánh – Tháng 11/2024',
-    summary: 'Thông báo lịch nhóm nhỏ tháng 12, chiến dịch Giáng Sinh và chương trình từ thiện cuối năm.',
-    content: 'Hội thánh REACH xin gửi đến quý ân nhân và Dân sự thông tin về lịch sinh hoạt tháng 12, chương trình từ thiện tại huyện Bình Chánh và buổi truyền giảng vào ngày lễ Giáng Sinh.',
-    date: '28/11/2024',
-    tag: 'Bản tin',
-    author: 'Ban Truyền Thông REACH',
-    location: 'Hội trường chính',
-    pdf_url: '/docs/lich-nhom-nho-thang-12.pdf',
-  },
-  {
-    id: 2,
-    title: 'Thông Báo: Lớp Báp-têm Tháng 12',
-    summary: 'Hội thánh sẽ tổ chức lớp học Báp-têm vào ngày 7-8/12. Đăng ký trước ngày 5/12.',
-    content: 'Xin ưu tiên đăng ký sớm để ban tổ chức sắp xếp chỗ ngồi. Lớp báp-têm sẽ do mục sư Nguyễn Hòa giảng dạy và bao gồm phần học, cầu nguyện và chia sẻ chứng đạo.',
-    date: '25/11/2024',
-    tag: 'Thông báo',
-    author: 'Ban Tông Đồ',
-    location: 'Phòng học hội thánh',
-  },
-  {
-    id: 3,
-    title: 'Chương Trình Giáng Sinh 2024',
-    summary: 'REACH Church trân trọng mời toàn thể Dân sự và thân hữu tham dự buổi lễ Giáng Sinh 22/12.',
-    content: 'Đêm Giáng Sinh sẽ có chương trình thờ phượng, diễn nguyện và phục vụ cộng đồng. Xin mời quý anh chị cùng tham dự và đem theo người thân để chia sẻ niềm vui Phúc Âm.',
-    date: '20/11/2024',
-    tag: 'Sự kiện',
-    author: 'Ban Sự Kiện',
-    location: 'Hội trường chính',
-  },
-];
-
-const devotionals = [
-  { day: 'Hôm nay', title: 'Sống trong ân điển', verse: 'Giăng 1:16', verseBook: 43, verseChapter: 1, text: 'Vả, bởi sự đầy dẫy của Ngài mà chúng ta đều có nhận được, và ơn càng thêm ơn.', duration: '5 phút đọc', color: '#48BCE1' },
-  { day: 'Hôm qua', title: 'Bình an từ Đức Chúa Trời', verse: 'Phi-líp 4:7', verseBook: 50, verseChapter: 4, text: 'Sự bình an của Ðức Chúa Trời vượt quá mọi sự hiểu biết, sẽ gìn giữ lòng và ý tưởng anh em trong Ðức Chúa Jêsus Christ.', duration: '4 phút đọc', color: '#F4CC30' },
-];
-
-const sermons = [
-  { id: 1, title: 'Chúa Jesus là câu trả lời', speaker: 'MS. Quản nhiệm', date: '26/11/2024', duration: '45 phút', series: 'Tin Lành Giăng', youtube_url: '' },
-  { id: 2, title: 'Đức Tin Vượt Qua Thử Thách', speaker: 'MS. Hội thánh', date: '19/11/2024', duration: '50 phút', series: 'Hê-bơ-rơ', youtube_url: '' },
-];
-
-const upcomingEvents = [
-  { day: '01', month: 'Th.12', title: 'Thờ phượng Chúa Nhật', time: '09:00 – 11:00', loc: 'Hội trường chính', mapUrl: 'https://maps.google.com' },
-  { day: '03', month: 'Th.12', title: 'Nhóm Nhỏ Thứ Ba', time: '19:30 – 21:00', loc: 'Nhà thành viên', mapUrl: 'https://maps.google.com' },
-  { day: '07', month: 'Th.12', title: 'Lớp Báp-têm', time: '08:00 – 16:00', loc: 'Phòng học hội thánh', mapUrl: 'https://maps.google.com' },
-  { day: '22', month: 'Th.12', title: '🎄 Đêm Giáng Sinh', time: '18:00 – 21:00', loc: 'Hội trường chính', mapUrl: 'https://maps.google.com' },
-];
 
 const tagColors: Record<string, string> = {
   'Bản tin': '#48BCE1', 'Thông báo': '#F4CC30', 'Sự kiện': '#F12D5C',
+  'Bài viết': '#a78bfa', 'Tin tức': '#34d399',
 };
 
-const notifications = [
-  { id: 1, icon: '🔔', title: 'Nhóm Nhỏ tối nay lúc 19:30', time: '2 giờ trước', read: false },
-  { id: 2, icon: '📖', title: 'Bài dưỡng linh mới đã được thêm vào', time: '5 giờ trước', read: false },
-  { id: 3, icon: '🙏', title: 'Nhớ dành thời gian cầu nguyện hôm nay!', time: 'Hôm qua', read: true },
+const DAILY_VERSES = [
+  { text: 'Vì Ðức Chúa Trời yêu thương thế gian, đến nỗi đã ban Con một của Ngài, hầu cho hễ ai tin Con ấy không bị hư mất mà được sự sống đời đời.', ref: 'Giăng 3:16', book: 43, chapter: 3, verse: 16 },
+  { text: 'Ðức Chúa Trời là nơi nương náu và sức lực của chúng tôi; Ngài là sự giúp đỡ rất sẵn trong lúc hoạn nạn.', ref: 'Thi Thiên 46:1', book: 19, chapter: 46, verse: 1 },
+  { text: 'Hãy tin Đức Chúa Jêsus, thì ngươi và cả nhà ngươi sẽ được cứu rỗi.', ref: 'Công Vụ 16:31', book: 44, chapter: 16, verse: 31 },
+  { text: 'Tôi làm được mọi sự nhờ Đấng ban thêm sức cho tôi.', ref: 'Phi-líp 4:13', book: 50, chapter: 4, verse: 13 },
+  { text: 'Chúa là Đấng chăn giữ tôi: tôi sẽ chẳng thiếu thốn gì.', ref: 'Thi Thiên 23:1', book: 19, chapter: 23, verse: 1 },
+  { text: 'Hãy phó thác đường lối mình cho Đức Giê-hô-va, và nhờ cậy nơi Ngài, thì Ngài sẽ làm thành việc đó.', ref: 'Thi Thiên 37:5', book: 19, chapter: 37, verse: 5 },
+  { text: 'Đừng lo lắng chi hết, nhưng trong mọi sự hãy dùng lời cầu nguyện, nài xin, và sự tạ ơn mà trình các sự cầu xin của mình cho Đức Chúa Trời.', ref: 'Phi-líp 4:6', book: 50, chapter: 4, verse: 6 },
+  { text: 'Hãy đến cùng ta, hỡi những kẻ mệt mỏi và gánh nặng, ta sẽ cho các ngươi được yên nghỉ.', ref: 'Ma-thi-ơ 11:28', book: 40, chapter: 11, verse: 28 },
+  { text: 'Mọi sự đều có thể được cho kẻ nào tin.', ref: 'Mác 9:23', book: 41, chapter: 9, verse: 23 },
+  { text: 'Đức Chúa Trời yêu thương chúng ta và sai Con Ngài làm của lễ chuộc tội lỗi chúng ta.', ref: '1 Giăng 4:10', book: 62, chapter: 4, verse: 10 },
+  { text: 'Nhưng những kẻ trông đợi Đức Giê-hô-va thì được thêm sức mới; họ bay lên như chim phụng hoàng.', ref: 'Ê-sai 40:31', book: 23, chapter: 40, verse: 31 },
+  { text: 'Hễ sự gì các ngươi làm, hãy làm hết sức mình như làm cho Chúa, chứ không phải làm cho người ta.', ref: 'Cô-lô-se 3:23', book: 51, chapter: 3, verse: 23 },
+  { text: 'Đức Giê-hô-va là ánh sáng và là sự cứu rỗi của tôi; tôi sẽ sợ ai?', ref: 'Thi Thiên 27:1', book: 19, chapter: 27, verse: 1 },
+  { text: 'Hãy vững lòng bền chí; chớ run sợ và chớ kinh hãi, vì Giê-hô-va Đức Chúa Trời ngươi ở cùng ngươi trong mọi nơi ngươi đi.', ref: 'Giô-suê 1:9', book: 6, chapter: 1, verse: 9 },
+  { text: 'Đức Chúa Trời là sự sáng, trong Ngài chẳng có sự tối tăm nào hết.', ref: '1 Giăng 1:5', book: 62, chapter: 1, verse: 5 },
+  { text: 'Vả, đức tin là sự biết chắc vững vàng của những điều mình đang trông mong, là bằng cớ của những điều mình chẳng xem thấy.', ref: 'Hê-bơ-rơ 11:1', book: 58, chapter: 11, verse: 1 },
+  { text: 'Hãy yêu thương nhau như ta đã yêu thương các ngươi.', ref: 'Giăng 15:12', book: 43, chapter: 15, verse: 12 },
+  { text: 'Nhưng hãy tìm kiếm trước nhất nước Đức Chúa Trời và sự công bình của Ngài, thì Ngài sẽ cho thêm các ngươi mọi điều ấy nữa.', ref: 'Ma-thi-ơ 6:33', book: 40, chapter: 6, verse: 33 },
+  { text: 'Đức Chúa Trời đã chẳng ban cho chúng ta tâm thần nhút nhát, bèn là tâm thần mạnh mẽ, có tình thương yêu và dè giữ.', ref: '2 Ti-mô-thê 1:7', book: 55, chapter: 1, verse: 7 },
+  { text: 'Khá cẩn thận, hãy tỉnh thức; vì ma quỉ, thù nghịch anh em, như sư tử rống, đi vòng quanh tìm kiếm người nào nó có thể nuốt được.', ref: '1 Phi-e-rơ 5:8', book: 60, chapter: 5, verse: 8 },
+  { text: 'Thật vậy, ta biết những ý tưởng ta nghĩ đối cùng các ngươi... là ý tưởng bình an, không phải tai họa, để cho các ngươi được sự trông cậy trong lúc cuối cùng của mình.', ref: 'Giê-rê-mi 29:11', book: 24, chapter: 29, verse: 11 },
+  { text: 'Ân điển của Đức Chúa Trời là nguồn cứu rỗi cho mọi người.', ref: 'Tít 2:11', book: 56, chapter: 2, verse: 11 },
+  { text: 'Chúng ta yêu Ngài, vì Ngài đã yêu chúng ta trước.', ref: '1 Giăng 4:19', book: 62, chapter: 4, verse: 19 },
+  { text: 'Hãy kính sợ Đức Giê-hô-va và tránh khỏi điều ác; điều đó sẽ là thuốc chữa bệnh cho thân thể ngươi, là sự bổ dưỡng cho xương cốt ngươi.', ref: 'Châm Ngôn 3:7-8', book: 20, chapter: 3, verse: 7 },
+  { text: 'Song những ai tiếp nhận Ngài thì Ngài ban cho quyền phép trở nên con cái Đức Chúa Trời.', ref: 'Giăng 1:12', book: 43, chapter: 1, verse: 12 },
+  { text: 'Hãy nhớ đến Đấng Tạo Hóa ngươi trong những ngày còn trẻ tuổi.', ref: 'Truyền Đạo 12:1', book: 21, chapter: 12, verse: 1 },
+  { text: 'Đừng lấy điều ác thắng điều thiện, nhưng hãy lấy điều thiện thắng điều ác.', ref: 'Rô-ma 12:21', book: 45, chapter: 12, verse: 21 },
+  { text: 'Chúa là thành tín; Ngài sẽ làm cho anh em vững lòng và gìn giữ khỏi điều ác.', ref: '2 Tê-sa-lô-ni-ca 3:3', book: 53, chapter: 3, verse: 3 },
+  { text: 'Hãy suy ngẫm sách luật pháp này ngày và đêm, để cẩn thận làm theo mọi điều đã chép ở trong; vì như vậy ngươi mới được thịnh vượng trong con đường mình.', ref: 'Giô-suê 1:8', book: 6, chapter: 1, verse: 8 },
+  { text: 'Đức Chúa Trời là Đấng yêu thương; ai ở trong sự yêu thương là ở trong Đức Chúa Trời, và Đức Chúa Trời ở trong người ấy.', ref: '1 Giăng 4:16', book: 62, chapter: 4, verse: 16 },
+  { text: 'Bình an ta để lại cho các ngươi; bình an ta ban cho các ngươi.', ref: 'Giăng 14:27', book: 43, chapter: 14, verse: 27 },
 ];
 
+function getDailyVerse() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / 86400000);
+  return DAILY_VERSES[dayOfYear % DAILY_VERSES.length];
+}
+
 export default function Home() {
+  const router = useRouter();
+  const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('Chào mừng bạn đến với REACH 🙏');
+
+  // Real Supabase data
   const [dbNews, setDbNews] = useState<any[]>([]);
   const [dbSermons, setDbSermons] = useState<any[]>([]);
+  const [dbDevotionals, setDbDevotionals] = useState<any[]>([]);
+  const [dbEvents, setDbEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [prayerCount, setPrayerCount] = useState(0);
 
   // UI state
   const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const [notifs, setNotifs] = useState(notifications);
+  const [notifs, setNotifs] = useState<any[]>([]);
   const [playingSermon, setPlayingSermon] = useState<any>(null);
   const [toast, setToast] = useState('');
   const [selectedNews, setSelectedNews] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -104,21 +100,52 @@ export default function Home() {
 
   const fetchHomeData = async () => {
     try {
-      const [newsRes, sermonsRes, prayerRes] = await Promise.all([
-        supabase.from('news').select('*').order('created_at', { ascending: false }).limit(12),
-        supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(2),
-        supabase.from('prayers').select('id', { count: 'exact' }).eq('status', 'ongoing'),
+      const [newsRes, sermonsRes, prayerRes, eventsRes, devotionalsRes] = await Promise.all([
+        supabase.from('news')
+          .select('*')
+          .neq('status', 'draft')
+          .not('type', 'in', '("Dưỡng linh","Dưỡng Linh","Sách Nói","Tài liệu")')
+          .order('created_at', { ascending: false })
+          .limit(6),
+        supabase.from('sermons')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3),
+        supabase.from('prayers')
+          .select('id', { count: 'exact' })
+          .eq('status', 'ongoing'),
+        supabase.from('events')
+          .select('*')
+          .gte('event_date', new Date().toISOString())
+          .order('event_date', { ascending: true })
+          .limit(4),
+        supabase.from('devotionals')
+          .select('*')
+          .order('published_at', { ascending: false })
+          .limit(2),
       ]);
+
       if (newsRes.data) {
-        const posts = newsRes.data.filter(
-          (n) =>
-            (POST_CONTENT_TYPES as readonly string[]).includes(n.type) &&
-            n.status !== 'draft',
-        );
-        setDbNews(posts.slice(0, 3));
+        setDbNews(newsRes.data);
+
+        // Build notifications from latest content
+        const dynamicNotifs = newsRes.data.slice(0, 5).map((n: any, i: number) => {
+          let icon = '🔔';
+          if (n.type?.includes('Dưỡng linh')) icon = '📖';
+          else if (n.type === 'Sự kiện') icon = '🎉';
+          else if (n.type === 'Sách Nói' || n.type === 'Tài liệu') icon = '📚';
+          const date = new Date(n.created_at);
+          return { id: n.id || i, icon, title: `${n.type}: ${n.title}`, time: date.toLocaleDateString('vi-VN'), read: false };
+        });
+        if (dynamicNotifs.length > 0) {
+          const readIds = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('readNotifs') || '[]' : '[]');
+          setNotifs(dynamicNotifs.map((n: any) => ({ ...n, read: readIds.includes(n.id) })));
+        }
       }
       if (sermonsRes.data) setDbSermons(sermonsRes.data);
       if (prayerRes.count !== null) setPrayerCount(prayerRes.count);
+      if (eventsRes.data) setDbEvents(eventsRes.data);
+      if (devotionalsRes.data) setDbDevotionals(devotionalsRes.data);
     } catch (error) {
       console.error('Error fetching home data:', error);
     } finally {
@@ -129,23 +156,142 @@ export default function Home() {
   const unreadCount = notifs.filter(n => !n.read).length;
 
   const markAllRead = () => {
-    setNotifs(notifs.map(n => ({ ...n, read: true })));
+    const newNotifs = notifs.map(n => ({ ...n, read: true }));
+    setNotifs(newNotifs);
+    localStorage.setItem('readNotifs', JSON.stringify(newNotifs.map(n => n.id)));
   };
 
-  const getYoutubeEmbedId = getYoutubeId;
+  const handleNotifClick = (n: any) => {
+    const newNotifs = notifs.map(x => x.id === n.id ? { ...x, read: true } : x);
+    setNotifs(newNotifs);
+    localStorage.setItem('readNotifs', JSON.stringify(newNotifs.filter(x => x.read).map(x => x.id)));
+  };
 
   const handleSermonClick = (sermon: any) => {
-    const source = sermon.youtube_url || sermon.youtube_id;
-    const embedId = getYoutubeEmbedId(source);
+    const source = sermon.youtube_url || sermon.youtube_id || sermon.video_url;
+    const embedId = getYoutubeId(source);
     if (embedId) {
-      setPlayingSermon({ ...sermon, youtube_url: sermon.youtube_url || `https://youtu.be/${embedId}` });
+      setPlayingSermon({ ...sermon, youtube_url: source || `https://youtu.be/${embedId}` });
     } else {
       showToast('🎵 Bài giảng này chưa có video hợp lệ. Vui lòng liên hệ Admin!');
     }
   };
 
-  const displayNews = dbNews.length > 0 ? dbNews : bulletins;
-  const displaySermons = dbSermons.length > 0 ? dbSermons : sermons;
+  // Bible search: detect patterns like "Giăng 3:16", "Ma-thi-ơ 5:3"
+  const BIBLE_BOOKS: { names: string[]; id: number }[] = [
+    { names: ['sáng thế ký','sáng thế','st','genesis','gen'], id: 1 },
+    { names: ['xuất ê-díp-tô ký','xuất ê-díp-tô','xuất','exodus','exo'], id: 2 },
+    { names: ['lê-vi ký','lê-vi','lêvi','leviticus','lev'], id: 3 },
+    { names: ['dân số ký','dân số','numbers','num'], id: 4 },
+    { names: ['phục truyền','phục-truyền','phục truyền luật lệ ký','deuteronomy','deut'], id: 5 },
+    { names: ['giô-suê','giôsuê','giô suê','joshua','josh'], id: 6 },
+    { names: ['các quan xét','thẩm phán','judges','judg'], id: 7 },
+    { names: ['ru-tơ','ru tơ','ruth'], id: 8 },
+    { names: ['1 sa-mu-ên','1 samuel','1sa'], id: 9 },
+    { names: ['2 sa-mu-ên','2 samuel','2sa'], id: 10 },
+    { names: ['1 các vua','1 vua','1kings','1ki'], id: 11 },
+    { names: ['2 các vua','2 vua','2kings','2ki'], id: 12 },
+    { names: ['1 sử ký','1 sử-ký','1chronicles','1ch'], id: 13 },
+    { names: ['2 sử ký','2 sử-ký','2chronicles','2ch'], id: 14 },
+    { names: ['ê-xơ-ra','êxơra','ezra'], id: 15 },
+    { names: ['nê-hê-mi','nêhêmi','nehemiah','neh'], id: 16 },
+    { names: ['ê-xơ-tê','êxơtê','esther','esth'], id: 17 },
+    { names: ['gióp','job'], id: 18 },
+    { names: ['thi thiên','thi-thiên','thithiên','psalms','ps','psalm'], id: 19 },
+    { names: ['châm ngôn','châm-ngôn','proverbs','prov','pr'], id: 20 },
+    { names: ['truyền đạo','truyền-đạo','ecclesiastes','eccl'], id: 21 },
+    { names: ['nhã ca','nhã-ca','song of songs','song'], id: 22 },
+    { names: ['ê-sai','êsai','isaiah','isa'], id: 23 },
+    { names: ['giê-rê-mi','giêrêmi','jeremiah','jer'], id: 24 },
+    { names: ['ca thương','ca-thương','lamentations','lam'], id: 25 },
+    { names: ['ê-xê-chi-ên','êxêchiên','ezekiel','ezek'], id: 26 },
+    { names: ['đa-ni-ên','đaniên','daniel','dan'], id: 27 },
+    { names: ['ô-sê','ôsê','hosea','hos'], id: 28 },
+    { names: ['giô-ên','giôên','joel'], id: 29 },
+    { names: ['a-mốt','amốt','amos'], id: 30 },
+    { names: ['mi-chê','michê','micah','mic'], id: 31 },
+    { names: ['giô-na','giôna','jonah','jon'], id: 32 },
+    { names: ['na-hum','nahum','nah'], id: 33 },
+    { names: ['ha-ba-cúc','habacúc','habakkuk','hab'], id: 34 },
+    { names: ['sô-phô-ni','sôphôni','zephaniah','zeph'], id: 35 },
+    { names: ['a-gai','agai','haggai','hag'], id: 36 },
+    { names: ['xa-cha-ri','xachari','zechariah','zech'], id: 37 },
+    { names: ['ma-la-chi','malachi','mal'], id: 38 },
+    { names: ['ma-thi-ơ','mathiơ','matthew','matt','mt'], id: 39 },
+    { names: ['mác','mark','mk'], id: 40 },
+    { names: ['lu-ca','luca','luke','lk'], id: 41 },
+    { names: ['giăng','john','jn'], id: 42 },
+    { names: ['công vụ','công-vụ','công vụ các sứ đồ','acts'], id: 43 },
+    { names: ['rô-ma','rôma','romans','rom'], id: 44 },
+    { names: ['1 cô-rinh-tô','1 côrintô','1corinthians','1cor'], id: 45 },
+    { names: ['2 cô-rinh-tô','2 côrintô','2corinthians','2cor'], id: 46 },
+    { names: ['ga-la-ti','galati','galatians','gal'], id: 47 },
+    { names: ['ê-phê-sô','êphêsô','ephesians','eph'], id: 48 },
+    { names: ['phi-líp','philíp','philippians','phil'], id: 49 },
+    { names: ['cô-lô-se','côlôse','colossians','col'], id: 50 },
+    { names: ['1 tê-sa-lô-ni-ca','1 têsalônica','1thessalonians','1thess'], id: 51 },
+    { names: ['2 tê-sa-lô-ni-ca','2 têsalônica','2thessalonians','2thess'], id: 52 },
+    { names: ['1 ti-mô-thê','1 timôthê','1timothy','1tim'], id: 53 },
+    { names: ['2 ti-mô-thê','2 timôthê','2timothy','2tim'], id: 54 },
+    { names: ['tít','titus'], id: 55 },
+    { names: ['phi-lê-môn','philêmôn','philemon','phlm'], id: 56 },
+    { names: ['hê-bơ-rơ','hêbơrơ','hebrews','heb'], id: 57 },
+    { names: ['gia-cơ','giacơ','james','jas'], id: 58 },
+    { names: ['1 phi-e-rơ','1 phierơ','1peter','1pet'], id: 59 },
+    { names: ['2 phi-e-rơ','2 phierơ','2peter','2pet'], id: 60 },
+    { names: ['1 giăng','1john','1jn'], id: 61 },
+    { names: ['2 giăng','2john','2jn'], id: 62 },
+    { names: ['3 giăng','3john','3jn'], id: 63 },
+    { names: ['giu-đe','giuđe','jude'], id: 64 },
+    { names: ['khải huyền','khải-huyền','revelation','rev'], id: 65 },
+  ];
+
+  const parseBibleQuery = (q: string): { bookId: number; bookName: string; chapter: number; verse?: number } | null => {
+    // Match: "BookName chapter:verse" e.g. "Giăng 3:16" or "Giăng 3" or "John 3:16-18"
+    const m = q.trim().match(/^(.+?)\s+(\d+)(?::(\d+)(?:-\d+)?)?$/i);
+    if (!m) return null;
+    const bookRaw = m[1].trim().toLowerCase()
+      .replace(/[àáảãạăắặằẵẫâấậầẩẫđèéẻẽẹêếệềểễìíỉĩịòóỏõọôốộồổỗơớợờởỡùúủũụưứựừửữỳýỷỹỵ]/g, c => c) // keep diacritics as-is for matching
+      ;
+    const chapter = parseInt(m[2]);
+    const verse = m[3] ? parseInt(m[3]) : undefined;
+    const found = BIBLE_BOOKS.find(b => b.names.some(n => bookRaw.startsWith(n) || n.startsWith(bookRaw)));
+    if (!found) return null;
+    // Get the display name from the Bible page books array (1-indexed)
+    const displayNames = [
+      'Sáng-thế Ký','Xuất Ê-díp-tô Ký','Lê-vi Ký','Dân-số Ký','Phục-truyền Luật-lệ Ký',
+      'Giô-suê','Các Quan Xét','Ru-tơ','1 Sa-mu-ên','2 Sa-mu-ên','1 Các Vua','2 Các Vua',
+      '1 Sử-ký','2 Sử-ký','Ê-xơ-ra','Nê-hê-mi','Ê-xơ-tê','Gióp','Thi-thiên','Châm-ngôn',
+      'Truyền-đạo','Nhã-ca','Ê-sai','Giê-rê-mi','Ca-thương','Ê-xê-chi-ên','Đa-ni-ên',
+      'Ô-sê','Giô-ên','A-mốt','Áp-đia','Giô-na','Mi-chê','Na-hum','Ha-ba-cúc','Sô-phô-ni',
+      'A-gai','Xa-cha-ri','Ma-la-chi','Ma-thi-ơ','Mác','Lu-ca','Giăng','Công-vụ các Sứ-đồ',
+      'Rô-ma','1 Cô-rinh-tô','2 Cô-rinh-tô','Ga-la-ti','Ê-phê-sô','Phi-líp','Cô-lô-se',
+      '1 Tê-sa-lô-ni-ca','2 Tê-sa-lô-ni-ca','1 Ti-mô-thê','2 Ti-mô-thê','Tít','Phi-lê-môn',
+      'Hê-bơ-rơ','Gia-cơ','1 Phi-e-rơ','2 Phi-e-rơ','1 Giăng','2 Giăng','3 Giăng','Giu-đe','Khải-huyền',
+    ];
+    return { bookId: found.id, bookName: displayNames[found.id - 1] || m[1], chapter, verse };
+  };
+
+  const bibleSearch = searchQuery.length >= 2 ? parseBibleQuery(searchQuery) : null;
+
+  // Search across all content
+  const searchLower = searchQuery.toLowerCase();
+  const searchResults = searchQuery.length >= 2 ? [
+    ...dbNews.filter((n: any) =>
+      n.title?.toLowerCase().includes(searchLower) ||
+      (n.content || '')?.toLowerCase().includes(searchLower)
+    ).map((n: any) => ({ ...n, _type: 'news' })),
+    ...dbSermons.filter((s: any) =>
+      s.title?.toLowerCase().includes(searchLower) ||
+      (s.speaker || '')?.toLowerCase().includes(searchLower)
+    ).map((s: any) => ({ ...s, _type: 'sermon' })),
+    ...dbEvents.filter((ev: any) =>
+      ev.title?.toLowerCase().includes(searchLower) ||
+      (ev.location || '')?.toLowerCase().includes(searchLower)
+    ).map((ev: any) => ({ ...ev, _type: 'event' })),
+  ] : [];
+
+  const getYoutubeEmbedId = getYoutubeId;
 
   return (
     <div className="home-container">
@@ -170,8 +316,8 @@ export default function Home() {
                 <X size={18} />
               </button>
             </div>
-            {getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id) ? (
-              <iframe width="100%" height="280" src={`https://www.youtube.com/embed/${getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id)}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen style={{ display: 'block', border: 'none' }} />
+            {getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id || playingSermon.video_url) ? (
+              <iframe width="100%" height="280" src={`https://www.youtube.com/embed/${getYoutubeEmbedId(playingSermon.youtube_url || playingSermon.youtube_id || playingSermon.video_url)}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen style={{ display: 'block', border: 'none' }} />
             ) : (
               <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Không tìm thấy video.</div>
             )}
@@ -184,15 +330,28 @@ export default function Home() {
 
       {/* ── Header ── */}
       <header className="home-header">
-        <div className="logo-container">
+        <button
+          className="logo-container"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+          onClick={() => { router.push('/'); router.refresh(); }}
+          aria-label="Về trang chủ"
+        >
           <Image src="/logo.png" alt="R.E.A.C.H Church Logo" width={44} height={44} className="app-logo" />
           <div>
             <h1 className="logo-text">R.E.A.C.H Church</h1>
             <p className="greeting">{greeting}</p>
           </div>
-        </div>
+        </button>
         <div className="header-actions">
-          {/* Bell Button + Notification Dropdown */}
+          {/* Search Icon Button */}
+          <button
+            className="icon-btn"
+            aria-label="Tìm kiếm"
+            onClick={() => setShowSearchModal(true)}
+          >
+            <Search size={22} />
+          </button>
+
           <div style={{ position: 'relative' }}>
             <button className="icon-btn" aria-label="Thông báo" onClick={() => setShowNotifPanel(!showNotifPanel)}>
               <Bell size={22} />
@@ -204,9 +363,9 @@ export default function Home() {
                   <span style={{ fontWeight: 'bold', color: '#fff' }}>Thông báo</span>
                   <button onClick={markAllRead} style={{ color: '#48BCE1', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>Đọc tất cả</button>
                 </div>
-                {notifs.map(n => (
+                {notifs.map((n: any) => (
                   <div key={n.id} style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(72,188,225,0.06)', cursor: 'pointer' }}
-                    onClick={() => setNotifs(notifs.map(x => x.id === n.id ? { ...x, read: true } : x))}>
+                    onClick={() => handleNotifClick(n)}>
                     <span style={{ fontSize: '1.4rem' }}>{n.icon}</span>
                     <div>
                       <p style={{ color: '#fff', fontSize: '0.88rem', fontWeight: n.read ? 400 : 600 }}>{n.title}</p>
@@ -220,24 +379,195 @@ export default function Home() {
             )}
           </div>
           <Link href="/profile" className="avatar-link" aria-label="Hồ sơ">
-            <div className="header-avatar">DS</div>
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.2)' }} />
+            ) : (
+              <div className="header-avatar">{profile?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'R'}</div>
+            )}
           </Link>
         </div>
       </header>
 
-      {/* ── Daily Verse ── */}
-      <Link href="/bible" style={{ textDecoration: 'none' }}>
-        <section className="verse-card" style={{ cursor: 'pointer' }}>
-          <div className="verse-top">
-            <BookOpen size={18} className="verse-icon" />
-            <span className="verse-label">Câu Kinh Thánh hôm nay — Chạm để đọc</span>
+      {/* ── Search Modal ── */}
+      {showSearchModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+            zIndex: 9990, display: 'flex', flexDirection: 'column',
+            alignItems: 'stretch', padding: '0',
+          }}
+          onClick={() => { setShowSearchModal(false); setSearchQuery(''); }}
+        >
+          <div
+            style={{
+              background: '#0f1520', borderBottom: '1px solid rgba(255,255,255,0.1)',
+              padding: '1rem',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(72,188,225,0.4)',
+              borderRadius: 14, padding: '0 1rem', height: 50,
+              boxShadow: '0 0 0 3px rgba(72,188,225,0.1)',
+            }}>
+              <Search size={18} style={{ color: '#48BCE1', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm bài giảng, tin tức, sự kiện..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                autoFocus
+                style={{
+                  background: 'none', border: 'none', outline: 'none',
+                  color: '#fff', fontSize: '0.95rem', width: '100%', fontFamily: 'inherit',
+                }}
+              />
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a8599', padding: 0, display: 'flex' }}>
+                  <X size={17} />
+                </button>
+              ) : (
+                <button onClick={() => { setShowSearchModal(false); setSearchQuery(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a8599', padding: 0, fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                  Hủy
+                </button>
+              )}
+            </div>
           </div>
-          <blockquote className="verse-text">
-            "Vì Ðức Chúa Trời yêu thương thế gian, đến nỗi đã ban Con một của Ngài, hầu cho hễ ai tin Con ấy không bị hư mất mà được sự sống đời đời."
-          </blockquote>
-          <p className="verse-ref">— Giăng 3:16</p>
-        </section>
-      </Link>
+
+          {/* Results */}
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ flex: 1, overflowY: 'auto', background: '#0f1520' }}
+          >
+            {searchQuery.length === 0 ? (
+              <div style={{ padding: '2rem 1.25rem' }}>
+                <p style={{ color: '#7a8599', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>Gợi ý tìm kiếm</p>
+                {['Bài giảng', 'Giăng 3:16', 'Ma-thi-ơ 5:3', 'Thờ phượng', 'Cầu nguyện'].map(hint => (
+                  <button key={hint} onClick={() => setSearchQuery(hint)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '0.7rem 0.85rem', background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10,
+                      color: '#9ca3af', fontSize: '0.88rem', cursor: 'pointer',
+                      marginBottom: '0.5rem', fontFamily: 'inherit',
+                    }}
+                  >
+                    🔍 {hint}
+                  </button>
+                ))}
+              </div>
+            ) : bibleSearch || searchResults.length > 0 ? (
+              <div style={{ padding: '0.75rem' }}>
+                {/* Bible result */}
+                {bibleSearch && (
+                  <>
+                    <p style={{ color: '#7a8599', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.5rem', marginBottom: '0.25rem' }}>📖 Kinh Thánh</p>
+                    <div
+                      onClick={() => {
+                        const url = `/bible?book=${bibleSearch.bookId}&chapter=${bibleSearch.chapter}${bibleSearch.verse ? `&verse=${bibleSearch.verse}` : ''}`;
+                        router.push(url);
+                        setShowSearchModal(false);
+                        setSearchQuery('');
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.75rem 0.85rem', cursor: 'pointer',
+                        borderRadius: 12, marginBottom: '0.75rem',
+                        background: 'rgba(72,188,225,0.08)',
+                        border: '1px solid rgba(72,188,225,0.2)',
+                      }}
+                    >
+                      <span style={{
+                        width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem',
+                        background: 'rgba(72,188,225,0.18)',
+                      }}>📖</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', margin: 0 }}>
+                          {bibleSearch.bookName} {bibleSearch.chapter}{bibleSearch.verse ? `:${bibleSearch.verse}` : ''}
+                        </p>
+                        <p style={{ color: '#48BCE1', fontSize: '0.76rem', margin: '2px 0 0', fontWeight: 600 }}>Mở trong Kinh Thánh →</p>
+                      </div>
+                      <ArrowRight size={15} style={{ color: '#48BCE1', flexShrink: 0 }} />
+                    </div>
+                  </>
+                )}
+                {/* Other results */}
+                {searchResults.length > 0 && (
+                  <>
+                    <p style={{ color: '#7a8599', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.5rem', marginBottom: '0.25rem' }}>
+                      {searchResults.length} kết quả khác
+                    </p>
+                    {searchResults.map((result: any, idx: number) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (result._type === 'news') { setSelectedNews(result); setShowSearchModal(false); setSearchQuery(''); }
+                          else if (result._type === 'sermon') { handleSermonClick(result); setShowSearchModal(false); setSearchQuery(''); }
+                          else if (result._type === 'event') { setShowSearchModal(false); setSearchQuery(''); window.location.href = '/events'; }
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                          padding: '0.75rem 0.85rem', cursor: 'pointer',
+                          borderRadius: 12, marginBottom: '0.25rem',
+                          transition: 'background 0.15s',
+                          background: 'rgba(255,255,255,0.03)',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(72,188,225,0.08)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                      >
+                        <span style={{
+                          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem',
+                          background: result._type === 'sermon' ? 'rgba(72,188,225,0.12)'
+                            : result._type === 'event' ? 'rgba(244,204,48,0.12)'
+                            : 'rgba(241,45,92,0.12)',
+                        }}>
+                          {result._type === 'sermon' ? '🎵' : result._type === 'event' ? '📅' : '📰'}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {result.title}
+                          </p>
+                          <p style={{ color: '#7a8599', fontSize: '0.76rem', margin: '2px 0 0' }}>
+                            {result._type === 'sermon' ? 'Bài giảng' : result._type === 'event' ? 'Sự kiện' : result.type || 'Tin tức'}
+                          </p>
+                        </div>
+                        <ArrowRight size={15} style={{ color: '#48BCE1', flexShrink: 0 }} />
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: '3rem 1.25rem', textAlign: 'center' }}>
+                <p style={{ color: '#fff', fontWeight: 700, marginBottom: '0.5rem' }}>Không tìm thấy kết quả</p>
+                <p style={{ color: '#7a8599', fontSize: '0.85rem' }}>Thử tìm câu Kinh Thánh như &ldquo;Giăng 3:16&rdquo;</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Daily Verse ── */}
+      {(() => {
+        const verse = getDailyVerse();
+        return (
+          <Link href={`/bible?book=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`} style={{ textDecoration: 'none' }}>
+            <section className="verse-card" style={{ cursor: 'pointer' }}>
+              <div className="verse-top">
+                <BookOpen size={18} className="verse-icon" />
+                <span className="verse-label">Câu Kinh Thánh hôm nay — Chạm để đọc</span>
+              </div>
+              <blockquote className="verse-text">
+                &ldquo;{verse.text}&rdquo;
+              </blockquote>
+              <p className="verse-ref">— {verse.ref}</p>
+            </section>
+          </Link>
+        );
+      })()}
 
       {/* ── Daily Devotional ── */}
       <section className="section">
@@ -246,23 +576,35 @@ export default function Home() {
             <Sun size={18} style={{ marginRight: 6, color: '#F4CC30', verticalAlign: 'middle' }} />
             Dưỡng Linh Hằng Ngày
           </h2>
-          <Link href="/bible" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
+          <Link href="/library" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
         </div>
         <div className="devotional-list">
-          {devotionals.map((d, i) => (
-            <Link key={i} href={`/devotional?title=${encodeURIComponent(d.title)}&verse=${encodeURIComponent(d.verse)}&text=${encodeURIComponent(d.text)}&day=${encodeURIComponent(d.day)}&duration=${encodeURIComponent(d.duration)}`} style={{ textDecoration: 'none' }}>
-              <div className="devotional-card" style={{ borderLeftColor: d.color, cursor: 'pointer' }}>
-                <div className="dev-day-badge" style={{ backgroundColor: d.color }}>{d.day}</div>
+          {loading ? (
+            [0,1].map(i => <div key={i} className="devotional-card skeleton" style={{ height: 120, borderLeftColor: '#2a3044' }} />)
+          ) : dbDevotionals.length > 0 ? dbDevotionals.map((d, i) => (
+            <Link key={i} href={`/devotional?id=${d.id}&title=${encodeURIComponent(d.title)}&text=${encodeURIComponent(d.content?.slice(0, 200) || '')}`} style={{ textDecoration: 'none' }}>
+              <div className="devotional-card" style={{ 
+                  borderLeftColor: i === 0 ? '#48BCE1' : '#F4CC30', 
+                  cursor: 'pointer',
+                  backgroundImage: d.featured_image_url ? `linear-gradient(to right, rgba(26, 29, 36, 0.95) 30%, rgba(26, 29, 36, 0.7)), url(${d.featured_image_url})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center right'
+                }}>
+                <div className="dev-day-badge" style={{ backgroundColor: i === 0 ? '#48BCE1' : '#F4CC30' }}>Mới nhất</div>
                 <h3 className="dev-title">{d.title}</h3>
-                <p className="dev-verse-ref">{d.verse}</p>
-                <p className="dev-text">"{d.text}"</p>
+                <p className="dev-text">&quot;{htmlExcerpt(d.content || '', 120)}&quot;</p>
                 <div className="dev-footer">
-                  <span className="dev-duration">{d.duration}</span>
+                  <span className="dev-duration">5 phút đọc</span>
                   <span className="dev-read-btn">Đọc bài →</span>
                 </div>
               </div>
             </Link>
-          ))}
+          )) : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <BookOpen size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontSize: '0.9rem' }}>Chưa có bài dưỡng linh</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -276,8 +618,10 @@ export default function Home() {
           <Link href="/library" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
         </div>
         <div className="sermons-list">
-          {loading ? <p>Đang tải...</p> : displaySermons.map(sermon => {
-            const thumb = getYoutubeThumbnailUrl(sermon.youtube_url || sermon.youtube_id);
+          {loading ? (
+            [0,1,2].map(i => <div key={i} className="sermon-item skeleton" style={{ height: 80 }} />)
+          ) : dbSermons.length > 0 ? dbSermons.map(sermon => {
+            const thumb = getYoutubeThumbnailUrl(sermon.youtube_url || sermon.youtube_id || sermon.video_url);
             return (
               <div key={sermon.id} className="sermon-item" onClick={() => handleSermonClick(sermon)} style={{ cursor: 'pointer' }}>
                 <div className="sermon-thumb">
@@ -292,14 +636,19 @@ export default function Home() {
                 <div className="sermon-info">
                   <span className="sermon-series">{sermon.series}</span>
                   <h3 className="sermon-title">{sermon.title}</h3>
-                  <p className="sermon-meta">{sermon.speaker} • {sermon.created_at ? new Date(sermon.created_at).toLocaleDateString('vi-VN') : sermon.date}</p>
+                  <p className="sermon-meta">{sermon.speaker} • {sermon.created_at ? new Date(sermon.created_at).toLocaleDateString('vi-VN') : ''}</p>
                 </div>
                 <div style={{ paddingRight: '12px', color: '#48BCE1' }}>
                   <PlayCircle size={18} />
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <PlayCircle size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontSize: '0.9rem' }}>Chưa có bài giảng</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -335,7 +684,9 @@ export default function Home() {
         )}
 
         <div className="bulletin-list">
-          {loading ? <p>Đang tải...</p> : displayNews.map(item => {
+          {loading ? (
+            [0,1,2].map(i => <div key={i} className="bulletin-card skeleton" style={{ height: 140 }} />)
+          ) : dbNews.length > 0 ? dbNews.map(item => {
             const cats = parseCategories(item.categories);
             const displayTag = cats[0] || item.type || item.tag;
             return (
@@ -347,16 +698,16 @@ export default function Home() {
                 </div>
               )}
               <div className="bulletin-top" style={item.image_url ? { marginTop: 0 } : {}}>
-                <span className="bulletin-tag" style={{ backgroundColor: `${tagColors[displayTag] || tagColors[item.type || item.tag] || '#48BCE1'}22`, color: tagColors[displayTag] || tagColors[item.type || item.tag] || '#48BCE1' }}>
+                <span className="bulletin-tag" style={{ backgroundColor: `${tagColors[displayTag] || '#48BCE1'}22`, color: tagColors[displayTag] || '#48BCE1' }}>
                   {displayTag}
                 </span>
                 <span className="bulletin-date">
-                  {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : item.date}
+                  {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}
                 </span>
               </div>
               <h3 className="bulletin-title">{item.title}</h3>
               {item.author && <p className="bulletin-meta" style={{ marginBottom: '0.35rem' }}>Bởi {item.author} • {item.location || 'REACH Church'}</p>}
-              <p className="bulletin-summary">{htmlExcerpt(item.content || item.summary || '', 120)}</p>
+              <p className="bulletin-summary">{htmlExcerpt(item.content || '', 120)}</p>
               {item.audio_url && (
                 <div style={{ marginTop: '12px' }} onClick={e => e.stopPropagation()}>
                   <audio controls style={{ width: '100%', height: '40px' }} src={item.audio_url}></audio>
@@ -373,7 +724,13 @@ export default function Home() {
                 )}
               </div>
             </div>
-          );})}
+          );}) : (
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+              <Newspaper size={36} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontWeight: 600, color: '#94a3b8', marginBottom: '0.25rem' }}>Chưa có tin tức nào</p>
+              <p style={{ fontSize: '0.82rem' }}>Hội thánh chưa đăng bản tin nào</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -398,24 +755,35 @@ export default function Home() {
             <Calendar size={18} style={{ marginRight: 6, color: '#48BCE1', verticalAlign: 'middle' }} />
             Sự Kiện Sắp Tới
           </h2>
+          <Link href="/events" className="see-all">Xem tất cả <ArrowRight size={14} /></Link>
         </div>
         <div className="events-list">
-          {upcomingEvents.map((ev, i) => (
-            <a key={i} href={ev.mapUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="event-item" style={{ cursor: 'pointer' }}>
-                <div className="event-date">
-                  <span className="date-day">{ev.day}</span>
-                  <span className="date-month">{ev.month}</span>
+          {loading ? (
+            [0,1,2].map(i => <div key={i} className="event-item skeleton" style={{ height: 68 }} />)
+          ) : dbEvents.length > 0 ? dbEvents.map((ev, idx) => {
+            const d = new Date(ev.event_date);
+            return (
+              <Link key={idx} href="/events" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="event-item" style={{ cursor: 'pointer' }}>
+                  <div className="event-date">
+                    <span className="date-day">{d.getDate().toString().padStart(2, '0')}</span>
+                    <span className="date-month">Th.{d.getMonth() + 1}</span>
+                  </div>
+                  <div className="event-details">
+                    <h4 className="event-title">{ev.title}</h4>
+                    <p className="event-time">{d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="event-loc">📍 {ev.location || 'Hội trường chính'}</p>
+                  </div>
+                  <ChevronRight size={14} style={{ color: '#48BCE1', flexShrink: 0, alignSelf: 'center' }} />
                 </div>
-                <div className="event-details">
-                  <h4 className="event-title">{ev.title}</h4>
-                  <p className="event-time">{ev.time}</p>
-                  <p className="event-loc">📍 {ev.loc}</p>
-                </div>
-                <ExternalLink size={14} style={{ color: '#48BCE1', flexShrink: 0, alignSelf: 'center' }} />
-              </div>
-            </a>
-          ))}
+              </Link>
+            );
+          }) : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontSize: '0.9rem' }}>Không có sự kiện sắp tới</p>
+            </div>
+          )}
         </div>
       </section>
 

@@ -3,6 +3,9 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ChevronLeft, BookOpen, Clock, Heart, Share2 } from 'lucide-react';
+import Link from 'next/link';
+import { parseVerseReference } from '@/lib/bible-share';
+import CommentSection from '@/components/CommentSection';
 import './page.css';
 
 function DevotionalContent() {
@@ -16,6 +19,7 @@ function DevotionalContent() {
   const text = searchParams.get('text') || 'Vì từ sự đầy dẫy của Ngài, chúng ta đã nhận được ân sủng chồng chất ân sủng.';
   const day = searchParams.get('day') || 'Hôm nay';
   const duration = searchParams.get('duration') || '5 phút đọc';
+  const id = searchParams.get('id') || btoa(encodeURIComponent(title));
 
   const handleShare = async () => {
     try {
@@ -69,7 +73,18 @@ function DevotionalContent() {
         <div className="dev-verse-box">
           <BookOpen size={24} className="verse-icon" />
           <p className="dev-verse-text">"{text}"</p>
-          <p className="dev-verse-ref">— {verse}</p>
+          {(() => {
+            const parsed = parseVerseReference(verse);
+            if (parsed.book && parsed.chapter) {
+              const href = `/bible?book=${parsed.book}&chapter=${parsed.chapter}${parsed.verse ? `&verse=${parsed.verse}` : ''}`;
+              return (
+                <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <p className="dev-verse-ref" style={{ textDecoration: 'underline', textDecorationStyle: 'dashed', textUnderlineOffset: '4px' }}>— {verse}</p>
+                </Link>
+              );
+            }
+            return <p className="dev-verse-ref">— {verse}</p>;
+          })()}
         </div>
 
         <div className="dev-content">
@@ -86,6 +101,8 @@ function DevotionalContent() {
             Lạy Chúa, con cảm tạ Ngài vì ân sủng không kể xiết của Ngài. Xin giúp con luôn biết sống trong sự biết ơn và chia sẻ tình yêu thương đó cho những người xung quanh. Nhân danh Chúa Jesus Christ, Amen!
           </p>
         </div>
+        
+        <CommentSection postType="devotional" postId={id} />
       </main>
     </div>
   );

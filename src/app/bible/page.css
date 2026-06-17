@@ -15,6 +15,17 @@
   gap: 0.5rem;
 }
 
+.bible-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--color-surface);
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 16px 16px 0 0;
+}
+
 .bible-chapter-nav {
   display: flex;
   align-items: center;
@@ -221,12 +232,26 @@
 }
 
 .verse-focus {
-  background: rgba(72, 188, 225, 0.12);
+  background: transparent;
   border-radius: 6px;
   margin-left: -4px;
   margin-right: -4px;
   padding-left: 4px;
   padding-right: 4px;
+  animation: verse-focus-blink 2s ease-out forwards;
+}
+
+@keyframes verse-focus-blink {
+  0% { background: rgba(72, 188, 225, 0.4); }
+  100% { background: transparent; }
+}
+
+.verse-selected .verse-text {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: #94a3b8;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
 }
 
 .bible-selection-action-muted {

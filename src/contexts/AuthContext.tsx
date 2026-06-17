@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { ensureProfile } from '@/lib/profile-service';
 import { translateAuthError } from '@/lib/auth-errors';
 import type { Profile } from '@/types';
+import { hasPermission, canAccessAdmin, getPermissions, type Permission } from '@/lib/permissions';
 
 interface AuthContextValue {
   user: User | null;
@@ -17,6 +18,12 @@ interface AuthContextValue {
   resendConfirmationEmail: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** Kiểm tra người dùng hiện tại có quyền cụ thể không */
+  can: (permission: Permission) => boolean;
+  /** Kiểm tra có thể vào Admin Panel không */
+  isAdmin: boolean;
+  /** Danh sách quyền hiện tại */
+  permissions: Permission[];
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -96,8 +103,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadProfile(user);
   };
 
+  const can = useCallback((permission: Permission): boolean => {
+    return hasPermission(profile?.role, permission);
+  }, [profile?.role]);
+
+  const isAdmin = canAccessAdmin(profile?.role);
+  const permissions = getPermissions(profile?.role);
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, resendConfirmationEmail, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{
+      user, session, profile, loading,
+      signIn, signUp, resendConfirmationEmail, signOut, refreshProfile,
+      can, isAdmin, permissions,
+    }}>
       {children}
     </AuthContext.Provider>
   );

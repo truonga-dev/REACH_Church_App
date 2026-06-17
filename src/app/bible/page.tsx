@@ -110,6 +110,7 @@ function BibleReader() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [highlights, setHighlights] = useState<VerseHighlight[]>([]);
+  const [selectedVerses, setSelectedVerses] = useState<number[]>([]);
   const [selection, setSelection] = useState<SelectionInfo | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [toast, setToast] = useState('');
@@ -123,8 +124,35 @@ function BibleReader() {
     setTimeout(() => setToast(''), 2500);
   };
 
+  useEffect(() => {
+    const loc = parseBibleLocation(searchParams.toString());
+    let changed = false;
+    if (loc.book && loc.book !== bookIndex) { setBookIndex(loc.book); changed = true; }
+    if (loc.chapter && loc.chapter !== chapter) { setChapter(loc.chapter); changed = true; }
+    
+    if (loc.startVerse) {
+      setFocusVerses({ start: loc.startVerse, end: loc.endVerse || loc.startVerse });
+      if (changed || loading) {
+        pendingScrollRef.current = loc.startVerse;
+      } else {
+        // Same chapter and already loaded, scroll immediately
+        requestAnimationFrame(() => {
+          const el = readerRef.current?.querySelector(`[data-verse="${loc.startVerse}"]`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        const timer = setTimeout(() => setFocusVerses(null), 4000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [searchParams]);
+
   const refreshHighlights = useCallback(() => {
     setHighlights(getChapterHighlights(bookIndex, chapter));
+  }, [bookIndex, chapter]);
+
+  useEffect(() => {
+    setSelectedVerses([]);
+    setSelection(null);
   }, [bookIndex, chapter]);
 
   useEffect(() => {
@@ -158,6 +186,7 @@ function BibleReader() {
   const fetchChapter = async (bIndex: number, cIndex: number) => {
     setLoading(true);
     setError(false);
+    setSelectedVerses([]);
     setSelection(null);
     try {
       const controller = new AbortController();
@@ -180,82 +209,56 @@ function BibleReader() {
     }
   };
 
-  const parseSelection = useCallback((): SelectionInfo | null => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !readerRef.current) return null;
-
-    const range = sel.getRangeAt(0);
-    if (!readerRef.current.contains(range.commonAncestorContainer)) return null;
-
-    const startVerseEl = findVerseElement(range.startContainer);
-    const endVerseEl = findVerseElement(range.endContainer);
-    if (!startVerseEl || !endVerseEl) return null;
-
-    const startVerse = Number(startVerseEl.getAttribute('data-verse'));
-    const endVerse = Number(endVerseEl.getAttribute('data-verse'));
-    const text = range.toString().trim();
-    if (!text) return null;
-
+  useEffect(() => {
+    if (selectedVerses.length === 0) {
+      setSelection(null);
+      return;
+    }
+    const sorted = [...selectedVerses].sort((a, b) => a - b);
+    const startVerse = sorted[0];
+    const endVerse = sorted[sorted.length - 1];
     const bookName = books[bookIndex - 1];
-    const verseLabel =
-      startVerse === endVerse
-        ? `${bookName} ${chapter}:${startVerse}`
-        : `${bookName} ${chapter}:${startVerse}-${endVerse}`;
 
-    const ranges: VerseRange[] = [];
+    let vLabel = sorted.length === 1 ? `${startVerse}` : `${startVerse}-${endVerse}`;
+    const label = `${bookName} ${chapter}:${vLabel} ${version}`;
 
-    if (startVerse === endVerse) {
-      ranges.push({
-        verse: startVerse,
-        start: offsetInVerse(startVerseEl, range.startContainer, range.startOffset),
-        end: offsetInVerse(startVerseEl, range.endContainer, range.endOffset),
-      });
-    } else {
-      const verseEls = Array.from(readerRef.current.querySelectorAll('[data-verse]')) as Element[];
-      for (const verseEl of verseEls) {
-        const verse = Number(verseEl.getAttribute('data-verse'));
-        if (verse < startVerse || verse > endVerse) continue;
+    let textParts = [];
+    let ranges: VerseRange[] = [];
 
-        if (verse === startVerse) {
-          ranges.push({
-            verse,
-            start: offsetInVerse(verseEl, range.startContainer, range.startOffset),
-            end: verseTextLength(verseEl),
-          });
-        } else if (verse === endVerse) {
-          ranges.push({
-            verse,
-            start: 0,
-            end: offsetInVerse(verseEl, range.endContainer, range.endOffset),
-          });
-        } else {
-          ranges.push({
-            verse,
-            start: 0,
-            end: verseTextLength(verseEl),
-          });
-        }
+    for (const vNum of sorted) {
+      const vData = verses.find(v => v.verse === vNum);
+      if (vData) {
+        textParts.push(`[${vNum}] ${vData.text}`);
+        ranges.push({ verse: vNum, start: 0, end: vData.text.length });
       }
     }
 
-    return {
+    setSelection({
       startVerse,
       endVerse,
       ranges,
-      text,
-      label: `${verseLabel} ${version}`,
-    };
-  }, [bookIndex, chapter, version]);
+      text: textParts.join(' '),
+      label,
+    });
+  }, [selectedVerses, bookIndex, chapter, version, verses]);
 
-  const handleSelectionChange = useCallback(() => {
-    const info = parseSelection();
-    setSelection(info);
-  }, [parseSelection]);
+  const toggleVerseSelection = (verseNum: number) => {
+    const next = selectedVerses.includes(verseNum) ? selectedVerses.filter(v => v !== verseNum) : [...selectedVerses, verseNum];
+    setSelectedVerses(next);
+    
+    if (next.length === 0) {
+      updateUrl(bookIndex, chapter);
+    } else {
+      const sorted = [...next].sort((a, b) => a - b);
+      updateUrl(bookIndex, chapter, sorted[0], sorted[sorted.length - 1]);
+    }
+  };
 
-  useEffect(() => {
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, [handleSelectionChange]);
+  const clearSelection = () => {
+    setSelectedVerses([]);
+    setSelection(null);
+    updateUrl(bookIndex, chapter);
+  };
 
   const applyHighlight = (color: HighlightColor) => {
     if (!selection) return;
@@ -263,8 +266,7 @@ function BibleReader() {
       setHighlightInRange(bookIndex, chapter, r.verse, r.start, r.end, color);
     }
     refreshHighlights();
-    window.getSelection()?.removeAllRanges();
-    setSelection(null);
+    clearSelection();
     showToast('Đã tô sáng đoạn đã chọn');
   };
 
@@ -274,8 +276,7 @@ function BibleReader() {
       removeHighlightsInRange(bookIndex, chapter, r.verse, r.start, r.end);
     }
     refreshHighlights();
-    window.getSelection()?.removeAllRanges();
-    setSelection(null);
+    clearSelection();
     showToast('Đã xóa tô sáng');
   };
 
@@ -284,8 +285,7 @@ function BibleReader() {
     const copyText = `${selection.text}\n— ${selection.label}`;
     await navigator.clipboard.writeText(copyText);
     showToast('Đã sao chép');
-    window.getSelection()?.removeAllRanges();
-    setSelection(null);
+    clearSelection();
   };
 
   const openShareCard = () => {
@@ -311,8 +311,7 @@ function BibleReader() {
       try {
         await navigator.share({ text: shareText, title: selection.label, url: shareLink });
         closeShareCard();
-        window.getSelection()?.removeAllRanges();
-        setSelection(null);
+        clearSelection();
       } catch {
         /* user cancelled */
       }
@@ -340,38 +339,39 @@ function BibleReader() {
     await navigator.clipboard.writeText(link);
     showToast('Đã sao chép link');
     closeShareCard();
-    window.getSelection()?.removeAllRanges();
-    setSelection(null);
+    clearSelection();
   };
   return (
     <div className="bible-container">
       {toast && <div className="bible-toast">{toast}</div>}
 
-      <header className="bible-header">
-        <select
-          className="book-selector"
-          value={bookIndex}
-          onChange={(e) => {
-            const nextBook = Number(e.target.value);
-            setBookIndex(nextBook);
-            setChapter(1);
-            setFocusVerses(null);
-            updateUrl(nextBook, 1);
-          }}        >
-          {books.map((b, idx) => (
-            <option key={b} value={idx + 1}>{b}</option>
-          ))}
-        </select>
-
-        <div className="bible-chapter-nav">
-          <button type="button" className="chapter-selector" onClick={() => { const ch = Math.max(1, chapter - 1); setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>«</button>
-          <span className="bible-chapter-label">Ch. {chapter}</span>
-          <button type="button" className="chapter-selector" onClick={() => { const ch = chapter + 1; setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>»</button>        </div>
-      </header>
-
-      <p className="bible-version-badge">{versionLabel}</p>
-
       <main className="bible-reader" ref={readerRef}>
+        <div className="bible-sticky-header">
+          <header className="bible-header">
+            <select
+              className="book-selector"
+              value={bookIndex}
+              onChange={(e) => {
+                const nextBook = Number(e.target.value);
+                setBookIndex(nextBook);
+                setChapter(1);
+                setFocusVerses(null);
+                updateUrl(nextBook, 1);
+              }}        >
+              {books.map((b, idx) => (
+                <option key={b} value={idx + 1}>{b}</option>
+              ))}
+            </select>
+
+            <div className="bible-chapter-nav">
+              <button type="button" className="chapter-selector" onClick={() => { const ch = Math.max(1, chapter - 1); setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>«</button>
+              <span className="bible-chapter-label">Ch. {chapter}</span>
+              <button type="button" className="chapter-selector" onClick={() => { const ch = chapter + 1; setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>»</button>        </div>
+          </header>
+
+          <p className="bible-version-badge">{versionLabel}</p>
+        </div>
+
         <h2 className="bible-chapter-title">
           {books[bookIndex - 1]} {chapter}
         </h2>
@@ -393,8 +393,16 @@ function BibleReader() {
           const segments = buildHighlightSegments(v.text, verseHighlights);
           const isFocused = focusVerses && v.verse >= focusVerses.start && v.verse <= focusVerses.end;
 
+          const isSelected = selectedVerses.includes(v.verse);
+
           return (
-            <span key={v.verse} className={`verse${isFocused ? ' verse-focus' : ''}`} data-verse={v.verse}>              <span className="verse-num">{v.verse}</span>
+            <span 
+              key={v.verse} 
+              className={`verse${isFocused ? ' verse-focus' : ''}${isSelected ? ' verse-selected' : ''}`} 
+              data-verse={v.verse}
+              onClick={() => toggleVerseSelection(v.verse)}
+              style={{ cursor: 'pointer', borderRadius: '6px', transition: 'background 0.2s', padding: '2px 4px', margin: '-2px -4px', userSelect: 'none' }}
+            >              <span className="verse-num">{v.verse}</span>
               <span className="verse-text">
                 {segments.map((seg, i) =>
                   seg.color ? (
@@ -415,7 +423,7 @@ function BibleReader() {
             <span className="bible-selection-label">
               Đang chọn: <strong>{selection.label}</strong>
             </span>
-            <button type="button" className="bible-sheet-close" onClick={() => { setSelection(null); window.getSelection()?.removeAllRanges(); }} aria-label="Đóng">
+            <button type="button" className="bible-sheet-close" onClick={clearSelection} aria-label="Đóng">
               <X size={18} />
             </button>
           </div>

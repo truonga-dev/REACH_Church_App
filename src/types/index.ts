@@ -1,4 +1,4 @@
-export type PrayerStatus = 'ongoing' | 'answered' | 'completed';
+export type PrayerStatus = 'ongoing' | 'answered' | 'completed' | 'pending' | 'reviewed' | 'closed';
 
 export interface Profile {
   id?: string;
@@ -14,13 +14,16 @@ export interface Profile {
 export interface Prayer {
   id: string;
   title: string;
+  content?: string;
   description?: string;
+  category?: string;
   status: PrayerStatus | string;
   created_at: string;
   user_id?: string;
   author_name?: string;
   topic?: string;
   is_private?: boolean;
+  prayer_count?: number;
   pray_count?: number;
   notes?: string;
 }
@@ -29,10 +32,14 @@ export interface Sermon {
   id: string;
   title: string;
   speaker?: string;
+  preacher?: string;
   series?: string;
   date?: string;
+  sermon_date?: string;
   youtube_url?: string;
   youtube_id?: string;
+  video_url?: string;
+  audio_url?: string;
   content?: string;
   created_at?: string;
 }

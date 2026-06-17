@@ -92,3 +92,36 @@ export function parseBibleLocation(search: string): {
     endVerse,
   };
 }
+
+const BIBLE_BOOKS = [
+  'Sáng-thế Ký', 'Xuất Ê-díp-tô Ký', 'Lê-vi Ký', 'Dân-số Ký', 'Phục-truyền Luật-lệ Ký',
+  'Giô-suê', 'Các Quan Xét', 'Ru-tơ', '1 Sa-mu-ên', '2 Sa-mu-ên', '1 Các Vua', '2 Các Vua',
+  '1 Sử-ký', '2 Sử-ký', 'Ê-xơ-ra', 'Nê-hê-mi', 'Ê-xơ-tê', 'Gióp', 'Thi-thiên', 'Châm-ngôn',
+  'Truyền-đạo', 'Nhã-ca', 'Ê-sai', 'Giê-rê-mi', 'Ca-thương', 'Ê-xê-chi-ên', 'Đa-ni-ên',
+  'Ô-sê', 'Giô-ên', 'A-mốt', 'Áp-đia', 'Giô-na', 'Mi-chê', 'Na-hum', 'Ha-ba-cúc', 'Sô-phô-ni',
+  'A-gai', 'Xa-cha-ri', 'Ma-la-chi', 'Ma-thi-ơ', 'Mác', 'Lu-ca', 'Giăng', 'Công-vụ các Sứ-đồ',
+  'Rô-ma', '1 Cô-rinh-tô', '2 Cô-rinh-tô', 'Ga-la-ti', 'Ê-phê-sô', 'Phi-líp', 'Cô-lô-se',
+  '1 Tê-sa-lô-ni-ca', '2 Tê-sa-lô-ni-ca', '1 Ti-mô-thê', '2 Ti-mô-thê', 'Tít', 'Phi-lê-môn',
+  'Hê-bơ-rơ', 'Gia-cơ', '1 Phi-e-rơ', '2 Phi-e-rơ', '1 Giăng', '2 Giăng', '3 Giăng', 'Giu-đe', 'Khải-huyền',
+];
+
+export function parseVerseReference(reference: string): { book?: number; chapter?: number; verse?: string } {
+  // Example input: "Giăng 3:16" or "Thi-thiên 23:1-2"
+  const match = reference.match(/^(.+?)\s+(\d+):(\d+(?:-\d+)?)$/);
+  if (!match) return {};
+
+  const bookName = match[1].trim();
+  const chapter = parseInt(match[2], 10);
+  const verse = match[3];
+
+  const bookIndex = BIBLE_BOOKS.findIndex(b => b.toLowerCase() === bookName.toLowerCase());
+  
+  if (bookIndex === -1) return {};
+
+  return {
+    book: bookIndex + 1,
+    chapter,
+    verse,
+  };
+}
+

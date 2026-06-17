@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Heart, Send, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { formatSupabaseError } from '@/lib/supabase-errors';
+import { buildPrayerInsert, prayerBody, prayerIntercessionCount } from '@/lib/prayer-helpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { PRAYER_TOPICS, type Prayer } from '@/types';
 import './page.css';
@@ -54,7 +56,7 @@ export default function PrayerPage() {
       if (error) throw error;
       setWall((data as Prayer[]) || []);
     } catch (err) {
-      console.error(err);
+      console.error('Không tải bức tường cầu nguyện:', formatSupabaseError(err));
     } finally {
       setLoadingWall(false);
     }
@@ -70,16 +72,14 @@ export default function PrayerPage() {
     setSubmitting(true);
     try {
       const topicLabel = PRAYER_TOPICS[topic] || topic;
-      const payload: Record<string, unknown> = {
-        title: `[${topicLabel}] ${content.slice(0, 80)}${content.length > 80 ? '...' : ''}`,
-        description: content.trim(),
-        topic,
-        author_name: name.trim() || (user ? 'Thành viên REACH' : 'Ẩn danh'),
-        is_private: isPrivate,
-        status: 'ongoing',
-        pray_count: 0,
-      };
-      if (user) payload.user_id = user.id;
+      const trimmed = content.trim();
+      const payload = buildPrayerInsert({
+        title: `[${topicLabel}] ${trimmed.slice(0, 80)}${trimmed.length > 80 ? '...' : ''}`,
+        content: trimmed,
+        category: topic,
+        userId: user?.id,
+        isPrivate,
+      });
 
       const { error } = await supabase.from('prayers').insert([payload]);
       if (error) throw error;
@@ -90,7 +90,7 @@ export default function PrayerPage() {
       setIsPrivate(false);
       if (!isPrivate) fetchWall();
     } catch (err) {
-      console.error(err);
+      console.error('Không gửi được lời cầu nguyện:', formatSupabaseError(err));
       showToast('Không gửi được. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
@@ -100,10 +100,10 @@ export default function PrayerPage() {
   const handlePrayFor = async (prayer: Prayer) => {
     if (prayedIds.has(prayer.id)) return;
 
-    const newCount = (prayer.pray_count || 0) + 1;
+    const newCount = prayerIntercessionCount(prayer) + 1;
     const { error } = await supabase
       .from('prayers')
-      .update({ pray_count: newCount })
+      .update({ prayer_count: newCount })
       .eq('id', prayer.id);
 
     if (!error) {
@@ -112,7 +112,7 @@ export default function PrayerPage() {
       setPrayedIds(updated);
       localStorage.setItem('reach_prayed_ids', JSON.stringify([...updated]));
       setWall((prev) =>
-        prev.map((p) => (p.id === prayer.id ? { ...p, pray_count: newCount } : p)),
+        prev.map((p) => (p.id === prayer.id ? { ...p, prayer_count: newCount, pray_count: newCount } : p)),
       );
     }
   };
@@ -213,14 +213,14 @@ export default function PrayerPage() {
                     <span className="prayer-author">{p.author_name || 'Ẩn danh'}</span>
                     <span className="prayer-time">{timeAgo(p.created_at)}</span>
                   </div>
-                  <p className="prayer-content">{p.description || p.title}</p>
+                  <p className="prayer-content">{prayerBody(p)}</p>
                   <button
                     type="button"
                     className={`btn-pray ${prayed ? 'active' : ''}`}
                     onClick={() => handlePrayFor(p)}
                   >
                     <Heart size={16} className="mr-xs" fill={prayed ? 'currentColor' : 'none'} />
-                    {prayed ? 'Đã cầu nguyện' : 'Cầu nguyện'} ({p.pray_count || 0})
+                    {prayed ? 'Đã cầu nguyện' : 'Cầu nguyện'} ({prayerIntercessionCount(p)})
                   </button>
                 </div>
               );

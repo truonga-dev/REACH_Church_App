@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import OneSignalInit from '@/components/OneSignalInit';
 import './globals.css';
 import ClientLayout from '@/components/ClientLayout';
 
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.variable}`} suppressHydrationWarning>
+        <OneSignalInit />
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

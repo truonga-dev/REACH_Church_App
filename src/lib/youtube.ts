@@ -1,7 +1,7 @@
 export function getYoutubeId(source: string | null | undefined): string | null {
   if (!source) return null;
   if (source.length === 11 && /^[A-Za-z0-9_-]+$/.test(source)) return source;
-  const match = source.match(/(?:v=|youtu\.be\/|embed\/)([^&?/]+)/);
+  const match = source.match(/(?:v=|youtu\.be\/|embed\/|live\/|shorts\/)([^&?/]+)/);
   return match ? match[1] : null;
 }
 

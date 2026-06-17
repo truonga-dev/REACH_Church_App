@@ -1,0 +1,86 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: reach-church-ingress
+  namespace: production
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://reach-church.com,https://www.reach-church.com"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - reach-church.com
+    - www.reach-church.com
+    secretName: reach-church-tls
+  rules:
+  - host: reach-church.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reach-church-app
+            port:
+              number: 80
+  - host: www.reach-church.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reach-church-app
+            port:
+              number: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: reach-church-cert
+  namespace: production
+spec:
+  secretName: reach-church-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - reach-church.com
+  - www.reach-church.com
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: reach-church
+  namespace: production
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: reach-church-role
+  namespace: production
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: reach-church-rolebinding
+  namespace: production
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: reach-church-role
+subjects:
+- kind: ServiceAccount
+  name: reach-church
+  namespace: production

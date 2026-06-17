@@ -2,9 +2,9 @@ const NOTIF_KEY = 'reach_notifications_enabled';
 const LANG_KEY = 'reach_language';
 
 export function getNotificationsEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
   const raw = localStorage.getItem(NOTIF_KEY);
-  return raw === null ? true : raw === 'true';
+  return raw === 'true';
 }
 
 export function setNotificationsEnabled(enabled: boolean): void {

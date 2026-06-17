@@ -1,1029 +1,1522 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  LayoutDashboard, Users, FileText,
-  Heart, Plus, Trash2, Video,
-  Upload, File, CheckCircle, Edit, Headphones, BookOpen, X, LogOut,
-  ArrowLeft, Lock, Shield, PenLine,
+import dynamic from 'next/dynamic';
+import {
+  LayoutDashboard, Users, FileText, Heart, Plus, Trash2, Video,
+  Upload, File, CheckCircle, Edit2, Headphones, BookOpen, X, LogOut,
+  ArrowLeft, Lock, Shield, Search, Bell, RefreshCw, Newspaper,
+  AlertTriangle, ChevronRight, TrendingUp, Eye, Calendar, Zap,
+  CheckSquare, Clock, Activity, Coins, Mail,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import AdminNewsTabPanel from '@/components/admin/AdminNewsTabPanel';
 import { POST_CONTENT_TYPES, POST_CATEGORIES } from '@/lib/post-categories';
 import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
+import PrayerReviewManager from '@/components/admin/PrayerReviewManager';
+import DonationsManager from '@/components/admin/DonationsManager';
+import SermonManager from '@/components/admin/SermonManager';
+import DevotionalManager from '@/components/admin/DevotionalManager';
+import EventsManager from '@/components/admin/EventsManager';
+import MinistryManager from '@/components/admin/MinistryManager';
+import UserManager from '@/components/admin/UserManager';
+import StatsManager from '@/components/admin/StatsManager';
+import Pagination from '@/components/ui/Pagination';
+import { useAuth } from '@/contexts/AuthContext';
+import { canAccessAdmin, hasPermission, TAB_PERMISSIONS, ROLE_DESCRIPTIONS, ALL_ROLES, type UserRole } from '@/lib/permissions';
 import './page.css';
-import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 const quillModules = {
   toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
+    [{ header: [1, 2, 3, false] }],
     ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-    [{'list': 'ordered'}, {'list': 'bullet'}],
-    ['link', 'image', 'video'],
-    ['clean']
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'image'],
+    ['clean'],
   ],
 };
 
-export default function AdminDashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+/* ── Types ── */
+type Sermon = {
+  id?: string;
+  title: string;
+  speaker?: string;
+  series?: string;
+  date?: string;
+  youtube_url?: string;
+  youtube_id?: string;
+  content?: string;
+  created_at?: string;
+};
+
+type NewsItem = {
+  id?: string;
+  title: string;
+  type: string;
+  content: string;
+  image_url?: string;
+  pdf_url?: string;
+  audio_url?: string;
+  categories?: string[] | string;
+  status?: string;
+  created_at?: string;
+  author?: string;
+};
+
+type Prayer = {
+  id?: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  created_at?: string;
+  author_name?: string;
+  topic?: string;
+  pray_count?: number;
+};
+
+type Profile = {
+  id?: string;
+  full_name?: string;
+  username?: string;
+  role?: string;
+  email?: string;
+  created_at?: string;
+};
+
+type ToastType = 'success' | 'error' | 'info' | 'warning';
+type Toast = { id: string; type: ToastType; title: string; msg?: string };
+type ConfirmState = { open: boolean; title: string; msg: string; onConfirm: () => void };
+
+const TABS = [
+  { id: 'overview',    label: 'Tổng quan',       icon: LayoutDashboard, group: null },
+  { id: 'stats',       label: 'Thống kê',         icon: TrendingUp,      group: null },
+  { id: 'news',        label: 'Tin tức',          icon: Newspaper,       group: 'NỘI DUNG' },
+  { id: 'posts',       label: 'Bài viết',         icon: FileText,        group: 'NỘI DUNG' },
+  { id: 'events',      label: 'Sự kiện',          icon: Calendar,        group: 'NỘI DUNG' },
+  { id: 'ministries',  label: 'Mục vụ',           icon: Users,           group: 'NỘI DUNG' },
+  { id: 'sermons',     label: 'Bài giảng',        icon: Video,           group: 'THƯ VIỆN' },
+  { id: 'audiobooks',  label: 'Sách Nói',         icon: Headphones,      group: 'THƯ VIỆN' },
+  { id: 'pdfs',        label: 'Sách PDF',         icon: File,            group: 'THƯ VIỆN' },
+  { id: 'devotionals', label: 'Dưỡng Linh',       icon: BookOpen,        group: 'THƯ VIỆN' },
+  { id: 'donations',   label: 'Dâng hiến',        icon: Coins,           group: 'CỘNG ĐỒNG' },
+  { id: 'prayers',     label: 'Cầu nguyện',       icon: Heart,           group: 'CỘNG ĐỒNG' },
+  { id: 'users',       label: 'Tín hữu',          icon: Users,           group: 'CỘNG ĐỒNG' },
+];
+
+const LIBRARY_TYPE_MAP: Record<string, string> = {
+  audiobooks: 'Sách Nói',
+  pdfs: 'Tài liệu',
+  devotionals: 'Dưỡng linh',
+};
+
+const NEWS_TYPES = ['Bản tin', 'Thông báo', 'Sự kiện'];
+
+const defaultSermon: Sermon = { title: '', speaker: '', series: '', date: '', youtube_url: '', content: '' };
+const defaultNews: NewsItem = {
+  title: '', type: 'Bài viết', content: '',
+  image_url: '', pdf_url: '', audio_url: '',
+  categories: [], status: 'published',
+};
+
+/* ════════════════════════════════════════
+   MAIN COMPONENT
+   ════════════════════════════════════════ */
+export default function AdminPanel() {
+  const { user, profile, loading: authLoading, signIn, signOut } = useAuth();
   const [authReady, setAuthReady] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
-
-  useEffect(() => {
-    setIsAuthenticated(sessionStorage.getItem('adminAuth') === 'true');
-    setAuthReady(true);
-  }, []);
-
+  const [loginErrorMsg, setLoginErrorMsg] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
 
-  const tabLabelMap: Record<string, string> = {
-    overview: 'Tổng quan',
-    sermons: 'Bài giảng',
-    audiobooks: 'Sách Nói',
-    pdfs: 'Sách PDF',
-    devotionals: 'Dưỡng Linh',
-    posts: 'Thêm bài viết',
-    users: 'Hồ sơ tín hữu',
-    prayers: 'Đề mục cầu nguyện',
-  };
-
-  const LIBRARY_TAB_TYPES: Record<string, string> = {
-    audiobooks: 'Sách Nói',
-    pdfs: 'Tài liệu',
-    devotionals: 'Dưỡng linh',
-  };
-
-  const libraryTabs = Object.keys(LIBRARY_TAB_TYPES);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123')) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('adminAuth', 'true');
-      setLoginError(false);
-    } else {
-      setLoginError(true);
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('adminAuth');
-  };
-
-  // Stats
-  const [stats, setStats] = useState({ prayers: 0, sermons: 0, news: 0, profiles: 0 });
-
-  type Sermon = {
-    id?: string;
-    title: string;
-    speaker?: string;
-    series?: string;
-    date?: string;
-    youtube_url?: string;
-    youtube_id?: string;
-    content?: string;
-  };
-
-  type NewsItem = {
-    id?: string;
-    title: string;
-    type: string;
-    content: string;
-    image_url?: string;
-    pdf_url?: string;
-    audio_url?: string;
-    categories?: string[] | string;
-    status?: string;
-    created_at?: string;
-  };
-
-  type Prayer = {
-    id?: string;
-    title?: string;
-    description?: string;
-    status?: string;
-    created_at?: string;
-  };
-
-  type Profile = {
-    id?: string;
-    full_name?: string;
-    username?: string;
-    role?: string;
-    created_at?: string;
-  };
-
-  // Data states
+  /* Data */
+  const [stats, setStats] = useState({ prayers: 0, sermons: 0, news: 0, profiles: 0, devotionals: 0, donations: 0 });
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [recentPosts, setRecentPosts] = useState<Array<{
-    id?: string;
-    title?: string;
-    type?: string;
-    author?: string;
-    created_at?: string;
-    source: string;
-    excerpt?: string;
-    date?: string;
-  }>>([]);
-  const [roleUpdating, setRoleUpdating] = useState(false);
+  const [profilesPage, setProfilesPage] = useState(1);
+  const [profilesTotalPages, setProfilesTotalPages] = useState(1);
+  const [newsPage, setNewsPage] = useState(1);
+  const [newsTotalPages, setNewsTotalPages] = useState(1);
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);
 
-  // Forms
-  const defaultSermon = { title: '', speaker: '', series: '', date: '', youtube_url: '', content: '' };
-  const defaultNews = {
-    title: '',
-    type: 'Bài viết',
-    content: '',
-    image_url: '',
-    pdf_url: '',
-    audio_url: '',
-    categories: [] as string[],
-    status: 'published' as 'published' | 'draft',
-  };
-  
-  const [newSermon, setNewSermon] = useState<Sermon>(defaultSermon);
-  const [newNews, setNewNews] = useState<NewsItem>(defaultNews);
-  const [sermonFormKey, setSermonFormKey] = useState(0);
-  const [newsFormKey, setNewsFormKey] = useState(0);
+  /* Forms */
+  const [newSermon, setNewSermon] = useState<Sermon>({ ...defaultSermon });
+  const [newNews, setNewNews] = useState<NewsItem>({ ...defaultNews });
+  const [quillKey, setQuillKey] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Edit states
-  const [editingItem, setEditingItem] = useState<Sermon | NewsItem | null>(null);
+  /* Edit */
+  const [editItem, setEditItem] = useState<Sermon | NewsItem | null>(null);
   const [editType, setEditType] = useState<'sermon' | 'news' | null>(null);
+  
+  /* Layout forms */
+  const [showAudioForm, setShowAudioForm] = useState(false);
+  const [showPdfForm, setShowPdfForm] = useState(false);
 
-  const fetchStats = async () => {
-    const { count: prayerCount } = await supabase.from('prayers').select('*', { count: 'exact', head: true });
-    const { count: sermonCount } = await supabase.from('sermons').select('*', { count: 'exact', head: true });
-    const { count: newsCount } = await supabase.from('news').select('*', { count: 'exact', head: true });
-    const { count: profileCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    
-    setStats({
-      prayers: prayerCount || 0,
-      sermons: sermonCount || 0,
-      news: newsCount || 0,
-      profiles: profileCount || 0
-    });
-  };
+  /* UI */
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [confirm, setConfirm] = useState<ConfirmState>({ open: false, title: '', msg: '', onConfirm: () => {} });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [panelSearch, setPanelSearch] = useState('');
+  const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
 
-  const fetchSermons = async () => {
-    const { data } = await supabase.from('sermons').select('*').order('created_at', { ascending: false });
-    if (data) setSermons(data.filter(Boolean));
-  };
-
-  const fetchNews = async () => {
-    const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
-    if (data) {
-      setNews(
-        data.filter(Boolean).map((n) => ({
-          ...n,
-          categories: parseCategories(n.categories),
-        })),
-      );
-    }
-  };
-
-  const fetchPrayers = async () => {
-    const { data } = await supabase.from('prayers').select('*').order('created_at', { ascending: false });
-    if (data) setPrayers(data.filter(Boolean));
-  };
-
-  const fetchProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data) setProfiles(data.filter(Boolean));
-  };
-
-  const fetchRecentPosts = async () => {
-    const [{ data: newsData }, { data: sermonData }] = await Promise.all([
-      supabase.from('news').select('*').order('created_at', { ascending: false }).limit(4),
-      supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(4)
-    ]);
-
-    const posts = [
-      ...(newsData || []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        type: item.type || 'Bản tin',
-        author: item.author || item.created_by || item.username || 'REACH',
-        created_at: item.created_at,
-        excerpt: item.content ? htmlExcerpt(item.content, 120) : '',
-        source: item.type || 'Tin tức'
-      })),
-      ...(sermonData || []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        type: 'Bài giảng',
-        author: item.speaker || 'Chưa rõ',
-        created_at: item.created_at || item.date,
-        excerpt: item.content
-          ? htmlExcerpt(item.content, 120)
-          : item.series
-            ? `Loạt: ${item.series}`
-            : '',
-        source: 'Bài giảng',
-        date: item.date
-      }))
-    ]
-      .sort((a, b) => (new Date(b.created_at || '').getTime()) - (new Date(a.created_at || '').getTime()))
-      .slice(0, 5);
-
-    setRecentPosts(posts);
-  };
-
-  const formatDateTime = (value?: string) => {
-    if (!value) return 'N/A';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  };
-
-  const handleUpdateRole = async (id?: string, newRole?: string) => {
-    if (!id || !newRole) return;
-    setRoleUpdating(true);
-    try {
-      const { error, data } = await supabase.from('profiles').update({ role: newRole }).eq('id', id).select();
-      if (error) {
-        throw error;
-      }
-      if (data) {
-        setProfiles(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi cập nhật quyền:', message);
-      alert('Không thể cập nhật quyền: ' + message);
-    } finally {
-      setRoleUpdating(false);
-    }
-  };
-
+  /* ── Auth ── */
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const loadAdminData = async () => {
-      await Promise.all([
-        fetchStats(),
-        fetchRecentPosts(),
-        activeTab === 'sermons' ? fetchSermons() : Promise.resolve(),
-        ['audiobooks', 'pdfs', 'devotionals', 'posts'].includes(activeTab) ? fetchNews() : Promise.resolve(),
-        activeTab === 'prayers' ? fetchPrayers() : Promise.resolve(),
-        activeTab === 'users' ? fetchProfiles() : Promise.resolve(),
-      ]);
-    };
-
-    void Promise.resolve().then(loadAdminData);
-  }, [activeTab, isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (activeTab === 'sermons') {
-      setNewSermon({ ...defaultSermon });
-      setSermonFormKey((k) => k + 1);
+    if (typeof window !== 'undefined' && sessionStorage.getItem('admin_bypass') === 'true') {
+      setIsAuth(true);
+      setAuthReady(true);
+      return;
     }
-    if (activeTab === 'posts') {
-      setNewNews({ ...defaultNews, type: 'Bài viết' });
-      setNewsFormKey((k) => k + 1);
-    } else if (libraryTabs.includes(activeTab)) {
-      setNewNews({ ...defaultNews, type: LIBRARY_TAB_TYPES[activeTab] });
-      setNewsFormKey((k) => k + 1);
-    }
-  }, [activeTab, isAuthenticated]);
 
-  const extractYoutubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : url;
-  };
-
-  // Add Handlers
-  const handleAddSermon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const youtube_id = extractYoutubeId(newSermon.youtube_url || '');
-      const { data, error } = await supabase.from('sermons').insert([{
-        title: newSermon.title,
-        speaker: newSermon.speaker,
-        series: newSermon.series,
-        date: newSermon.date,
-        youtube_url: newSermon.youtube_url,
-        youtube_id,
-        content: newSermon.content || '',
-      }]).select();
-
-      if (error) {
-        console.error('Lỗi thêm bài giảng:', error);
-        alert('Lỗi thêm bài giảng: ' + error.message);
-        return;
-      }
-
-      if (!data || !data.length) {
-        alert('Không có dữ liệu trả về sau khi thêm bài giảng.');
-        return;
-      }
-
-      await fetchSermons();
-      setNewSermon({ ...defaultSermon });
-      setSermonFormKey((k) => k + 1);
-      fetchStats();
-      fetchRecentPosts();
-      alert('Đã thêm bài giảng thành công!');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi mạng khi thêm bài giảng:', error);
-      alert('Lỗi mạng khi thêm bài giảng: ' + message);
-    }
-  };
-
-  const handleAddNews = async (e: React.FormEvent, type: string) => {
-    e.preventDefault();
-    try {
-      const itemType = type;
-      const payload = {
-        title: newNews.title,
-        type: itemType,
-        content: newNews.content,
-        image_url: newNews.image_url || '',
-        pdf_url: itemType === 'Tài liệu' ? newNews.pdf_url : '',
-        audio_url: itemType === 'Sách Nói' ? newNews.audio_url : '',
-        categories: JSON.stringify(newNews.categories || []),
-        status: newNews.status || 'published',
-      };
-      const { data, error } = await supabase.from('news').insert([payload]).select();
-
-      if (error) {
-        console.error('Lỗi thêm bài viết:', error);
-        alert('Lỗi thêm bài viết: ' + error.message);
-        return;
-      }
-
-      if (!data || !data.length) {
-        alert('Không có dữ liệu trả về sau khi thêm bài viết.');
-        return;
-      }
-
-      await fetchNews();
-      setNewNews({ ...defaultNews, type: itemType });
-      setNewsFormKey((k) => k + 1);
-      fetchStats();
-      fetchRecentPosts();
-      alert('Đã đăng bài thành công!');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi mạng khi thêm bài viết:', error);
-      alert('Lỗi mạng khi thêm bài viết: ' + message);
-    }
-  };
-
-  // Delete Handlers
-  const handleDeleteSermon = async (id?: string) => {
-    if (!id || !confirm('Bạn có chắc muốn xóa bài giảng này?')) return;
-    try {
-      const { error } = await supabase.from('sermons').delete().eq('id', id);
-      if (error) {
-        console.error('Lỗi xóa bài giảng:', error);
-        alert('Lỗi xóa bài giảng: ' + error.message);
-        return;
-      }
-      setSermons(sermons.filter(s => s.id !== id));
-      fetchStats();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi mạng khi xóa bài giảng:', error);
-      alert('Lỗi mạng khi xóa bài giảng: ' + message);
-    }
-  };
-
-  const handleDeleteNews = async (id?: string) => {
-    if (!id || !confirm('Bạn có chắc muốn xóa bài viết này?')) return;
-    try {
-      const { error } = await supabase.from('news').delete().eq('id', id);
-      if (error) {
-        console.error('Lỗi xóa bài viết:', error);
-        alert('Lỗi xóa bài viết: ' + error.message);
-        return;
-      }
-      setNews(news.filter(n => n.id !== id));
-      fetchStats();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi mạng khi xóa bài viết:', error);
-      alert('Lỗi mạng khi xóa bài viết: ' + message);
-    }
-  };
-
-  // Edit Handlers
-  const handleOpenEdit = (item: Sermon | NewsItem, type: 'sermon' | 'news') => {
-    setEditingItem({ ...item });
-    setEditType(type);
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem) return;
-
-    try {
-      if (editType === 'sermon') {
-        const sermonEdit = editingItem as Sermon;
-        let youtube_id = sermonEdit.youtube_id;
-        if (sermonEdit.youtube_url) {
-          youtube_id = extractYoutubeId(sermonEdit.youtube_url);
-        }
-        const { data, error } = await supabase.from('sermons').update({
-          title: sermonEdit.title,
-          speaker: sermonEdit.speaker,
-          series: sermonEdit.series,
-          date: sermonEdit.date,
-          youtube_url: sermonEdit.youtube_url,
-          youtube_id,
-          content: sermonEdit.content || '',
-        }).eq('id', sermonEdit.id).select();
-
-        if (error) {
-          console.error('Lỗi cập nhật bài giảng:', error);
-          alert('Lỗi cập nhật bài giảng: ' + error.message);
-          return;
-        }
-
-        if (!data || !data.length) {
-          alert('Không có dữ liệu trả về sau khi cập nhật bài giảng.');
-          return;
-        }
-
-        setSermons(sermons.map(s => s.id === editingItem.id ? data[0] : s));
-        setEditingItem(null);
-        fetchStats();
-        alert('Cập nhật bài giảng thành công!');
+    if (!authLoading) {
+      if (user && profile?.role && canAccessAdmin(profile.role)) {
+        setIsAuth(true);
       } else {
-        const newsEdit = editingItem as NewsItem;
-        const { data, error } = await supabase.from('news').update({
-          title: newsEdit.title,
-          type: newsEdit.type,
-          content: newsEdit.content,
-          image_url: newsEdit.image_url,
-          pdf_url: newsEdit.pdf_url,
-          audio_url: newsEdit.audio_url,
-          categories: JSON.stringify(parseCategories(newsEdit.categories)),
-          status: newsEdit.status || 'published',
-        }).eq('id', newsEdit.id).select();
-
-        if (error) {
-          console.error('Lỗi cập nhật bài viết:', error);
-          alert('Lỗi cập nhật bài viết: ' + error.message);
-          return;
-        }
-
-        if (!data || !data.length) {
-          alert('Không có dữ liệu trả về sau khi cập nhật bài viết.');
-          return;
-        }
-
-        setNews(news.map(n => n.id === editingItem.id ? data[0] : n));
-        setEditingItem(null);
-        fetchStats();
-        alert('Cập nhật bài viết thành công!');
+        setIsAuth(false);
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi mạng khi cập nhật:', error);
-      alert('Lỗi mạng khi cập nhật: ' + message);
+      setAuthReady(true);
+    }
+  }, [user, profile, authLoading]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(false);
+    setLoginErrorMsg('');
+
+    const envEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const envPwd = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    if (envEmail && envPwd && email === envEmail && password === envPwd) {
+      sessionStorage.setItem('admin_bypass', 'true');
+      setIsAuth(true);
+      return;
+    }
+
+    const { error } = await signIn(email, password);
+    if (error) {
+      setLoginError(true);
+      setLoginErrorMsg(error);
+    } else {
+      // Check role happens in useEffect — both admin and ban dieu hanh can access
+      setTimeout(() => {
+        const storedProfile = localStorage.getItem('reach_profile');
+        if (storedProfile) {
+          try {
+            const p = JSON.parse(storedProfile);
+            if (!canAccessAdmin(p.role)) {
+               setLoginError(true);
+               setLoginErrorMsg('Tài khoản không có quyền quản trị');
+               signOut();
+            }
+          } catch {}
+        }
+      }, 1000);
     }
   };
 
-  const handleDeletePrayer = async (id?: string) => {
-    if (!id || !confirm('Bạn có chắc muốn xóa lời cầu nguyện này?')) return;
-    const { error } = await supabase.from('prayers').delete().eq('id', id);
-    if (error) {
-      console.error('Lỗi xóa lời cầu nguyện:', error);
-      alert('Lỗi xóa lời cầu nguyện: ' + error.message);
-      return;
+  const handleLogout = async () => {
+    sessionStorage.removeItem('admin_bypass');
+    await signOut();
+    setIsAuth(false);
+  };
+
+  /* ── Toast ── */
+  const toast = useCallback((type: ToastType, title: string, msg?: string) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, type, title, msg }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
+
+  /* ── Confirm Dialog ── */
+  const showConfirm = (title: string, msg: string, onConfirm: () => void) => {
+    setConfirm({ open: true, title, msg, onConfirm });
+  };
+
+  /* ── Data fetchers ── */
+  const fetchStats = useCallback(async () => {
+    const [p, s, n, u, d, do_] = await Promise.all([
+      supabase.from('prayers').select('*', { count: 'exact', head: true }),
+      supabase.from('sermons').select('*', { count: 'exact', head: true }),
+      supabase.from('news').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('devotionals').select('*', { count: 'exact', head: true }),
+      supabase.from('donations').select('*', { count: 'exact', head: true }),
+    ]);
+    setStats({
+      prayers: p.count || 0,
+      sermons: s.count || 0,
+      news: n.count || 0,
+      profiles: u.count || 0,
+      devotionals: d.count || 0,
+      donations: do_.count || 0,
+    });
+  }, []);
+
+  const fetchSermons = useCallback(async () => {
+    const { data } = await supabase.from('sermons').select('*').order('created_at', { ascending: false });
+    if (data) setSermons(data);
+  }, []);
+
+  const fetchNews = useCallback(async () => {
+    const limit = 10;
+    const offset = (newsPage - 1) * limit;
+    
+    let typeFilter = 'Bản tin';
+    if (activeTab === 'posts') typeFilter = 'Bài viết';
+    else if (activeTab === 'audiobooks') typeFilter = 'Sách Nói';
+    else if (activeTab === 'pdfs') typeFilter = 'Tài liệu';
+
+    const { data, count } = await supabase.from('news')
+      .select('*', { count: 'exact' })
+      .eq('type', typeFilter)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+      
+    if (data) {
+      setNews(data.map(n => ({ ...n, categories: parseCategories(n.categories) })));
+      setNewsTotalPages(Math.ceil((count || 0) / limit));
     }
-    setPrayers(prayers.filter(p => p.id !== id));
+  }, [newsPage, activeTab]);
+
+  const fetchPrayers = useCallback(async () => {
+    const { data } = await supabase.from('prayers').select('*').order('created_at', { ascending: false });
+    if (data) setPrayers(data);
+  }, []);
+
+  const fetchProfiles = useCallback(async () => {
+    const limit = 10;
+    const offset = (profilesPage - 1) * limit;
+    const { data, count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (data) {
+      setProfiles(data);
+      setProfilesTotalPages(Math.ceil((count || 0) / limit));
+    }
+  }, [profilesPage]);
+
+  const fetchRecentPosts = useCallback(async () => {
+    const [{ data: nd }, { data: sd }] = await Promise.all([
+      supabase.from('news').select('*').order('created_at', { ascending: false }).limit(5),
+      supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(3),
+    ]);
+    const combined = [
+      ...(nd || []).map((i: any) => ({ ...i, _source: 'news' })),
+      ...(sd || []).map((i: any) => ({ ...i, _source: 'sermon' })),
+    ].sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()).slice(0, 6);
+    setRecentPosts(combined);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuth) return;
     fetchStats();
-  };
+    fetchRecentPosts();
+  }, [isAuth, fetchStats, fetchRecentPosts]);
 
-  const handleCompletePrayer = async (id?: string) => {
-    if (!id) return;
-    const { error } = await supabase.from('prayers').update({ status: 'completed' }).eq('id', id);
-    if (error) {
-      console.error('Lỗi cập nhật trạng thái lời cầu nguyện:', error);
-      alert('Lỗi cập nhật trạng thái lời cầu nguyện: ' + error.message);
-      return;
+  useEffect(() => {
+    if (!isAuth) return;
+    setPanelSearch('');
+    if (['audiobooks', 'pdfs', 'devotionals', 'posts', 'news'].includes(activeTab)) {
+      setNewsPage(1);
     }
-    setPrayers(prayers.map(p => p.id === id ? { ...p, status: 'completed' } : p));
+    if (activeTab === 'users') {
+      setProfilesPage(1);
+    }
+  }, [activeTab, isAuth]);
+
+  useEffect(() => {
+    if (!isAuth) return;
+    if (activeTab === 'sermons') fetchSermons();
+    else if (['audiobooks', 'pdfs', 'devotionals', 'posts', 'news'].includes(activeTab)) {
+      fetchNews();
+    }
+    else if (activeTab === 'prayers') fetchPrayers();
+    else if (activeTab === 'users') fetchProfiles();
+  }, [activeTab, isAuth, profilesPage, newsPage, fetchProfiles, fetchNews, fetchSermons, fetchPrayers]);
+
+  useEffect(() => {
+    if (!isAuth) return;
+    setNewSermon({ ...defaultSermon });
+    const libType = LIBRARY_TYPE_MAP[activeTab];
+    if (activeTab === 'posts') setNewNews({ ...defaultNews, type: 'Bài viết' });
+    else if (activeTab === 'news') setNewNews({ ...defaultNews, type: 'Bản tin' });
+    else if (libType) setNewNews({ ...defaultNews, type: libType });
+    setQuillKey(k => k + 1);
+  }, [activeTab, isAuth]);
+
+  /* ── Helpers ── */
+  const extractYtId = (url: string) => {
+    const m = url.match(/(?:youtu\.be\/|v\/|watch\?v=|&v=)([^#&?]{11})/);
+    return m ? m[1] : url;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'pdf' | 'audio', isEdit: boolean = false) => {
+  const fmtDate = (v?: string) => {
+    if (!v) return '—';
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const filterBySearch = <T extends { title?: string }>(list: T[], q: string) =>
+    q ? list.filter(i => i.title?.toLowerCase().includes(q.toLowerCase())) : list;
+
+  const getNewsForTab = (types: string[]) => news.filter(n => n?.type && types.includes(n.type));
+
+  /* ── File Upload ── */
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'image_url' | 'pdf_url' | 'audio_url',
+    isEdit = false,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File vượt quá 5MB! Vui lòng chọn file nhẹ hơn.');
-      return;
-    }
-
+    if (file.size > 10 * 1024 * 1024) { toast('error', 'File quá lớn', 'Tối đa 10MB'); return; }
     setUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-    const filePath = `${fileName}`;
-
+    const ext = file.name.split('.').pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
     try {
-      const { error } = await supabase.storage.from('uploads').upload(filePath, file);
+      const { error } = await supabase.storage.from('uploads').upload(path, file);
       if (error) throw error;
-      const { data: publicUrlData } = supabase.storage.from('uploads').getPublicUrl(filePath);
-      const publicUrl = publicUrlData.publicUrl;
-
-      if (isEdit) {
-        if (type === 'image') setEditingItem((prev) => prev ? {...prev, image_url: publicUrl} : prev);
-        if (type === 'pdf') setEditingItem((prev) => prev ? {...prev, pdf_url: publicUrl} : prev);
-        if (type === 'audio') setEditingItem((prev) => prev ? {...prev, audio_url: publicUrl} : prev);
-      } else {
-        if (type === 'image') setNewNews((prev) => ({...prev, image_url: publicUrl}));
-        if (type === 'pdf') setNewNews((prev) => ({...prev, pdf_url: publicUrl}));
-        if (type === 'audio') setNewNews((prev) => ({...prev, audio_url: publicUrl}));
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Lỗi upload file:', error);
-      alert('Lỗi tải file: ' + message);
+      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path);
+      if (isEdit) setEditItem(prev => prev ? { ...prev, [field]: publicUrl } : prev);
+      else setNewNews(prev => ({ ...prev, [field]: publicUrl }));
+      toast('success', 'Tải lên thành công');
+    } catch (err: any) {
+      toast('error', 'Lỗi upload', err.message);
     } finally {
       setUploading(false);
     }
   };
 
+  /* ── CRUD: Sermon ── */
+  const handleAddSermon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('sermons').insert([{
+        ...newSermon,
+        youtube_id: extractYtId(newSermon.youtube_url || ''),
+      }]);
+      if (error) throw error;
+
+      fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'REACH Church: Bài giảng mới',
+          message: newSermon.title,
+          url: `${window.location.origin}/library`,
+        })
+      }).catch(e => console.error('Push notification failed:', e));
+
+      toast('success', 'Đã thêm bài giảng');
+      setNewSermon({ ...defaultSermon });
+      setQuillKey(k => k + 1);
+      fetchSermons();
+      fetchStats();
+      fetchRecentPosts();
+    } catch (err: any) { toast('error', 'Lỗi', err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleDeleteSermon = (id?: string) => {
+    if (!id) return;
+    showConfirm('Xóa bài giảng?', 'Thao tác này không thể hoàn tác.', async () => {
+      const { error } = await supabase.from('sermons').delete().eq('id', id);
+      if (error) { toast('error', 'Lỗi xóa', error.message); return; }
+      setSermons(prev => prev.filter(s => s.id !== id));
+      toast('success', 'Đã xóa bài giảng');
+      fetchStats();
+    });
+  };
+
+  /* ── CRUD: News ── */
+  const handleAddNews = async (e: React.FormEvent, type: string) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        title: newNews.title,
+        type,
+        content: newNews.content,
+        image_url: newNews.image_url || '',
+        pdf_url: type === 'Tài liệu' ? newNews.pdf_url : '',
+        audio_url: type === 'Sách Nói' ? newNews.audio_url : '',
+        categories: JSON.stringify(newNews.categories || []),
+        status: newNews.status || 'published',
+      };
+      const { error } = await supabase.from('news').insert([payload]);
+      
+      if (!error && payload.status === 'published') {
+        try {
+          fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: `REACH: ${payload.type}`,
+              message: payload.title,
+              url: `${window.location.origin}/news`,
+            }),
+          });
+        } catch (e) {
+          console.error('Failed to trigger notification', e);
+        }
+      }
+      if (error) throw error;
+
+      if (payload.status === 'published') {
+        fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `REACH Church: ${type} mới`,
+            message: payload.title,
+            url: `${window.location.origin}/news`,
+          })
+        }).catch(e => console.error('Push notification failed:', e));
+      }
+
+      toast('success', 'Đã đăng bài thành công');
+      setNewNews({ ...defaultNews, type });
+      setQuillKey(k => k + 1);
+      fetchNews();
+      fetchStats();
+      fetchRecentPosts();
+    } catch (err: any) { toast('error', 'Lỗi đăng bài', err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleDeleteNews = (id?: string) => {
+    if (!id) return;
+    showConfirm('Xóa bài viết?', 'Thao tác này không thể hoàn tác.', async () => {
+      const { error } = await supabase.from('news').delete().eq('id', id);
+      if (error) { toast('error', 'Lỗi xóa', error.message); return; }
+      setNews(prev => prev.filter(n => n.id !== id));
+      toast('success', 'Đã xóa bài viết');
+      fetchStats();
+    });
+  };
+
+  /* ── CRUD: Edit (both) ── */
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItem) return;
+    setSaving(true);
+    try {
+      if (editType === 'sermon') {
+        const s = editItem as Sermon;
+        const { error } = await supabase.from('sermons').update({
+          title: s.title, speaker: s.speaker, series: s.series, date: s.date,
+          youtube_url: s.youtube_url, youtube_id: extractYtId(s.youtube_url || ''),
+          content: s.content || '',
+        }).eq('id', s.id);
+        if (error) throw error;
+        setSermons(prev => prev.map(x => x.id === s.id ? { ...x, ...s } : x));
+      } else {
+        const n = editItem as NewsItem;
+        const { error } = await supabase.from('news').update({
+          title: n.title, type: n.type, content: n.content,
+          image_url: n.image_url, pdf_url: n.pdf_url, audio_url: n.audio_url,
+          categories: JSON.stringify(parseCategories(n.categories)),
+          status: n.status || 'published',
+        }).eq('id', n.id);
+        
+        if (!error && n.status === 'published') {
+          try {
+            fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `REACH: ${n.type}`,
+                message: n.title,
+                url: `${window.location.origin}/news`,
+              }),
+            });
+          } catch (e) {
+            console.error('Failed to trigger notification', e);
+          }
+        }
+        if (error) throw error;
+        setNews(prev => prev.map(x => x.id === n.id ? { ...x, ...n } : x));
+      }
+      toast('success', 'Cập nhật thành công');
+      setEditItem(null);
+      fetchRecentPosts();
+      fetchStats();
+    } catch (err: any) { toast('error', 'Lỗi cập nhật', err.message); }
+    finally { setSaving(false); }
+  };
+
+  /* ── CRUD: Prayer ── */
+  const handleDeletePrayer = (id?: string) => {
+    if (!id) return;
+    showConfirm('Xóa lời cầu nguyện?', 'Xác nhận xóa đề mục này?', async () => {
+      const { error } = await supabase.from('prayers').delete().eq('id', id);
+      if (error) { toast('error', 'Lỗi', error.message); return; }
+      setPrayers(prev => prev.filter(p => p.id !== id));
+      toast('success', 'Đã xóa');
+      fetchStats();
+    });
+  };
+
+  const handleCompletePrayer = async (id?: string) => {
+    if (!id) return;
+    const { error } = await supabase.from('prayers').update({ status: 'answered' }).eq('id', id);
+    if (error) { toast('error', 'Lỗi', error.message); return; }
+    setPrayers(prev => prev.map(p => p.id === id ? { ...p, status: 'answered' } : p));
+    toast('success', 'Đã đánh dấu nhậm lời 🙏');
+  };
+
+  /* ── CRUD: Role ── */
+  const handleUpdateRole = async (id?: string, role?: string) => {
+    if (!id || !role) return;
+    setRoleUpdating(id);
+    const { error } = await supabase.from('profiles').update({ role }).eq('id', id);
+    if (error) { toast('error', 'Lỗi', error.message); }
+    else {
+      setProfiles(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+      toast('success', 'Đã cập nhật quyền');
+    }
+    setRoleUpdating(null);
+  };
+
+/* ════════════════════════════════════════
+   RENDER HELPERS (OUTSIDE)
+   ════════════════════════════════════════ */
+
+const StatusBadge = ({ status }: { status?: string }) => (
+  <span className={`data-item-badge ${status === 'draft' ? 'badge-draft' : 'badge-published'}`}>
+    {status === 'draft' ? '📝 Nháp' : '✅ Xuất bản'}
+  </span>
+);
+
+const DataItem = ({
+  title, sub, status, onEdit, onDelete, thumb,
+}: {
+  title: string; sub?: string; status?: string;
+  onEdit?: () => void; onDelete?: () => void; thumb?: string;
+}) => (
+  <div className="data-item">
+    {thumb && <img src={thumb} alt="" className="news-thumb" />}
+    <div className="data-item-info">
+      <p className="data-item-title">{title}</p>
+      {sub && <p className="data-item-sub">{sub}</p>}
+    </div>
+    {status !== undefined && <StatusBadge status={status} />}
+    <div className="data-item-actions">
+      {onEdit && (
+        <button className="btn-icon edit" onClick={onEdit} title="Sửa">
+          <Edit2 size={14} />
+        </button>
+      )}
+      {onDelete && (
+        <button className="btn-icon danger" onClick={onDelete} title="Xóa">
+          <Trash2 size={14} />
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+  /* ── Sermon form ── */
+  const renderSermonForm = ({ isEdit = false }: { isEdit?: boolean } = {}) => {
+    const data = isEdit ? (editItem as Sermon) : newSermon;
+    const set = isEdit
+      ? (k: string, v: string) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev)
+      : (k: string, v: string) => setNewSermon(prev => ({ ...prev, [k]: v }));
+
+    return (
+      <>
+        <div className="form-group">
+          <label className="form-label">Tiêu đề bài giảng *</label>
+          <input className="form-input" required placeholder="VD: Chúa Jesus là câu trả lời"
+            value={data?.title || ''} onChange={e => set('title', e.target.value)} />
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Người giảng *</label>
+            <input className="form-input" required placeholder="Mục sư Tín"
+              value={(data as Sermon)?.speaker || ''} onChange={e => set('speaker', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Loạt bài</label>
+            <input className="form-input" placeholder="Tin Lành Giăng"
+              value={(data as Sermon)?.series || ''} onChange={e => set('series', e.target.value)} />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Ngày giảng *</label>
+            <input className="form-input" type="date"
+              value={(data as Sermon)?.date || ''} onChange={e => set('date', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Link YouTube</label>
+            <input className="form-input" placeholder="https://youtube.com/watch?v=..."
+              value={(data as Sermon)?.youtube_url || ''} onChange={e => set('youtube_url', e.target.value)} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Nội dung / Tóm tắt</label>
+          <ReactQuill key={`sermon-${quillKey}-${isEdit}`} theme="snow" modules={quillModules}
+            value={(data as Sermon)?.content || ''}
+            onChange={val => set('content', val)}
+            placeholder="Tóm tắt bài giảng..." />
+        </div>
+      </>
+    );
+  };
+
+  /* ── News/Library form ── */
+  const renderNewsForm = ({
+    type, isEdit = false, showImg = false, showPdf = false, showAudio = false,
+    showCats = false, showTypeSelect = false,
+  }: {
+    type: string; isEdit?: boolean; showImg?: boolean; showPdf?: boolean;
+    showAudio?: boolean; showCats?: boolean; showTypeSelect?: boolean;
+  }) => {
+    const data = isEdit ? (editItem as NewsItem) : newNews;
+    const set = isEdit
+      ? (k: string, v: any) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev)
+      : (k: string, v: any) => setNewNews(prev => ({ ...prev, [k]: v }));
+    const cats = parseCategories(data?.categories);
+
+    return (
+      <>
+        <div className="form-group">
+          <label className="form-label">Tiêu đề *</label>
+          <input className="form-input" required placeholder="Nhập tiêu đề..."
+            value={data?.title || ''} onChange={e => set('title', e.target.value)} />
+        </div>
+
+        {showTypeSelect && (
+          <div className="form-group">
+            <label className="form-label">Loại bài viết</label>
+            <select className="form-select" value={data?.type || type}
+              onChange={e => set('type', e.target.value)}>
+              {NEWS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label className="form-label">Trạng thái</label>
+          <div className="status-toggle">
+            <button type="button" className={`status-btn ${data?.status !== 'draft' ? 'active-published' : ''}`}
+              onClick={() => set('status', 'published')}>
+              <CheckCircle size={14} /> Xuất bản
+            </button>
+            <button type="button" className={`status-btn ${data?.status === 'draft' ? 'active-draft' : ''}`}
+              onClick={() => set('status', 'draft')}>
+              <Clock size={14} /> Lưu nháp
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Nội dung *</label>
+          <ReactQuill key={`news-${quillKey}-${type}-${isEdit}`} theme="snow" modules={quillModules}
+            value={data?.content || ''}
+            onChange={val => set('content', val)}
+            placeholder="Nhập nội dung bài viết..." />
+        </div>
+
+        {showImg && (
+          <div>
+            <div className="upload-box">
+              <div className="upload-box-icon"><Eye size={20} style={{ color: '#48bce1' }} /></div>
+              <div className="upload-box-info">
+                <strong>Ảnh đại diện</strong>
+                <span>{data?.image_url ? '✅ Đã tải lên' : 'Chưa có ảnh'}</span>
+              </div>
+              <label className="btn-upload">
+                {uploading ? 'Đang tải...' : 'Chọn ảnh'}
+                <input type="file" accept="image/*" hidden
+                  onChange={e => handleFileUpload(e, 'image_url', isEdit)} disabled={uploading} />
+              </label>
+            </div>
+            {data?.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.image_url} alt="Preview" className="img-preview" />
+            )}
+          </div>
+        )}
+
+        {showAudio && (
+          <div className="upload-box">
+            <div className="upload-box-icon"><Headphones size={20} style={{ color: '#f4cc30' }} /></div>
+            <div className="upload-box-info">
+              <strong>File Audio (MP3)</strong>
+              <span>{data?.audio_url ? '✅ Đã tải lên' : 'Chưa có audio'}</span>
+            </div>
+            <label className="btn-upload">
+              {uploading ? 'Đang tải...' : 'Chọn audio'}
+              <input type="file" accept="audio/*" hidden
+                onChange={e => handleFileUpload(e, 'audio_url', isEdit)} disabled={uploading} />
+            </label>
+          </div>
+        )}
+
+        {showPdf && (
+          <div className="upload-box">
+            <div className="upload-box-icon"><FileText size={20} style={{ color: '#ef4444' }} /></div>
+            <div className="upload-box-info">
+              <strong>File PDF</strong>
+              <span>{data?.pdf_url ? '✅ Đã tải lên' : 'Chưa có PDF'}</span>
+            </div>
+            <label className="btn-upload">
+              {uploading ? 'Đang tải...' : 'Chọn PDF'}
+              <input type="file" accept="application/pdf" hidden
+                onChange={e => handleFileUpload(e, 'pdf_url', isEdit)} disabled={uploading} />
+            </label>
+          </div>
+        )}
+
+        {showCats && (
+          <div className="form-group">
+            <label className="form-label">Danh mục</label>
+            <div className="category-grid">
+              {POST_CATEGORIES.map(cat => {
+                const checked = cats.includes(cat);
+                return (
+                  <label key={cat} className={`cat-check-label ${checked ? 'checked' : ''}`}>
+                    <input type="checkbox" checked={checked}
+                      onChange={() => {
+                        const next = checked ? cats.filter(c => c !== cat) : [...cats, cat];
+                        set('categories', next);
+                      }} />
+                    {cat}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  /* ════════════════════════════════════════
+     LOADING / LOGIN
+     ════════════════════════════════════════ */
   if (!authReady) {
     return (
-      <div className="admin-login-container">
-        <div className="admin-auth-loading">
-          <div className="admin-auth-spinner" />
+      <div className="admin-root">
+        <div className="admin-loading-screen">
+          <div className="admin-spinner" />
           <p>Đang tải...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuth) {
     return (
-      <div className="admin-login-container">
-        <div className="admin-login-topbar">
+      <div className="admin-root">
+        <div className="admin-login-wrap">
           <Link href="/" className="admin-login-back">
             <ArrowLeft size={16} /> Về trang chủ
           </Link>
-        </div>
-        <div className="login-card">
-          <div className="admin-login-logo-ring">
-            <Image src="/logo.png" alt="REACH Admin" width={72} height={72} />
-          </div>
-          <span className="admin-login-badge">
-            <Shield size={14} /> Ban điều hành
-          </span>
-          <h2>REACH Admin</h2>
-          <p>Đăng nhập hệ thống quản trị nội dung hội thánh</p>
-          <form onSubmit={handleLogin} className="login-form">
-            <label className="admin-login-label" htmlFor="admin-password">Mật khẩu quản trị</label>
-            <div className="admin-login-input-wrap">
-              <Lock size={18} className="admin-login-input-icon" />
-              <input
-                id="admin-password"
-                type="password"
-                placeholder="Nhập mật khẩu admin"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={loginError ? 'error' : ''}
-                required
-              />
+          <div className="login-card">
+            <div className="login-logo-ring">
+              <Image src="/logo.png" alt="REACH Admin" width={70} height={70} />
             </div>
-            {loginError && <p className="error-msg">Mật khẩu không chính xác!</p>}
-            <button type="submit" className="btn-primary w-full">Vào bảng điều khiển</button>
-          </form>
+            <span className="login-badge"><Shield size={13} /> Ban điều hành</span>
+            <h2>REACH Admin</h2>
+            <p>Đăng nhập hệ thống quản trị nội dung hội thánh</p>
+            <div className="login-divider" />
+            <form onSubmit={handleLogin} className="login-form">
+              <div>
+                <label className="login-form-label" htmlFor="email">Email</label>
+                <div className="login-input-wrap">
+                  <Mail size={16} className="login-input-icon" />
+                  <input id="email" type="email" placeholder="reachchurch2017@gmail.com"
+                    value={email} onChange={e => setEmail(e.target.value)}
+                    className={loginError ? 'input-error' : ''} required />
+                </div>
+              </div>
+              <div>
+                <label className="login-form-label" htmlFor="pwd">Mật khẩu</label>
+                <div className="login-input-wrap">
+                  <Lock size={16} className="login-input-icon" />
+                  <input id="pwd" type="password" placeholder="••••••••••"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    className={loginError ? 'input-error' : ''} required />
+                </div>
+              </div>
+              {loginError && (
+                <p className="login-error-msg"><AlertTriangle size={14} /> {loginErrorMsg || 'Email hoặc mật khẩu không chính xác!'}</p>
+              )}
+              <button type="submit" className="btn-login">
+                <Shield size={17} /> Vào bảng điều khiển
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Lọc dữ liệu theo tab
-  const getFilteredNews = (types: string[]) => news.filter((n): n is NewsItem => Boolean(n && n.type && types.includes(n.type)));
-  const editingSermon = editingItem as Sermon;
-  const editingNews = editingItem as NewsItem;
+  /* ── Filter helpers ── */
+  const tabBadge = (id: string) => {
+    const m: Record<string, number> = {
+      sermons: stats.sermons, news: stats.news, prayers: stats.prayers,
+      users: stats.profiles, posts: stats.news, audiobooks: stats.news,
+      devotionals: stats.devotionals, donations: stats.donations,
+    };
+    return m[id] || 0;
+  };
 
-  const getPosts = () => getFilteredNews([...POST_CONTENT_TYPES]);
+  const getPosts = () => getNewsForTab([...POST_CONTENT_TYPES]);
+  const newsItems = getNewsForTab(NEWS_TYPES);
+  const audioItems = getNewsForTab(['Sách Nói']);
+  const pdfItems = getNewsForTab(['Tài liệu']);
+  const devItems = getNewsForTab(['Dưỡng linh', 'Dưỡng Linh']);
 
+  /* group nav */
+  const groups = ['NỘI DUNG', 'THƯ VIỆN', 'CỘNG ĐỒNG'];
+
+  /**
+   * effectiveRole: nếu đã xác thực mà profile chưa load hoặc role chưa set
+   * (bypass login bằng env credentials), mặc định coi là Quản trị viên
+   */
+  const effectiveRole: string = profile?.role || (isAuth ? 'Quản trị viên' : '');
+
+  const toastIcons: Record<ToastType, React.ReactNode> = {
+    success: <CheckCircle size={18} />,
+    error: <AlertTriangle size={18} />,
+    info: <Bell size={18} />,
+    warning: <AlertTriangle size={18} />,
+  };
+
+  /* ════════════════════════════════════════
+     MAIN RENDER
+     ════════════════════════════════════════ */
   return (
-    <div className="admin-layout">
-      {/* Sidebar Navigation */}
-      <aside className="admin-sidebar">
-        <div className="sidebar-header">
-          <Image src="/logo.png" alt="REACH Logo" width={40} height={40} style={{ borderRadius: 8, objectFit: 'contain' }} />
-          <div className="sidebar-brand">
-            <h2>REACH Admin</h2>
-            <p>Hệ thống quản trị</p>
+    <div className="admin-root">
+      {/* ── Toast Container ── */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast ${t.type}`}>
+            <span className="toast-icon">{toastIcons[t.type]}</span>
+            <div className="toast-body">
+              <p className="toast-title">{t.title}</p>
+              {t.msg && <p className="toast-msg">{t.msg}</p>}
+            </div>
+            <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>
+              <X size={15} />
+            </button>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <nav className="sidebar-nav">
-          <button className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
-            <LayoutDashboard size={20} /> Tổng quan
-          </button>
-          
-          <div className="nav-section-title">QUẢN LÝ THƯ VIỆN</div>
-          <button className={`nav-item ${activeTab === 'sermons' ? 'active' : ''}`} onClick={() => setActiveTab('sermons')}>
-            <Video size={20} /> Bài Giảng
-          </button>
-          <button className={`nav-item ${activeTab === 'audiobooks' ? 'active' : ''}`} onClick={() => setActiveTab('audiobooks')}>
-            <Headphones size={20} /> Sách Nói
-          </button>
-          <button className={`nav-item ${activeTab === 'pdfs' ? 'active' : ''}`} onClick={() => setActiveTab('pdfs')}>
-            <FileText size={20} /> Sách PDF
-          </button>
-          <button className={`nav-item ${activeTab === 'devotionals' ? 'active' : ''}`} onClick={() => setActiveTab('devotionals')}>
-            <BookOpen size={20} /> Dưỡng Linh
-          </button>
-
-          <div className="nav-section-title">NỘI DUNG</div>
-          <button className={`nav-item ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>
-            <PenLine size={20} /> Thêm bài viết
-          </button>
-
-          <div className="nav-section-title">THÀNH VIÊN</div>
-          <button className={`nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <Users size={20} /> Hồ sơ tín hữu
-          </button>
-          <button className={`nav-item ${activeTab === 'prayers' ? 'active' : ''}`} onClick={() => setActiveTab('prayers')}>
-            <Heart size={20} /> Lời cầu nguyện
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="btn-logout-sidebar">
-            <LogOut size={20} /> Đăng xuất
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="admin-main">
-        <header className="admin-topbar">
-          <div className="topbar-left">
-            <div>
-              <h1 className="page-title">{tabLabelMap[activeTab]}</h1>
-              <div className="topbar-breadcrumb">Bảng điều khiển / {tabLabelMap[activeTab]}</div>
+      {/* ── Confirm Modal ── */}
+      {confirm.open && (
+        <div className="confirm-overlay" onClick={() => setConfirm(c => ({ ...c, open: false }))}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="confirm-icon-wrap"><AlertTriangle size={26} /></div>
+            <h3>{confirm.title}</h3>
+            <p>{confirm.msg}</p>
+            <div className="confirm-actions">
+              <button className="btn-confirm-cancel"
+                onClick={() => setConfirm(c => ({ ...c, open: false }))}>
+                Hủy
+              </button>
+              <button className="btn-confirm-ok" onClick={() => {
+                confirm.onConfirm();
+                setConfirm(c => ({ ...c, open: false }));
+              }}>
+                Xóa
+              </button>
             </div>
-          </div>
-          <div className="topbar-right">
-            <div className="topbar-search">
-              <input type="text" placeholder="Tìm bài, người dùng, bài giảng..." />
-            </div>
-            <div className="topbar-user">
-              <span>Admin</span>
-              <div className="avatar-circle">A</div>
-            </div>
-          </div>
-        </header>
-
-        <div className="admin-content-scroll">
-          {/* OVERVIEW */}
-          {activeTab === 'overview' && (
-            <>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-icon-wrap bg-blue"><Users size={24} /></div>
-                  <div className="stat-info"><span className="stat-label">Hồ sơ tín hữu</span><span className="stat-value">{stats.profiles}</span></div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon-wrap bg-yellow"><Video size={24} /></div>
-                  <div className="stat-info"><span className="stat-label">Tổng bài giảng</span><span className="stat-value">{stats.sermons}</span></div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon-wrap bg-red"><Heart size={24} /></div>
-                  <div className="stat-info"><span className="stat-label">Đề mục cầu nguyện</span><span className="stat-value">{stats.prayers}</span></div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon-wrap bg-green"><FileText size={24} /></div>
-                  <div className="stat-info"><span className="stat-label">Tài liệu & Bản tin</span><span className="stat-value">{stats.news}</span></div>
-                </div>
-              </div>
-
-              <div className="overview-section">
-                <div className="section-header">
-                  <div>
-                    <h2>Bài đăng mới nhất</h2>
-                    <p className="section-subtitle">Xem nhanh nội dung, thời gian và người đăng.</p>
-                  </div>
-                </div>
-                <div className="recent-posts-list">
-                  {recentPosts.length > 0 ? recentPosts.map(post => (
-                    <div key={post.id} className="recent-post-item">
-                      <div className="recent-post-top">
-                        <span className="badge">{post.source}</span>
-                        <span>{formatDateTime(post.created_at)}</span>
-                      </div>
-                      <h3>{post.title}</h3>
-                      <p className="recent-post-author">Đăng bởi {post.author}</p>
-                      {post.excerpt && <p className="recent-post-excerpt">{post.excerpt}</p>}
-                    </div>
-                  )) : (
-                    <p>Không có bài đăng mới.</p>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* SERMONS */}
-          {activeTab === 'sermons' && (
-            <div className="admin-panel-grid">
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Thêm Bài Giảng Mới</h3></div>
-                <form onSubmit={handleAddSermon} className="cms-form">
-                  <div className="form-group"><label>Tiêu đề bài giảng</label><input required placeholder="VD: Chúa Jesus là câu trả lời" value={newSermon.title} onChange={e => setNewSermon({...newSermon, title: e.target.value})} /></div>
-                  <div className="form-row">
-                    <div className="form-group"><label>Người giảng</label><input required placeholder="VD: Mục sư Tín" value={newSermon.speaker} onChange={e => setNewSermon({...newSermon, speaker: e.target.value})} /></div>
-                    <div className="form-group"><label>Loạt bài</label><input placeholder="VD: Tin Lành Giăng" value={newSermon.series} onChange={e => setNewSermon({...newSermon, series: e.target.value})} /></div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group"><label>Ngày giảng</label><input required type="date" value={newSermon.date} onChange={e => setNewSermon({...newSermon, date: e.target.value})} /></div>
-                    <div className="form-group"><label>Đường dẫn YouTube</label><input required placeholder="https://youtube.com/watch?v=..." value={newSermon.youtube_url} onChange={e => setNewSermon({...newSermon, youtube_url: e.target.value})} /></div>
-                  </div>
-                  <div className="form-group">
-                    <label>Nội dung / Mô tả bài giảng</label>
-                    <ReactQuill key={sermonFormKey} theme="snow" modules={quillModules} value={newSermon.content || ''} onChange={val => setNewSermon({...newSermon, content: val})} className="quill-editor" placeholder="Tóm tắt hoặc ghi chú nội dung bài giảng..." />
-                  </div>
-                  <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng bài giảng</button>
-                </form>
-              </div>
-
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Danh sách Bài giảng ({sermons.length})</h3></div>
-                <div className="data-list">
-                  {sermons.filter(Boolean).map(s => (
-                    <div key={s.id} className="data-item">
-                      <div className="data-item-content"><strong>{s.title}</strong><span>{s.speaker} • {s.date}</span></div>
-                      <div style={{display:'flex', gap: '8px'}}>
-                        <button onClick={() => handleOpenEdit(s, 'sermon')} className="btn-icon-edit" title="Sửa"><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteSermon(s.id)} className="btn-icon-danger" title="Xóa"><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* AUDIOBOOKS */}
-          {activeTab === 'audiobooks' && (
-            <div className="admin-panel-grid">
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Thêm Sách Nói Mới</h3></div>
-                <form onSubmit={e => handleAddNews(e, 'Sách Nói')} className="cms-form">
-                  <div className="form-group"><label>Tiêu đề sách / Bài nghe</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Mô tả ngắn</label><ReactQuill key={`audio-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
-                  <div className="upload-box">
-                    <Upload size={24} className="upload-icon text-yellow" />
-                    <div className="upload-info"><strong>File Audio (MP3)</strong><span>{newNews.audio_url ? 'Đã đính kèm Audio' : 'Chưa có file'}</span></div>
-                    <label className="btn-upload">{uploading ? 'Đang tải...' : 'Chọn File'}<input type="file" accept="audio/*" onChange={(e) => handleFileUpload(e, 'audio')} disabled={uploading} hidden /></label>
-                  </div>
-                  <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng Sách Nói</button>
-                </form>
-              </div>
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Danh sách ({getFilteredNews(['Sách Nói']).length})</h3></div>
-                <div className="data-list">
-                  {getFilteredNews(['Sách Nói']).filter(Boolean).map(n => (
-                    <div key={n.id} className="data-item">
-                      <div className="data-item-content"><strong>{n.title}</strong></div>
-                      <div style={{display:'flex', gap: '8px'}}>
-                        <button onClick={() => handleOpenEdit(n, 'news')} className="btn-icon-edit"><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteNews(n.id)} className="btn-icon-danger"><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PDFS */}
-          {activeTab === 'pdfs' && (
-            <div className="admin-panel-grid">
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Thêm Sách PDF / Tài liệu</h3></div>
-                <form onSubmit={e => handleAddNews(e, 'Tài liệu')} className="cms-form">
-                  <div className="form-group"><label>Tên sách / Tài liệu</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Mô tả nội dung</label><ReactQuill key={`pdf-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" /></div>
-                  <div className="upload-box">
-                    <File size={24} className="upload-icon text-red" />
-                    <div className="upload-info"><strong>File PDF</strong><span>{newNews.pdf_url ? 'Đã đính kèm PDF' : 'Chưa có file'}</span></div>
-                    <label className="btn-upload">{uploading ? 'Đang tải...' : 'Chọn File'}<input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, 'pdf')} disabled={uploading} hidden /></label>
-                  </div>
-                  <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng Sách PDF</button>
-                </form>
-              </div>
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Danh sách ({getFilteredNews(['Tài liệu']).length})</h3></div>
-                <div className="data-list">
-                  {getFilteredNews(['Tài liệu']).filter(Boolean).map(n => (
-                    <div key={n.id} className="data-item">
-                      <div className="data-item-content"><strong>{n.title}</strong></div>
-                      <div style={{display:'flex', gap: '8px'}}>
-                        <button onClick={() => handleOpenEdit(n, 'news')} className="btn-icon-edit"><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteNews(n.id)} className="btn-icon-danger"><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* DEVOTIONALS */}
-          {activeTab === 'devotionals' && (
-            <div className="admin-panel-grid">
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Thêm Bài Dưỡng Linh</h3></div>
-                <form onSubmit={e => handleAddNews(e, 'Dưỡng linh')} className="cms-form">
-                  <div className="form-group"><label>Chủ đề dưỡng linh</label><input required placeholder="Nhập tiêu đề..." value={newNews.title} onChange={e => setNewNews({...newNews, title: e.target.value})} /></div>
-                  <div className="form-group"><label>Nội dung bài học / Lời Chúa</label><ReactQuill key={`dev-${newsFormKey}`} theme="snow" modules={quillModules} value={newNews.content} onChange={val => setNewNews({...newNews, content: val})} className="quill-editor" placeholder="Nhập nội dung bài tĩnh nguyện hoặc đoạn Kinh Thánh..." /></div>
-                  <button type="submit" className="btn-primary-solid"><Plus size={18} /> Đăng bài Dưỡng linh</button>
-                </form>
-              </div>
-              <div className="admin-panel-card">
-                <div className="panel-header"><h3>Danh sách ({getFilteredNews(['Dưỡng linh']).length})</h3></div>
-                <div className="data-list">
-                  {getFilteredNews(['Dưỡng linh']).filter(Boolean).map(n => (
-                    <div key={n.id} className="data-item">
-                      <div className="data-item-content"><strong>{n.title}</strong></div>
-                      <div style={{display:'flex', gap: '8px'}}>
-                        <button onClick={() => handleOpenEdit(n, 'news')} className="btn-icon-edit"><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteNews(n.id)} className="btn-icon-danger"><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* THÊM BÀI VIẾT — Sự kiện, Thông báo, Bản tin, Bài viết */}
-          {activeTab === 'posts' && (
-            <AdminNewsTabPanel
-              listTitle="Danh sách bài viết"
-              items={getPosts()}
-              form={newNews}
-              onFormChange={setNewNews}
-              onSubmit={(e) => handleAddNews(e, newNews.type || 'Bài viết')}
-              onImageUpload={(e) => handleFileUpload(e, 'image')}
-              onRemoveImage={() => setNewNews({ ...newNews, image_url: '' })}
-              onEdit={(item) => handleOpenEdit(item, 'news')}
-              onDelete={handleDeleteNews}
-              uploading={uploading}
-              quillKey={newsFormKey}
-              quillModules={quillModules}
-              submitLabel="Xuất bản"
-              showCategories
-              showFeaturedImage
-            />
-          )}
-
-          {/* PRAYERS & USERS */}
-          {activeTab === 'prayers' && (
-            <div className="admin-panel-card">
-              <div className="panel-header"><h3>Danh sách Đề mục cầu nguyện</h3></div>
-              <div className="prayer-grid">
-                {prayers.filter(Boolean).map(p => (
-                  <div key={p.id} className={`prayer-card-admin ${p.status === 'completed' ? 'completed' : ''}`}>
-                    <div className="prayer-status">
-                      {p.status === 'completed' ? <CheckCircle size={16} className="text-green" /> : <Heart size={16} className="text-red" />}
-                      <span>{p.status === 'completed' ? 'Đã nhậm lời' : 'Đang cầu nguyện'}</span>
-                    </div>
-                    <h4>{p.title}</h4>
-                    <p>{p.description}</p>
-                    <div className="prayer-actions">
-                      {p.status !== 'completed' && <button onClick={() => handleCompletePrayer(p.id)} className="btn-action success">Đánh dấu Hoàn tất</button>}
-                      <button onClick={() => handleDeletePrayer(p.id)} className="btn-action danger">Xóa</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {activeTab === 'users' && (
-            <div className="admin-panel-card">
-              <div className="panel-header"><h3>Danh sách Hồ sơ tín hữu</h3></div>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead><tr><th>Họ và tên</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Ngày tham gia</th></tr></thead>
-                  <tbody>
-                    {profiles.map(u => (
-                      <tr key={u.id}>
-                        <td>{u.full_name}</td>
-                        <td>{u.username || 'N/A'}</td>
-                        <td>
-                          <select value={u.role || 'Thành viên'} onChange={(e) => handleUpdateRole(u.id, e.target.value)} disabled={roleUpdating} className="role-select">
-                            <option value="Thành viên">Thành viên</option>
-                            <option value="Ban điều hành">Ban điều hành</option>
-                            <option value="Quản trị">Quản trị</option>
-                          </select>
-                        </td>
-                        <td>{u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : 'N/A'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-        </div>
-      </main>
-
-      {/* Edit Modal Overlay */}
-      {editingItem && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Sửa bài viết</h2>
-              <button onClick={() => setEditingItem(null)} className="btn-close"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleUpdate} className="cms-form">
-              <div className="form-group">
-                <label>Tiêu đề</label>
-                <input required value={editingItem?.title || ''} onChange={e => setEditingItem({...editingItem, title: e.target.value})} />
-              </div>
-
-              {editType === 'sermon' ? (
-                <>
-                  <div className="form-row">
-                    <div className="form-group"><label>Người giảng</label><input required value={editingSermon.speaker || ''} onChange={e => setEditingItem({...editingSermon, speaker: e.target.value})} /></div>
-                    <div className="form-group"><label>Loạt bài</label><input value={editingSermon.series || ''} onChange={e => setEditingItem({...editingSermon, series: e.target.value})} /></div>
-                  </div>
-                  <div className="form-group"><label>YouTube Link (chỉ sửa nếu đổi video)</label><input placeholder="Nhập đường dẫn YouTube mới..." value={editingSermon.youtube_url || ''} onChange={e => setEditingItem({...editingSermon, youtube_url: e.target.value})} /></div>
-                  <div className="form-group">
-                    <label>Nội dung / Mô tả bài giảng</label>
-                    <ReactQuill theme="snow" modules={quillModules} value={editingSermon.content || ''} onChange={val => setEditingItem({...editingSermon, content: val})} className="quill-editor" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="form-group">
-                    <label>Nội dung</label>
-                    <ReactQuill theme="snow" modules={quillModules} value={editingNews.content || ''} onChange={val => setEditingItem({...editingNews, content: val})} className="quill-editor" />
-                  </div>
-                  {(editingNews.type === 'Sách Nói') && (
-                    <div className="upload-box">
-                      <div className="upload-info"><strong>Cập nhật Audio</strong><span>{editingNews.audio_url ? 'Đã có Audio' : 'Chưa có'}</span></div>
-                      <label className="btn-upload">{uploading ? 'Đang tải...' : 'Tải File Mới'}<input type="file" accept="audio/*" onChange={(e) => handleFileUpload(e, 'audio', true)} disabled={uploading} hidden /></label>
-                    </div>
-                  )}
-                  {(editingNews.type === 'Tài liệu') && (
-                    <div className="upload-box">
-                      <div className="upload-info"><strong>Cập nhật PDF</strong><span>{editingNews.pdf_url ? 'Đã có PDF' : 'Chưa có'}</span></div>
-                      <label className="btn-upload">{uploading ? 'Đang tải...' : 'Tải File Mới'}<input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, 'pdf', true)} disabled={uploading} hidden /></label>
-                    </div>
-                  )}
-                  {editingNews.type !== 'Tài liệu' && (
-                    <div className="upload-box" style={{ flexWrap: 'wrap' }}>
-                      <div className="upload-info"><strong>Ảnh đại diện</strong><span>{editingNews.image_url ? 'Đã có ảnh' : 'Chưa có'}</span></div>
-                      <label className="btn-upload">{uploading ? 'Đang tải...' : 'Tải Ảnh Mới'}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'image', true)} disabled={uploading} hidden /></label>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {editingNews.image_url && <img src={editingNews.image_url} alt="Preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />}
-                    </div>
-                  )}
-                  {(['Dưỡng linh', ...POST_CONTENT_TYPES] as readonly string[]).includes(editingNews.type) && (
-                    <div className="form-group">
-                      <label>Danh mục</label>
-                      <div className="wp-category-list">
-                        {POST_CATEGORIES.map((cat) => (
-                          <label key={cat} className="wp-category-item">
-                            <input
-                              type="checkbox"
-                              checked={parseCategories(editingNews.categories).includes(cat)}
-                              onChange={() => {
-                                const cats = parseCategories(editingNews.categories);
-                                const next = cats.includes(cat) ? cats.filter((c) => c !== cat) : [...cats, cat];
-                                setEditingItem({ ...editingNews, categories: next });
-                              }}
-                            />
-                            <span>{cat}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <button type="submit" className="btn-primary-solid" style={{ background: '#10B981', color: '#fff' }}><CheckCircle size={18} /> Lưu cập nhật</button>
-            </form>
           </div>
         </div>
       )}
+
+      {/* ── Edit Modal ── */}
+      {editItem && (
+        <div className="modal-overlay" onClick={() => setEditItem(null)}>
+          <div className="admin-modal">
+            <div className="admin-modal-content">
+              <div className="modal-header">
+                <h3>Sửa {editType === 'sermon' ? 'Bài giảng' : 'Bài viết'}</h3>
+                <button className="btn-close" onClick={() => setEditItem(null)}><X size={20} /></button>
+              </div>
+              <form className="cms-form modal-body" onSubmit={handleUpdate}>
+                {editType === 'sermon' ? (
+                  renderSermonForm({ isEdit: true })
+                ) : (
+                  renderNewsForm({
+                    type: (editItem as NewsItem).type || 'Bài viết',
+                    isEdit: true,
+                    showImg: ['Bài viết', 'Tin tức', 'Bản tin', 'Thông báo', 'Sự kiện'].includes((editItem as NewsItem).type || ''),
+                    showCats: ['Bài viết', 'Tin tức', 'Bản tin', 'Thông báo', 'Sự kiện'].includes((editItem as NewsItem).type || ''),
+                    showTypeSelect: ['Bài viết', 'Tin tức', 'Bản tin', 'Thông báo', 'Sự kiện'].includes((editItem as NewsItem).type || ''),
+                    showPdf: (editItem as NewsItem).type === 'Tài liệu',
+                    showAudio: (editItem as NewsItem).type === 'Sách Nói',
+                  })
+                )}
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setEditItem(null)}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn-submit" disabled={saving || uploading}>
+                    <CheckCircle size={16} /> Lưu thay đổi
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="admin-layout">
+        {/* ════════════════ SIDEBAR ════════════════ */}
+        <aside className="admin-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-logo-ring">
+              <Image src="/logo.png" alt="REACH" width={36} height={36} />
+            </div>
+            <div>
+              <p className="sidebar-brand-name">REACH Admin</p>
+              <p className="sidebar-brand-sub">Hệ thống quản trị</p>
+            </div>
+          </div>
+
+          <nav className="sidebar-nav">
+            {/* Overview & Stats - luôn hiện nếu đã xác thực */}
+            {hasPermission(effectiveRole, 'stats:view') && (
+              <>
+                <button className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('overview')}>
+                  <LayoutDashboard size={18} /> Tổng quan
+                </button>
+                <button className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('stats')}>
+                  <TrendingUp size={18} /> Thống kê
+                </button>
+              </>
+            )}
+
+            {groups.map(group => {
+              const visibleTabs = TABS.filter(t =>
+                t.group === group &&
+                hasPermission(effectiveRole, TAB_PERMISSIONS[t.id])
+              );
+              if (visibleTabs.length === 0) return null;
+              return (
+                <div key={group}>
+                  <div className="nav-group-label">{group}</div>
+                  {visibleTabs.map(t => (
+                    <button key={t.id}
+                      className={`nav-item ${activeTab === t.id ? 'active' : ''}`}
+                      onClick={() => setActiveTab(t.id)}>
+                      <t.icon size={18} />
+                      {t.label}
+                      {tabBadge(t.id) > 0 && (
+                        <span className="nav-badge">{tabBadge(t.id)}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </nav>
+
+          <div className="sidebar-footer">
+            {/* Role badge */}
+            {profile?.role && (() => {
+              const rd = ROLE_DESCRIPTIONS[profile.role as UserRole];
+              return rd ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 12px', borderRadius: '8px',
+                  background: rd.bg, marginBottom: '10px',
+                }}>
+                  <span style={{ fontSize: '1rem' }}>{rd.icon}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.72rem', color: rd.color, fontWeight: 700 }}>{rd.label}</p>
+                    <p style={{ margin: 0, fontSize: '0.68rem', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {profile.full_name || 'Admin'}
+                    </p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            <button className="btn-sidebar-logout" onClick={handleLogout}>
+              <LogOut size={18} /> Đăng xuất
+            </button>
+          </div>
+        </aside>
+
+        {/* ════════════════ MAIN ════════════════ */}
+        <main className="admin-main">
+          {/* Topbar */}
+          <header className="admin-topbar">
+            <div className="topbar-left">
+              <h1>{TABS.find(t => t.id === activeTab)?.label || 'Tổng quan'}</h1>
+              <div className="topbar-breadcrumb">
+                Dashboard / {TABS.find(t => t.id === activeTab)?.label || 'Tổng quan'}
+              </div>
+            </div>
+            <div className="topbar-search">
+              <Search size={15} />
+              <input placeholder="Tìm bài viết, bài giảng..."
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            </div>
+            <div className="topbar-right">
+              <button className="topbar-icon-btn" title="Làm mới" onClick={() => {
+                fetchStats(); fetchRecentPosts();
+                toast('info', 'Đã làm mới dữ liệu');
+              }}>
+                <RefreshCw size={16} />
+              </button>
+              <div className="topbar-admin-pill">
+                <div className="avatar-dot">
+                  {profile?.full_name ? profile.full_name[0].toUpperCase() : 'A'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff' }}>
+                    {profile?.full_name || 'Admin'}
+                  </span>
+                  {effectiveRole && ROLE_DESCRIPTIONS[effectiveRole as UserRole] && (
+                    <span style={{
+                      fontSize: '0.7rem',
+                      color: ROLE_DESCRIPTIONS[effectiveRole as UserRole].color,
+                      fontWeight: 600,
+                    }}>
+                      {ROLE_DESCRIPTIONS[effectiveRole as UserRole].icon} {effectiveRole}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Content */}
+          <div className="admin-content">
+
+            {/* ─── OVERVIEW ─── */}
+            {activeTab === 'overview' && (
+              <div className="tab-page">
+                {/* Stats */}
+                <div className="stats-grid">
+                  {[
+                    { icon: <Users size={22} />, label: 'Tín hữu', value: stats.profiles, color: 'blue', trend: '+2 tuần này' },
+                    { icon: <Video size={22} />,  label: 'Bài giảng', value: stats.sermons,  color: 'yellow' },
+                    { icon: <Heart size={22} />,  label: 'Cầu nguyện', value: stats.prayers, color: 'red' },
+                    { icon: <Newspaper size={22} />, label: 'Tin tức & Nội dung', value: stats.news, color: 'green' },
+                    { icon: <BookOpen size={22} />, label: 'Dưỡng linh', value: stats.devotionals, color: 'purple' },
+                  ].map(s => (
+                    <div key={s.label} className={`stat-card ${s.color}`}>
+                      <div className={`stat-icon ${s.color}`}>{s.icon}</div>
+                      <div className="stat-info">
+                        <span className="stat-label">{s.label}</span>
+                        <span className="stat-value">{s.value}</span>
+                        {s.trend && <span className="stat-trend"><TrendingUp size={11} /> {s.trend}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="quick-actions">
+                  {[
+                    { icon: '🎤', label: 'Thêm bài giảng', tab: 'sermons', color: '#f4cc30' },
+                    { icon: '📰', label: 'Đăng tin tức',  tab: 'news',    color: '#48bce1' },
+                    { icon: '✍️', label: 'Bài viết mới',  tab: 'posts',   color: '#8b5cf6' },
+                    { icon: '📖', label: 'Thêm dưỡng linh', tab: 'devotionals', color: '#10b981' },
+                    { icon: '🙏', label: 'Xem cầu nguyện', tab: 'prayers', color: '#ef4444' },
+                    { icon: '👥', label: 'Quản lý tín hữu', tab: 'users',  color: '#f59e0b' },
+                  ].map(a => (
+                    <button key={a.tab} className="quick-action-btn" onClick={() => setActiveTab(a.tab)}>
+                      <div className="qa-icon" style={{ background: `${a.color}18`, fontSize: '1.4rem' }}>
+                        {a.icon}
+                      </div>
+                      <span>{a.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grid: recent + quick stats */}
+                <div className="overview-grid">
+                  <div className="section-card">
+                    <div className="section-card-header">
+                      <h3><Activity size={16} /> Nội dung mới nhất</h3>
+                      <button className="see-all-link" onClick={() => setActiveTab('news')}>
+                        Xem tất cả <ChevronRight size={14} />
+                      </button>
+                    </div>
+                    <div className="recent-list">
+                      {recentPosts.length === 0 ? (
+                        <div className="empty-state" style={{ padding: '1.5rem' }}>
+                          <p>Chưa có nội dung nào</p>
+                        </div>
+                      ) : recentPosts.map((p, i) => {
+                        const isSermon = p._source === 'sermon';
+                        const dotColor = isSermon ? '#f4cc30' : '#48bce1';
+                        return (
+                          <div key={i} className="recent-post-row">
+                            <div className="rp-type-dot" style={{ background: dotColor }} />
+                            <div className="rp-info">
+                              <p className="rp-title">{p.title}</p>
+                              <p className="rp-meta">
+                                <span className="rp-badge" style={{
+                                  background: isSermon ? 'rgba(244,204,48,0.12)' : 'rgba(72,188,225,0.12)',
+                                  color: dotColor,
+                                }}>
+                                  {isSermon ? 'Bài giảng' : p.type}
+                                </span>
+                                {fmtDate(p.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="section-card">
+                    <div className="section-card-header">
+                      <h3><Zap size={16} /> Thống kê nhanh</h3>
+                    </div>
+                    <div className="quick-stats-list">
+                      {[
+                        { icon: <Video size={15} />, label: 'Bài giảng', val: stats.sermons },
+                        { icon: <Heart size={15} />, label: 'Cầu nguyện đang mở', val: prayers.filter(p => p.status !== 'answered').length || stats.prayers },
+                        { icon: <Users size={15} />, label: 'Tín hữu đăng ký', val: stats.profiles },
+                        { icon: <BookOpen size={15} />, label: 'Bài dưỡng linh', val: stats.devotionals },
+                        { icon: <Newspaper size={15} />, label: 'Tổng nội dung', val: stats.news },
+                      ].map(s => (
+                        <div key={s.label} className="qs-row">
+                          <span className="qs-label">{s.icon} {s.label}</span>
+                          <span className="qs-value">{s.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ─── STATS TAB ─── */}
+            {activeTab === 'stats' && (
+              <div className="tab-page">
+                <StatsManager />
+              </div>
+            )}
+
+            {/* ─── NEWS TAB ─── */}
+            {activeTab === 'news' && (
+              <div className="panel-grid tab-page">
+                <div className="panel-card">
+                  <div className="panel-card-header">
+                    <h3>Đăng tin tức mới</h3>
+                  </div>
+                  <form className="cms-form" onSubmit={e => handleAddNews(e, newNews.type || 'Bản tin')}>
+                    {renderNewsForm({ type: newNews.type || 'Bản tin', showImg: true, showCats: true, showTypeSelect: true })}
+                    <button type="submit" className="btn-submit" disabled={saving || uploading}>
+                      <Plus size={17} /> {saving ? 'Đang đăng...' : 'Xuất bản tin tức'}
+                    </button>
+                  </form>
+                </div>
+                <div className="panel-card">
+                  <div className="panel-card-header">
+                    <h3>Danh sách tin tức</h3>
+                    <span className="panel-card-count">{newsItems.length}</span>
+                  </div>
+                  <div className="panel-search">
+                    <Search size={14} />
+                    <input placeholder="Tìm tin tức..." value={panelSearch}
+                      onChange={e => setPanelSearch(e.target.value)} />
+                  </div>
+                  <div className="data-list">
+                    {filterBySearch(newsItems, panelSearch).length === 0 ? (
+                      <div className="empty-state"><p>Không tìm thấy</p></div>
+                    ) : filterBySearch(newsItems, panelSearch).map(n => (
+                      <DataItem key={n.id} title={n.title} sub={`${n.type} • ${fmtDate(n.created_at)}`}
+                        status={n.status} thumb={n.image_url}
+                        onEdit={() => { setEditItem({ ...n }); setEditType('news'); }}
+                        onDelete={() => handleDeleteNews(n.id)} />
+                    ))}
+                  </div>
+                  {newsTotalPages > 0 && (
+                    <Pagination 
+                      currentPage={newsPage} 
+                      totalPages={newsTotalPages} 
+                      onPageChange={setNewsPage} 
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── POSTS TAB ─── */}
+            {activeTab === 'posts' && (
+              <div className="panel-grid tab-page">
+                <div className="panel-card">
+                  <div className="panel-card-header"><h3>Thêm bài viết mới</h3></div>
+                  <form className="cms-form" onSubmit={e => handleAddNews(e, newNews.type || 'Bài viết')}>
+                    {renderNewsForm({ type: newNews.type || 'Bài viết', showImg: true, showCats: true, showTypeSelect: true })}
+                    <button type="submit" className="btn-submit" disabled={saving || uploading}>
+                      <Plus size={17} /> {saving ? 'Đang đăng...' : 'Xuất bản bài viết'}
+                    </button>
+                  </form>
+                </div>
+                <div className="panel-card">
+                  <div className="panel-card-header">
+                    <h3>Danh sách bài viết</h3>
+                    <span className="panel-card-count">{getPosts().length}</span>
+                  </div>
+                  <div className="panel-search">
+                    <Search size={14} />
+                    <input placeholder="Tìm bài viết..." value={panelSearch}
+                      onChange={e => setPanelSearch(e.target.value)} />
+                  </div>
+                  <div className="data-list">
+                    {filterBySearch(getPosts(), panelSearch).map(n => (
+                      <DataItem key={n.id} title={n.title}
+                        sub={`${n.type} • ${fmtDate(n.created_at)}`}
+                        status={n.status} thumb={n.image_url}
+                        onEdit={() => { setEditItem({ ...n }); setEditType('news'); }}
+                        onDelete={() => handleDeleteNews(n.id)} />
+                    ))}
+                  </div>
+                  {newsTotalPages > 0 && (
+                    <Pagination 
+                      currentPage={newsPage} 
+                      totalPages={newsTotalPages} 
+                      onPageChange={setNewsPage} 
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── EVENTS TAB ─── */}
+            {activeTab === 'events' && (
+              <div className="tab-page">
+                <EventsManager />
+              </div>
+            )}
+
+            {/* ─── MINISTRIES TAB ─── */}
+            {activeTab === 'ministries' && (
+              <div className="tab-page">
+                <MinistryManager />
+              </div>
+            )}
+
+            {/* ─── SERMONS TAB ─── */}
+            {activeTab === 'sermons' && (
+              <div className="tab-page">
+                <SermonManager />
+              </div>
+            )}
+
+            {/* ─── AUDIOBOOKS ─── */}
+            {activeTab === 'audiobooks' && (
+              <div className="tab-page">
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+                      Quản lý Sách Nói
+                    </h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '4px 0 0' }}>
+                      Thêm, sửa và quản lý thư viện sách nói
+                    </p>
+                  </div>
+                  {!showAudioForm && (
+                    <button
+                      className="btn-submit"
+                      style={{ width: 'auto', padding: '0.6rem 1.1rem' }}
+                      onClick={() => { setShowAudioForm(true); setNewNews({ type: 'Sách Nói' } as NewsItem); }}
+                    >
+                      <Plus size={17} /> Thêm sách nói
+                    </button>
+                  )}
+                </div>
+
+                {showAudioForm && (
+                  <div className="section-card" style={{ marginBottom: '1.25rem' }}>
+                    <div className="section-card-header">
+                      <h3>{editItem ? <><Edit2 size={15} /> Sửa Sách Nói</> : <><Plus size={15} /> Thêm Sách Nói</>}</h3>
+                      <button onClick={() => { setShowAudioForm(false); setEditItem(null); setEditType(null); }} className="btn-icon danger" title="Đóng">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <form className="cms-form" onSubmit={async e => {
+                      await handleAddNews(e, 'Sách Nói');
+                      if (!saving && !uploading) setShowAudioForm(false);
+                    }}>
+                      {renderNewsForm({ type: 'Sách Nói', showAudio: true })}
+                      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                        <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.65rem 1.5rem' }} disabled={saving || uploading}>
+                          <Plus size={17} /> {saving ? 'Đang lưu...' : 'Lưu sách nói'}
+                        </button>
+                        <button type="button" onClick={() => { setShowAudioForm(false); setEditItem(null); setEditType(null); }} style={{
+                          display: 'flex', alignItems: 'center', gap: '0.4rem',
+                          padding: '0.65rem 1.1rem', borderRadius: 8, border: '1px solid var(--border)',
+                          background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600
+                        }}>
+                          <X size={16} /> Hủy
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="section-card">
+                  <div className="section-card-header">
+                    <h3>Danh sách sách nói</h3>
+                    <span className="panel-card-count">{audioItems.length}</span>
+                  </div>
+                  <div className="panel-search">
+                    <Search size={14} />
+                    <input placeholder="Tìm kiếm sách nói..." value={panelSearch}
+                      onChange={e => setPanelSearch(e.target.value)} />
+                  </div>
+                  <div className="data-list">
+                    {filterBySearch(audioItems, panelSearch).map(n => (
+                      <DataItem key={n.id} title={n.title} sub={fmtDate(n.created_at)}
+                        onEdit={() => { setEditItem({ ...n }); setEditType('news'); setShowAudioForm(true); }}
+                        onDelete={() => handleDeleteNews(n.id)} />
+                    ))}
+                  </div>
+                  {newsTotalPages > 0 && (
+                    <Pagination 
+                      currentPage={newsPage} 
+                      totalPages={newsTotalPages} 
+                      onPageChange={setNewsPage} 
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── PDFS ─── */}
+            {activeTab === 'pdfs' && (
+              <div className="tab-page">
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+                      Quản lý Sách PDF
+                    </h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '4px 0 0' }}>
+                      Thêm, sửa và quản lý thư viện tài liệu PDF
+                    </p>
+                  </div>
+                  {!showPdfForm && (
+                    <button
+                      className="btn-submit"
+                      style={{ width: 'auto', padding: '0.6rem 1.1rem' }}
+                      onClick={() => { setShowPdfForm(true); setNewNews({ type: 'Tài liệu' } as NewsItem); }}
+                    >
+                      <Plus size={17} /> Thêm tài liệu
+                    </button>
+                  )}
+                </div>
+
+                {showPdfForm && (
+                  <div className="section-card" style={{ marginBottom: '1.25rem' }}>
+                    <div className="section-card-header">
+                      <h3>{editItem ? <><Edit2 size={15} /> Sửa Sách PDF</> : <><Plus size={15} /> Thêm Sách PDF</>}</h3>
+                      <button onClick={() => { setShowPdfForm(false); setEditItem(null); setEditType(null); }} className="btn-icon danger" title="Đóng">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <form className="cms-form" onSubmit={async e => {
+                      await handleAddNews(e, 'Tài liệu');
+                      if (!saving && !uploading) setShowPdfForm(false);
+                    }}>
+                      {renderNewsForm({ type: 'Tài liệu', showPdf: true })}
+                      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                        <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.65rem 1.5rem' }} disabled={saving || uploading}>
+                          <Plus size={17} /> {saving ? 'Đang lưu...' : 'Lưu tài liệu'}
+                        </button>
+                        <button type="button" onClick={() => { setShowPdfForm(false); setEditItem(null); setEditType(null); }} style={{
+                          display: 'flex', alignItems: 'center', gap: '0.4rem',
+                          padding: '0.65rem 1.1rem', borderRadius: 8, border: '1px solid var(--border)',
+                          background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600
+                        }}>
+                          <X size={16} /> Hủy
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="section-card">
+                  <div className="section-card-header">
+                    <h3>Danh sách PDF</h3>
+                    <span className="panel-card-count">{pdfItems.length}</span>
+                  </div>
+                  <div className="panel-search">
+                    <Search size={14} />
+                    <input placeholder="Tìm kiếm tài liệu PDF..." value={panelSearch}
+                      onChange={e => setPanelSearch(e.target.value)} />
+                  </div>
+                  <div className="data-list">
+                    {filterBySearch(pdfItems, panelSearch).map(n => (
+                      <DataItem key={n.id} title={n.title} sub={fmtDate(n.created_at)}
+                        onEdit={() => { setEditItem({ ...n }); setEditType('news'); setShowPdfForm(true); }}
+                        onDelete={() => handleDeleteNews(n.id)} />
+                    ))}
+                  </div>
+                  {newsTotalPages > 0 && (
+                    <Pagination 
+                      currentPage={newsPage} 
+                      totalPages={newsTotalPages} 
+                      onPageChange={setNewsPage} 
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── DEVOTIONALS ─── */}
+            {activeTab === 'devotionals' && (
+              <div className="tab-page">
+                <DevotionalManager />
+              </div>
+            )}
+
+            {/* ─── PRAYERS ─── */}
+            {activeTab === 'prayers' && (
+              <div className="tab-page">
+                <PrayerReviewManager />
+              </div>
+            )}
+
+            {/* ─── DONATIONS ─── */}
+            {activeTab === 'donations' && (
+              <div className="tab-page">
+                <DonationsManager />
+              </div>
+            )}
+
+            {/* ─── USERS ─── */}
+            {activeTab === 'users' && (
+              <div className="tab-page">
+                <UserManager />
+              </div>
+            )}
+
+          </div>{/* end admin-content */}
+        </main>
+      </div>
     </div>
   );
 }

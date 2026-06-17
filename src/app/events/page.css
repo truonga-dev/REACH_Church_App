@@ -1,0 +1,135 @@
+.events-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.events-header {
+  margin-bottom: 30px;
+}
+
+.events-header h1 {
+  font-size: 2rem;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.events-header p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.events-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.events-tab {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.events-tab.active {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.events-tab:hover:not(.active) {
+  background: #f9fafb;
+}
+
+.events-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.event-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.event-card h3 {
+  font-size: 1.25rem;
+  color: #1f2937;
+  margin: 0 0 10px 0;
+}
+
+.event-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4b5563;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.event-desc {
+  color: #4b5563;
+  font-size: 0.95rem;
+  margin: 12px 0;
+  flex-grow: 1;
+}
+
+.event-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-register {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  background: #10b981;
+  color: white;
+  transition: background 0.2s;
+}
+
+.btn-register:hover {
+  background: #059669;
+}
+
+.btn-cancel {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ef4444;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  color: #ef4444;
+  transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #fef2f2;
+}
+
+.event-full {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #6b7280;
+  text-align: center;
+}

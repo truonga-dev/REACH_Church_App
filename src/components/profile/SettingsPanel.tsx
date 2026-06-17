@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   ArrowLeft, Bell, Globe, CreditCard, Shield, MessageSquare, BookOpen, User,
+  Edit3, Trash2,
 } from 'lucide-react';
 import {
   getNotificationsEnabled,
@@ -11,13 +12,22 @@ import {
   setLanguage,
   type AppLanguage,
 } from '@/lib/user-preferences';
+import {
+  optOutOfPushNotifications,
+  promptForPushNotifications,
+} from '@/lib/onesignal';
 
-type SettingsView = 'list' | 'language' | 'payment' | 'privacy' | 'feedback' | 'usage' | 'account';
+type SettingsView = 'list' | 'language' | 'payment' | 'privacy' | 'feedback' | 'usage' | 'account' | 'personal';
 
 interface SettingsPanelProps {
   email: string;
   bio: string;
+  fullName: string;
+  avatarUrl: string;
   onBioChange: (bio: string) => void;
+  onFullNameChange: (name: string) => void;
+  onAvatarChange: (url: string) => void;
+  onDeleteAvatar: () => void;
   onSaveAccount: () => void;
   isSaving: boolean;
   onBack: () => void;
@@ -27,27 +37,39 @@ interface SettingsPanelProps {
 export default function SettingsPanel({
   email,
   bio,
+  fullName,
+  avatarUrl,
   onBioChange,
+  onFullNameChange,
+  onAvatarChange,
+  onDeleteAvatar,
   onSaveAccount,
   isSaving,
   onBack,
   onOpenDonation,
 }: SettingsPanelProps) {
   const [view, setView] = useState<SettingsView>('list');
-  const [notificationsOn, setNotificationsOn] = useState(true);
-  const [language, setLanguageState] = useState<AppLanguage>('vi');
+  const [notificationsOn, setNotificationsOn] = useState<boolean>(() => getNotificationsEnabled());
+  const [language, setLanguageState] = useState<AppLanguage>(() => getLanguage());
   const [feedback, setFeedback] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    setNotificationsOn(getNotificationsEnabled());
-    setLanguageState(getLanguage());
-  }, []);
-
-  const toggleNotifications = () => {
+  const toggleNotifications = async () => {
     const next = !notificationsOn;
-    setNotificationsOn(next);
-    setNotificationsEnabled(next);
+    if (next) {
+      setNotificationsOn(true);
+      setNotificationsEnabled(true);
+      const ok = await promptForPushNotifications();
+      if (!ok) {
+        setNotificationsOn(false);
+        setNotificationsEnabled(false);
+      }
+    } else {
+      setNotificationsOn(false);
+      setNotificationsEnabled(false);
+      await optOutOfPushNotifications();
+    }
   };
 
   const selectLanguage = (lang: AppLanguage) => {
@@ -64,6 +86,14 @@ export default function SettingsPanel({
     setFeedback('');
   };
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onAvatarChange(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   if (view !== 'list') {
     const titles: Record<Exclude<SettingsView, 'list'>, string> = {
       language: 'Ngôn ngữ',
@@ -72,6 +102,7 @@ export default function SettingsPanel({
       feedback: 'Góp ý',
       usage: 'Hướng dẫn sử dụng',
       account: 'Tài khoản',
+      personal: 'Thông tin cá nhân',
     };
 
     return (
@@ -80,22 +111,73 @@ export default function SettingsPanel({
           <ArrowLeft size={18} /> {titles[view]}
         </button>
 
+        {/* ── Personal info edit ── */}
+        {view === 'personal' && (
+          <div className="settings-detail">
+            {/* Avatar */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div style={{ position: 'relative', width: 88, height: 88 }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Ảnh đại diện" style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(72,188,225,0.4)' }} />
+                ) : (
+                  <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'linear-gradient(135deg,#48BCE1,#1e6fa8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={36} color="white" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: '50%', background: '#48BCE1', border: '2px solid #0f1520', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  aria-label="Đổi ảnh"
+                >
+                  <Edit3 size={13} color="white" />
+                </button>
+              </div>
+              <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarFileChange} />
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={onDeleteAvatar}
+                  style={{ background: 'rgba(241,45,92,0.12)', border: '1px solid rgba(241,45,92,0.25)', borderRadius: 8, color: '#f12d5c', padding: '6px 14px', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Trash2 size={13} /> Xóa ảnh đại diện
+                </button>
+              )}
+            </div>
+
+            {/* Name */}
+            <label htmlFor="settings-fullname" style={{ fontSize: '0.8rem', color: '#7a8599', fontWeight: 700, display: 'block', marginBottom: 4 }}>Họ và tên</label>
+            <input
+              id="settings-fullname"
+              className="settings-input"
+              value={fullName}
+              onChange={e => onFullNameChange(e.target.value)}
+              placeholder="Nhập tên của bạn"
+              style={{ marginBottom: '1rem' }}
+            />
+
+            {/* Bio */}
+            <label htmlFor="settings-bio-personal" style={{ fontSize: '0.8rem', color: '#7a8599', fontWeight: 700, display: 'block', marginBottom: 4 }}>Giới thiệu bản thân</label>
+            <textarea
+              id="settings-bio-personal"
+              className="settings-bio"
+              rows={3}
+              placeholder="Chia sẻ vài dòng về bạn..."
+              value={bio}
+              onChange={e => onBioChange(e.target.value)}
+              style={{ marginBottom: '1rem' }}
+            />
+
+            <button type="button" className="btn-primary settings-full-btn" onClick={onSaveAccount} disabled={isSaving}>
+              {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        )}
+
         {view === 'language' && (
           <div className="settings-detail">
-            <button
-              type="button"
-              className={`settings-option ${language === 'vi' ? 'active' : ''}`}
-              onClick={() => selectLanguage('vi')}
-            >
-              Tiếng Việt
-            </button>
-            <button
-              type="button"
-              className={`settings-option ${language === 'en' ? 'active' : ''}`}
-              onClick={() => selectLanguage('en')}
-            >
-              English
-            </button>
+            <button type="button" className={`settings-option ${language === 'vi' ? 'active' : ''}`} onClick={() => selectLanguage('vi')}>Tiếng Việt</button>
+            <button type="button" className={`settings-option ${language === 'en' ? 'active' : ''}`} onClick={() => selectLanguage('en')}>English</button>
             <p className="settings-hint">Ngôn ngữ giao diện (một số nội dung vẫn bằng tiếng Việt).</p>
           </div>
         )}
@@ -108,9 +190,7 @@ export default function SettingsPanel({
               <p><strong>Số TK:</strong> 1012345678</p>
               <p><strong>Chủ TK:</strong> HỘI THÁNH REACH VN</p>
             </div>
-            <button type="button" className="btn-primary settings-full-btn" onClick={onOpenDonation}>
-              Xem tab Dâng hiến
-            </button>
+            <button type="button" className="btn-primary settings-full-btn" onClick={onOpenDonation}>Xem tab Dâng hiến</button>
           </div>
         )}
 
@@ -136,9 +216,7 @@ export default function SettingsPanel({
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
             />
-            <button type="button" className="btn-primary settings-full-btn" onClick={handleSendFeedback}>
-              Gửi qua email
-            </button>
+            <button type="button" className="btn-primary settings-full-btn" onClick={handleSendFeedback}>Gửi qua email</button>
             {feedbackSent && <p className="settings-hint success">Đã mở ứng dụng email. Cảm ơn bạn!</p>}
           </div>
         )}
@@ -184,6 +262,13 @@ export default function SettingsPanel({
       </button>
 
       <div className="settings-list">
+        {/* Personal info shortcut */}
+        <button type="button" className="settings-row clickable" onClick={() => setView('personal')}>
+          <span className="settings-row-icon"><User size={20} /></span>
+          <span className="settings-row-label">Thông tin cá nhân</span>
+          <span className="settings-row-chevron">›</span>
+        </button>
+
         <div className="settings-row">
           <span className="settings-row-icon"><Bell size={20} /></span>
           <span className="settings-row-label">Thông báo</span>
@@ -226,12 +311,6 @@ export default function SettingsPanel({
         <button type="button" className="settings-row clickable" onClick={() => setView('usage')}>
           <span className="settings-row-icon"><BookOpen size={20} /></span>
           <span className="settings-row-label">Hướng dẫn sử dụng</span>
-          <span className="settings-row-chevron">›</span>
-        </button>
-
-        <button type="button" className="settings-row clickable" onClick={() => setView('account')}>
-          <span className="settings-row-icon"><User size={20} /></span>
-          <span className="settings-row-label">Tài khoản & Bio</span>
           <span className="settings-row-chevron">›</span>
         </button>
       </div>

@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   User, Heart, Bell, BookOpen, Settings, ChevronRight, LogOut,
-  Edit3, CheckCircle, Clock, Plus, X, Gift, Copy, Trash2, ArrowLeft,
+  CheckCircle, Clock, Plus, X, Gift, Copy, ArrowLeft,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatSupabaseError } from '@/lib/supabase-errors';
+import {
+  buildPrayerInsert,
+  isPrayerAnswered,
+  prayerBody,
+} from '@/lib/prayer-helpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/lib/profile-service';
 import { getReadingStreak, getTotalReadingDays } from '@/lib/reading-tracker';
@@ -16,6 +23,13 @@ import WeeklyBibleSchedule from '@/components/profile/WeeklyBibleSchedule';
 import type { Prayer } from '@/types';
 import '../login/auth.css';
 import './page.css';
+
+type RecentNewsItem = {
+  id: string;
+  title: string;
+  type: string;
+  created_at?: string;
+};
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, signOut, refreshProfile } = useAuth();
@@ -30,12 +44,10 @@ export default function ProfilePage() {
     full_name: '', username: '', role: 'Hội viên', avatar_url: '', bio: '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [toast, setToast] = useState('');
-  const [readingDays, setReadingDays] = useState(0);
-  const [readingStreak, setReadingStreak] = useState(0);
-  const [recentNews, setRecentNews] = useState<any[]>([]);
-  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [readingDays] = useState(() => getTotalReadingDays());
+  const [readingStreak] = useState(() => getReadingStreak());
+  const [recentNews, setRecentNews] = useState<RecentNewsItem[]>([]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -43,12 +55,8 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    setReadingDays(getTotalReadingDays());
-    setReadingStreak(getReadingStreak());
-  }, []);
-
-  useEffect(() => {
-    if (profile) {
+    if (!profile) return;
+    const timer = window.setTimeout(() => {
       setProfileInfo({
         full_name: profile.full_name || '',
         username: profile.username || '',
@@ -56,21 +64,11 @@ export default function ProfilePage() {
         avatar_url: profile.avatar_url || '',
         bio: profile.bio || '',
       });
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [profile]);
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        fetchPrayers(user.id);
-        fetchNotifications();
-      } else {
-        setLoading(false);
-      }
-    }
-  }, [user, authLoading]);
-
-  const fetchPrayers = async (userId: string) => {
+  const fetchPrayers = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('prayers')
@@ -81,30 +79,34 @@ export default function ProfilePage() {
       if (error) throw error;
       setPrayers((data as Prayer[]) || []);
     } catch (error) {
-      console.error(error);
+      console.error('Không tải được đề mục cầu nguyện:', formatSupabaseError(error));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const { data } = await supabase
       .from('news')
       .select('id, title, type, created_at')
       .order('created_at', { ascending: false })
       .limit(5);
-    if (data) setRecentNews(data);
-  };
+    if (data) setRecentNews(data as RecentNewsItem[]);
+  }, []);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileInfo((prev) => ({ ...prev, avatar_url: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
-  };
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+    if (!authLoading) {
+      if (user) {
+        void fetchPrayers(user.id);
+        void fetchNotifications();
+      } else {
+        setLoading(false);
+      }
+    }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [user, authLoading, fetchPrayers, fetchNotifications]);
 
   const handleSaveProfile = async () => {
     if (!user) {
@@ -120,24 +122,10 @@ export default function ProfilePage() {
     setIsSaving(false);
     if (ok) {
       await refreshProfile();
-      setIsEditingProfile(false);
       showToast('Lưu hồ sơ thành công!');
     } else {
       showToast('Không lưu được hồ sơ.');
     }
-  };
-
-  const handleCancelEdit = () => {
-    if (profile) {
-      setProfileInfo({
-        full_name: profile.full_name || '',
-        username: profile.username || '',
-        role: profile.role || 'Hội viên',
-        avatar_url: profile.avatar_url || '',
-        bio: profile.bio || '',
-      });
-    }
-    setIsEditingProfile(false);
   };
 
   const handleDeleteAvatar = async () => {
@@ -163,28 +151,27 @@ export default function ProfilePage() {
   const handleAddPrayer = async () => {
     if (!newPrayer.trim() || !user) return;
     try {
+      const text = newPrayer.trim();
       const { data, error } = await supabase
         .from('prayers')
-        .insert([{
-          title: newPrayer.trim(),
-          description: newPrayer.trim(),
-          status: 'ongoing',
-          user_id: user.id,
-          author_name: profileInfo.full_name || 'Thành viên',
-          is_private: true,
-          pray_count: 0,
-        }])
+        .insert([buildPrayerInsert({
+          title: text,
+          content: text,
+          category: 'other',
+          userId: user.id,
+          isPrivate: true,
+        })])
         .select();
 
       if (error) throw error;
       if (data) {
-        setPrayers([data[0], ...prayers]);
+        setPrayers([data[0] as Prayer, ...prayers]);
         setNewPrayer('');
         setShowAddPrayer(false);
         showToast('Đã thêm đề mục cầu nguyện!');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Không thêm được đề mục cầu nguyện:', formatSupabaseError(error));
       showToast('Không thêm được đề mục.');
     }
   };
@@ -199,7 +186,7 @@ export default function ProfilePage() {
     showToast('Đã sao chép số tài khoản!');
   };
 
-  const answeredCount = prayers.filter((p) => p.status === 'answered' || p.status === 'completed').length;
+  const answeredCount = prayers.filter((p) => isPrayerAnswered(p.status)).length;
 
   if (authLoading) {
     return (
@@ -258,82 +245,18 @@ export default function ProfilePage() {
         <div className="avatar-wrapper">
           <div className="avatar">
             {profileInfo.avatar_url ? (
-              <img src={profileInfo.avatar_url} alt="Ảnh đại diện" className="avatar-img" />
+              <Image src={profileInfo.avatar_url} alt="Ảnh đại diện" className="avatar-img" width={88} height={88} />
             ) : (
               <div className="avatar-placeholder">
                 <User size={40} color="white" />
               </div>
             )}
           </div>
-          {isEditingProfile && (
-            <>
-              <button
-                className="avatar-edit-btn"
-                type="button"
-                aria-label="Đổi ảnh đại diện"
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                <Edit3 size={14} />
-              </button>
-              {profileInfo.avatar_url && (
-                <button
-                  className="avatar-delete-btn"
-                  type="button"
-                  aria-label="Xóa ảnh đại diện"
-                  onClick={handleDeleteAvatar}
-                  disabled={isSaving}
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </>
-          )}
-          <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
         </div>
 
-        {isEditingProfile ? (
-          <div className="profile-edit-block">
-            <label className="profile-edit-label" htmlFor="profile-name">Họ và tên</label>
-            <input
-              id="profile-name"
-              className="profile-name-input"
-              value={profileInfo.full_name}
-              onChange={(e) => setProfileInfo((prev) => ({ ...prev, full_name: e.target.value }))}
-              placeholder="Nhập tên của bạn"
-            />
-            <div className="profile-edit-actions">
-              <button className="btn-primary" type="button" onClick={handleSaveProfile} disabled={isSaving}>
-                {isSaving ? 'Đang lưu...' : 'Lưu'}
-              </button>
-              <button className="btn-secondary" type="button" onClick={handleCancelEdit} disabled={isSaving}>
-                Hủy
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="profile-name-block">
-            <h1 className="profile-name">{profileInfo.full_name || 'Thành viên REACH'}</h1>
-            <div className="profile-hero-actions">
-              <button
-                className="profile-action-btn edit"
-                type="button"
-                onClick={() => setIsEditingProfile(true)}
-              >
-                <Edit3 size={14} /> Sửa
-              </button>
-              {profileInfo.avatar_url && (
-                <button
-                  className="profile-action-btn delete"
-                  type="button"
-                  onClick={handleDeleteAvatar}
-                  disabled={isSaving}
-                >
-                  <Trash2 size={14} /> Xóa ảnh
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="profile-name-block">
+          <h1 className="profile-name">{profileInfo.full_name || 'Thành viên REACH'}</h1>
+        </div>
 
         <p className="profile-role">{profileInfo.role} • {user.email}</p>
         <div className="profile-stats">
@@ -370,7 +293,12 @@ export default function ProfilePage() {
             <SettingsPanel
               email={user.email || ''}
               bio={profileInfo.bio}
+              fullName={profileInfo.full_name}
+              avatarUrl={profileInfo.avatar_url}
               onBioChange={(bio) => setProfileInfo((prev) => ({ ...prev, bio }))}
+              onFullNameChange={(full_name) => setProfileInfo((prev) => ({ ...prev, full_name }))}
+              onAvatarChange={(avatar_url) => setProfileInfo((prev) => ({ ...prev, avatar_url }))}
+              onDeleteAvatar={handleDeleteAvatar}
               onSaveAccount={handleSaveProfile}
               isSaving={isSaving}
               onBack={() => setInfoView('main')}
@@ -493,17 +421,17 @@ export default function ProfilePage() {
               {prayers.map((p) => (
                 <div key={p.id} className="prayer-item">
                   <div className="prayer-item-icon">
-                    {p.status === 'answered' || p.status === 'completed'
+                    {isPrayerAnswered(p.status)
                       ? <CheckCircle size={20} className="icon-answered" />
                       : <Clock size={20} className="icon-ongoing" />}
                   </div>
                   <div className="prayer-item-content">
-                    <p className="prayer-item-title">{p.description || p.title}</p>
+                    <p className="prayer-item-title">{prayerBody(p)}</p>
                     {p.notes && <p className="prayer-item-notes">✨ {p.notes}</p>}
                     <p className="prayer-item-date">{new Date(p.created_at).toLocaleDateString('vi-VN')}</p>
                   </div>
                   <span className={`prayer-badge ${p.status}`}>
-                    {p.status === 'answered' || p.status === 'completed' ? 'Đáp lời' : 'Đang cầu'}
+                    {isPrayerAnswered(p.status) ? 'Đáp lời' : 'Đang cầu'}
                   </span>
                 </div>
               ))}
