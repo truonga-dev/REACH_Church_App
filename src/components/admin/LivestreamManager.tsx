@@ -33,6 +33,7 @@ export default function LivestreamManager() {
   const ITEMS_PER_PAGE = 10;
    
   const [toast, setToast] = useState('');
+  const [formLang, setFormLang] = useState<'vi' | 'en' | 'ko'>('vi');
 
   const showToast = (message: string) => {
     setToast(message);
@@ -131,13 +132,18 @@ export default function LivestreamManager() {
       id: ls.id,
       data: {
         title: ls.title,
+        title_en: ls.title_en || '',
+        title_ko: ls.title_ko || '',
         description: ls.description || '',
+        description_en: ls.description_en || '',
+        description_ko: ls.description_ko || '',
         youtube_id: ls.youtube_id || '',
         facebook_url: ls.facebook_url || '',
         is_live: ls.is_live,
         scheduled_at: ls.scheduled_at || '',
       },
     });
+    setFormLang('vi');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -212,21 +218,30 @@ export default function LivestreamManager() {
           </div>
           
           <form onSubmit={handleSave} style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <button type="button" onClick={() => setFormLang('vi')} style={{ padding: '6px 12px', background: formLang === 'vi' ? '#38bdf8' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Tiếng Việt</button>
+              <button type="button" onClick={() => setFormLang('en')} style={{ padding: '6px 12px', background: formLang === 'en' ? '#38bdf8' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>English</button>
+              <button type="button" onClick={() => setFormLang('ko')} style={{ padding: '6px 12px', background: formLang === 'ko' ? '#38bdf8' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>한국어</button>
+            </div>
+
             <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
               {/* Left Column: Inputs */}
               <div style={{ flex: '1 1 500px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Type size={14} /> Tiêu đề buổi lễ *
+                    <Type size={14} /> Tiêu đề buổi lễ {formLang === 'vi' ? '*' : ''}
                   </label>
                   <input
                     type="text"
                     className="form-input"
                     style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', height: '44px', fontSize: '1rem', color: '#fff' }}
-                    value={editing.data.title}
-                    onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
+                    value={formLang === 'vi' ? editing.data.title : (formLang === 'en' ? (editing.data.title_en || '') : (editing.data.title_ko || ''))}
+                    onChange={(e) => {
+                      const key = formLang === 'vi' ? 'title' : (formLang === 'en' ? 'title_en' : 'title_ko');
+                      setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                    }}
                     placeholder="VD: Thánh Lễ Trực Tuyến Chúa Nhật..."
-                    required
+                    required={formLang === 'vi'}
                   />
                 </div>
                 
@@ -350,8 +365,11 @@ export default function LivestreamManager() {
                   <textarea
                     className="form-input"
                     style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', resize: 'vertical' }}
-                    value={editing.data.description || ''}
-                    onChange={(e) => setEditing({ ...editing, data: { ...editing.data, description: e.target.value } })}
+                    value={formLang === 'vi' ? (editing.data.description || '') : (formLang === 'en' ? (editing.data.description_en || '') : (editing.data.description_ko || ''))}
+                    onChange={(e) => {
+                      const key = formLang === 'vi' ? 'description' : (formLang === 'en' ? 'description_en' : 'description_ko');
+                      setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                    }}
                     rows={2}
                     placeholder="Nhập vài dòng giới thiệu về buổi lễ..."
                   />

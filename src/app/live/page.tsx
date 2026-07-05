@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { getActiveLivestream, getSermonNote, saveSermonNote } from '@/lib/livestreams';
 import type { Livestream, SermonNote } from '@/lib/livestreams';
 import { getYoutubeId } from '@/lib/youtube';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 type VideoSource = 'youtube' | 'facebook';
@@ -41,6 +42,7 @@ function FacebookPlayer({ url }: { url: string }) {
 export default function LivePage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t, getDbField } = useLanguage();
   
   const [livestream, setLivestream] = useState<Livestream | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ export default function LivePage() {
 
   const handleShareClick = (platform: string) => {
     const shareUrl = window.location.href;
-    const shareText = `Đang phát trực tiếp: ${livestream?.title}`;
+    const shareText = `Đang phát trực tiếp: ${getDbField(livestream, 'title')}`;
     
     switch (platform) {
       case 'facebook':
@@ -243,8 +245,8 @@ export default function LivePage() {
 
       {/* Info */}
       <div className="live-info" style={{ background: 'linear-gradient(180deg,#111827,#0a0f1e)', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <h1 className="live-title">{livestream.title}</h1>
-        {livestream.description && <p className="live-desc">{livestream.description}</p>}
+        <h1 className="live-title">{getDbField(livestream, 'title')}</h1>
+        <div className="live-desc" dangerouslySetInnerHTML={{ __html: getDbField(livestream, 'description') || '' }} />
         {livestream.scheduled_at && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, color: '#64748b', fontSize: '0.8rem' }}>
             <Clock size={13} />

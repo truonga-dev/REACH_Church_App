@@ -5,19 +5,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, Library, Users, UserCircle2, Radio } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './BottomNav.css';
 
-const baseNavItems = [
-  { name: 'Trang chủ', path: '/', icon: Home },
-  { name: 'Kinh Thánh', path: '/bible', icon: BookOpen },
-  { name: 'Thư viện', path: '/library', icon: Library },
-  { name: 'Mục vụ', path: '/ministry', icon: Users },
-  { name: 'Hồ sơ', path: '/profile', icon: UserCircle2 },
+const getNavItems = (t: any) => [
+  { name: t('home'), path: '/', icon: Home },
+  { name: t('bible'), path: '/bible', icon: BookOpen },
+  { name: t('library'), path: '/library', icon: Library },
+  { name: t('ministry'), path: '/ministry', icon: Users },
+  { name: t('profile'), path: '/profile', icon: UserCircle2 },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
   const [isLive, setIsLive] = useState(false);
+  const { t } = useLanguage();
+  
+  const baseNavItems = getNavItems(t);
 
   useEffect(() => {
     const checkLive = async () => {
@@ -60,7 +64,7 @@ export default function BottomNav() {
   return (
     <nav className="bottom-nav">
       {navItems.map((item) => {
-        const isActive = pathname === item.path || (item.path !== '/' && pathname?.startsWith(item.path));
+        const isActive = pathname === item.path || (item.path !== '/' && pathname?.startsWith(`${item.path}/`));
         const Icon = item.icon;
         
         return (

@@ -3,7 +3,11 @@ import { supabase, supabaseAdmin } from '@/lib/supabase';
 export type Livestream = {
   id: string;
   title: string;
+  title_en?: string | null;
+  title_ko?: string | null;
   description: string | null;
+  description_en?: string | null;
+  description_ko?: string | null;
   youtube_id: string | null;
   facebook_url: string | null;
   is_live: boolean;

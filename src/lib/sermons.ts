@@ -8,7 +8,11 @@ import { supabase } from './supabase';
 export interface Sermon {
   id: string;
   title: string;
+  title_en?: string;
+  title_ko?: string;
   description?: string;
+  description_en?: string;
+  description_ko?: string;
   audio_url?: string;
   video_url?: string;
   preacher: string;
@@ -22,7 +26,11 @@ export interface Sermon {
 
 export interface SermonCreateInput {
   title: string;
+  title_en?: string;
+  title_ko?: string;
   description?: string;
+  description_en?: string;
+  description_ko?: string;
   audio_url?: string;
   video_url?: string;
   preacher: string;

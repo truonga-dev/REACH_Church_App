@@ -10,9 +10,15 @@ import { EventVolunteer } from '@/types';
 export interface Event {
   id: string;
   title: string;
+  title_en?: string;
+  title_ko?: string;
   description?: string;
+  description_en?: string;
+  description_ko?: string;
   event_date: string;
   location?: string;
+  location_en?: string;
+  location_ko?: string;
   department_id?: string;
   max_attendees?: number;
   registrations_count: number;
@@ -22,9 +28,15 @@ export interface Event {
 
 export interface EventCreateInput {
   title: string;
+  title_en?: string;
+  title_ko?: string;
   description?: string;
+  description_en?: string;
+  description_ko?: string;
   event_date: string;
   location?: string;
+  location_en?: string;
+  location_ko?: string;
   department_id?: string;
   max_attendees?: number;
 }

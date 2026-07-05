@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FileText, Headphones, Video, BookOpen, PlayCircle, X, ChevronRight, ExternalLink, Calendar, Heart } from 'lucide-react';
 import { LibrarySkeleton } from '@/components/ui/Skeleton';
 import { useRouter } from 'next/navigation';
+
 import { supabase } from '@/lib/supabase';
 import type { Sermon, NewsItem } from '@/types';
 import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
@@ -13,6 +14,7 @@ import MediaPlayer from '@/components/library/MediaPlayer';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkIsFavorite, addFavorite, removeFavorite } from '@/lib/favorites';
 import { useDraggableScroll } from '@/hooks/useDraggableScroll';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 type Tab = 'sermons' | 'audiobooks' | 'pdfs' | 'devotionals' | 'events';
@@ -41,6 +43,7 @@ export default function Library() {
   const [playingPdf, setPlayingPdf]         = useState<NewsItem | null>(null);
   const [activeFilter, setActiveFilter]     = useState('Tất cả');
   const { user } = useAuth();
+  const { t, getDbField } = useLanguage();
   const [likedSermon, setLikedSermon]       = useState(false);
   const [likedPdf, setLikedPdf]             = useState(false);
 
@@ -98,7 +101,7 @@ export default function Library() {
         setPdfs(news.filter(n => n.type === 'Tài liệu'));
       }
       if (devotionalsRes.data) {
-        setDevotionals(devotionalsRes.data as any[]);  
+        setDevotionals(devotionalsRes.data as any[]);
       }
     } catch (err) {
       console.error(err);
@@ -135,7 +138,6 @@ export default function Library() {
     ? devotionals
     : devotionals.filter(d => d.title.includes(activeFilter) || (d.content || '').includes(activeFilter));
 
-  /* ── Render content per tab ── */
   const renderContent = () => {
     if (loading) return <LibrarySkeleton />;
 
@@ -151,7 +153,7 @@ export default function Library() {
                 <div className="lib-sermon-thumb">
                   {thumb
                      
-                    ? <img src={thumb} alt={s.title} />
+                    ? <img src={thumb} alt={getDbField(s, 'title')} />
                     : (
                       <div className="lib-sermon-thumb-placeholder">
                         <Video size={32} color="rgba(255,255,255,0.2)" />
@@ -166,7 +168,7 @@ export default function Library() {
                 </div>
                 <div className="sermon-card-body">
                   {s.series && <span className="sermon-series-tag">{s.series}</span>}
-                  <h4 className="sermon-card-title">{s.title}</h4>
+                  <h4 className="sermon-card-title">{getDbField(s, 'title')}</h4>
                   <div className="sermon-card-meta">
                     <span>{s.preacher || s.speaker || 'REACH Church'}</span>
                     {(s.sermon_date || s.date) && <><span className="sermon-card-dot">•</span><span>{new Date(s.sermon_date || s.date as string).toLocaleDateString('vi-VN')}</span></>}
@@ -189,7 +191,7 @@ export default function Library() {
               <div className="audio-card-top">
                 <div className="audio-icon-wrap"><Headphones size={22} /></div>
                 <div className="audio-card-info">
-                  <p className="audio-card-title">{a.title}</p>
+                  <p className="audio-card-title">{getDbField(a, 'title')}</p>
                   <p className="audio-card-type">Sách Nói</p>
                 </div>
               </div>
@@ -197,7 +199,7 @@ export default function Library() {
                 ? (
                   <button 
                     className="btn-read" 
-                    onClick={() => setPlayingMedia({ id: a.id, title: a.title, url: a.audio_url, type: 'audio' })}
+                    onClick={() => setPlayingMedia({ id: a.id, title: getDbField(a, 'title'), url: a.audio_url, type: 'audio' })}
                     style={{ marginTop: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
                   >
                     <PlayCircle size={16} /> Nghe sách
@@ -221,7 +223,7 @@ export default function Library() {
               <div className="pdf-card-top">
                 <div className="pdf-icon-wrap"><FileText size={20} /></div>
                 <div className="pdf-card-info">
-                  <p className="pdf-card-title">{pdf.title}</p>
+                  <p className="pdf-card-title">{getDbField(pdf, 'title')}</p>
                   <p className="pdf-card-type">{pdf.type || 'Tài liệu'}</p>
                 </div>
               </div>
@@ -246,12 +248,12 @@ export default function Library() {
         {filteredDev.map(d => (
           <Link
             key={d.id}
-            href={`/devotional?id=${d.id}&title=${encodeURIComponent(d.title)}&text=${encodeURIComponent(d.content?.slice(0, 200) || '')}&day=Thư viện&duration=5 phút`}
+            href={`/devotional?id=${d.id}&title=${encodeURIComponent(getDbField(d, 'title'))}&text=${encodeURIComponent(getDbField(d, 'content')?.slice(0, 200) || '')}&day=Thư viện&duration=5 phút`}
             className="dev-card"
           >
             <div className="dev-icon-wrap"><BookOpen size={22} /></div>
             <div className="dev-card-info">
-              <p className="dev-card-title">{d.title}</p>
+              <p className="dev-card-title">{getDbField(d, 'title')}</p>
               <p className="dev-card-type">{d.type || 'Dưỡng linh'}</p>
             </div>
             <ChevronRight size={18} className="dev-card-arrow" />
@@ -325,7 +327,7 @@ export default function Library() {
             <div className="sermon-modal-header">
               <div>
                 {playingSermon.series && <p className="sermon-modal-series">{playingSermon.series}</p>}
-                <h3 className="sermon-modal-title">{playingSermon.title}</h3>
+                <h3 className="sermon-modal-title">{getDbField(playingSermon, 'title')}</h3>
                 {(playingSermon.preacher || playingSermon.speaker) && <p className="sermon-modal-speaker">{playingSermon.preacher || playingSermon.speaker} · {playingSermon.sermon_date || playingSermon.date ? new Date(playingSermon.sermon_date || playingSermon.date as string).toLocaleDateString('vi-VN') : ''}</p>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -371,7 +373,7 @@ export default function Library() {
             <div className="sermon-modal-header">
               <div>
                 <p className="sermon-modal-series">{playingPdf.type || 'Tài liệu PDF'}</p>
-                <h3 className="sermon-modal-title">{playingPdf.title}</h3>
+                <h3 className="sermon-modal-title">{getDbField(playingPdf, 'title')}</h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button type="button" onClick={handleFavoritePdf} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: likedPdf ? '#ef4444' : '#fff', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -65,7 +65,7 @@
 
 | Trang | Đường dẫn | Mô tả |
 | ----- | --------- | ----- |
-| **Admin Panel** | `/admin` | CMS quản lý bài giảng, sách nói, PDF, dưỡng linh, sự kiện, tín hữu, cầu nguyện, quản lý người dùng. Tích hợp giao diện quản lý Livestream và Lịch sử Dâng hiến. |
+| **Admin Panel** | `/admin` | CMS quản lý bài giảng, sách nói, PDF, dưỡng linh, sự kiện, tín hữu, cầu nguyện, quản lý người dùng. Tích hợp giao diện quản lý Livestream và Lịch sử Dâng hiến. Hỗ trợ đa ngôn ngữ (VI/EN/KO) cho nội dung. |
 | **Thiết lập Admin** | `/setup-admin` | Công cụ gán quyền admin cho tài khoản (chỉ dùng cục bộ/dev) |
 
 ### API nội bộ & Webhooks

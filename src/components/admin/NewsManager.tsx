@@ -40,6 +40,7 @@ export default function AdminNewsManager() {
   const [editing, setEditing] = useState<EditingState>({ id: null, data: emptyData() });
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
+  const [formLang, setFormLang] = useState<'vi' | 'en' | 'ko'>('vi');
 
   useEffect(() => {
     loadNewsPosts();
@@ -96,11 +97,16 @@ export default function AdminNewsManager() {
       id: post.id,
       data: {
         title: post.title,
+        title_en: post.title_en || '',
+        title_ko: post.title_ko || '',
         content: post.content,
+        content_en: post.content_en || '',
+        content_ko: post.content_ko || '',
         category: post.category,
         image_url: post.image_url,
       },
     });
+    setFormLang('vi');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -174,15 +180,24 @@ export default function AdminNewsManager() {
             </button>
           </div>
           <form onSubmit={handleSave} className="cms-form">
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <button type="button" onClick={() => setFormLang('vi')} style={{ padding: '6px 12px', background: formLang === 'vi' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Tiếng Việt</button>
+              <button type="button" onClick={() => setFormLang('en')} style={{ padding: '6px 12px', background: formLang === 'en' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>English</button>
+              <button type="button" onClick={() => setFormLang('ko')} style={{ padding: '6px 12px', background: formLang === 'ko' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>한국어</button>
+            </div>
+
             <div className="form-group">
-              <label className="form-label">Tiêu đề *</label>
+              <label className="form-label">Tiêu đề {formLang === 'vi' ? '*' : ''}</label>
               <input
                 type="text"
                 className="form-input"
-                value={editing.data.title}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
+                value={formLang === 'vi' ? editing.data.title : (formLang === 'en' ? (editing.data.title_en || '') : (editing.data.title_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'title' : (formLang === 'en' ? 'title_en' : 'title_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 placeholder="Nhập tiêu đề tin tức"
-                required
+                required={formLang === 'vi'}
               />
             </div>
 
@@ -218,14 +233,17 @@ export default function AdminNewsManager() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nội dung *</label>
+              <label className="form-label">Nội dung {formLang === 'vi' ? '*' : ''}</label>
               <textarea
                 className="form-textarea"
-                value={editing.data.content}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, content: e.target.value } })}
+                value={formLang === 'vi' ? editing.data.content : (formLang === 'en' ? (editing.data.content_en || '') : (editing.data.content_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'content' : (formLang === 'en' ? 'content_en' : 'content_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 placeholder="Nhập nội dung tin tức..."
                 rows={8}
-                required
+                required={formLang === 'vi'}
               />
             </div>
 

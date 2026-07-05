@@ -14,6 +14,7 @@ import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
 import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 const tagColors: Record<string, string> = {
@@ -65,6 +66,7 @@ function getDailyVerse() {
 
 export default function Home() {
   const router = useRouter();
+  const { t, getDbField } = useLanguage();
   const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('Chào mừng bạn đến với REACH 🙏');
 
@@ -141,7 +143,7 @@ export default function Home() {
           else if (n.type === 'Sự kiện') icon = '🎉';
           else if (n.type === 'Sách Nói' || n.type === 'Tài liệu') icon = '📚';
           const date = new Date(n.created_at);
-          return { id: n.id || i, icon, title: `${n.type}: ${n.title}`, time: date.toLocaleDateString('vi-VN'), read: false };
+          return { id: n.id || i, icon, title: `${n.type}: ${getDbField(n, 'title')}`, time: date.toLocaleDateString('vi-VN'), read: false };
         });
         if (dynamicNotifs.length > 0) {
           const readIds = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('readNotifs') || '[]' : '[]');
@@ -297,15 +299,15 @@ export default function Home() {
   const searchLower = searchQuery.toLowerCase();
   const searchResults = searchQuery.length >= 2 ? [
     ...dbNews.filter((n: any) =>
-      n.title?.toLowerCase().includes(searchLower) ||
+      getDbField(n, 'title').toLowerCase().includes(searchLower) ||
       (n.content || '')?.toLowerCase().includes(searchLower)
     ).map((n: any) => ({ ...n, _type: 'news' })),
     ...dbSermons.filter((s: any) =>
-      s.title?.toLowerCase().includes(searchLower) ||
+      getDbField(s, 'title').toLowerCase().includes(searchLower) ||
       (s.speaker || '')?.toLowerCase().includes(searchLower)
     ).map((s: any) => ({ ...s, _type: 'sermon' })),
     ...dbEvents.filter((ev: any) =>
-      ev.title?.toLowerCase().includes(searchLower) ||
+      getDbField(ev, 'title').toLowerCase().includes(searchLower) ||
       (ev.location || '')?.toLowerCase().includes(searchLower)
     ).map((ev: any) => ({ ...ev, _type: 'event' })),
   ] : [];
@@ -327,7 +329,7 @@ export default function Home() {
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', alignItems: 'center' }}>
               <div>
                 <p style={{ color: '#48BCE1', fontSize: '0.8rem', fontWeight: 'bold' }}>{playingSermon.series}</p>
-                <h3 style={{ color: '#fff', fontSize: '1rem' }}>{playingSermon.title}</h3>
+                <h3 style={{ color: '#fff', fontSize: '1rem' }}>{getDbField(playingSermon, 'title')}</h3>
               </div>
               <button onClick={() => setPlayingSermon(null)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={18} />
@@ -393,7 +395,7 @@ export default function Home() {
                     onClick={() => handleNotifClick(n)}>
                     <span style={{ fontSize: '1.4rem' }}>{n.icon}</span>
                     <div>
-                      <p style={{ color: '#fff', fontSize: '0.88rem', fontWeight: n.read ? 400 : 600 }}>{n.title}</p>
+                      <p style={{ color: '#fff', fontSize: '0.88rem', fontWeight: n.read ? 400 : 600 }}>{getDbField(n, 'title')}</p>
                       <p style={{ color: '#666', fontSize: '0.75rem' }}>{n.time}</p>
                     </div>
                     {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#48BCE1', flexShrink: 0, marginLeft: 'auto', alignSelf: 'center' }} />}
@@ -601,7 +603,7 @@ export default function Home() {
                   Đang Phát Trực Tiếp
                 </p>
                 <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: 700 }}>
-                  {dbActiveLive.title || 'Sự kiện Live'}
+                  {getDbField(dbActiveLive, 'title') || 'Sự kiện Live'}
                 </h3>
               </div>
             </div>
@@ -642,7 +644,7 @@ export default function Home() {
           {loading ? (
             [0,1].map(i => <div key={i} className="devotional-card skeleton" style={{ height: 120, borderLeftColor: '#2a3044' }} />)
           ) : dbDevotionals.length > 0 ? dbDevotionals.map((d, i) => (
-            <Link key={i} href={`/devotional?id=${d.id}&title=${encodeURIComponent(d.title)}&text=${encodeURIComponent(d.content?.slice(0, 200) || '')}`} style={{ textDecoration: 'none' }}>
+            <Link key={i} href={`/devotional?id=${d.id}&title=${encodeURIComponent(getDbField(d, 'title'))}&text=${encodeURIComponent(getDbField(d, 'content').slice(0, 200) || '')}`} style={{ textDecoration: 'none' }}>
               <div className="devotional-card" style={{ 
                   borderLeftColor: i === 0 ? '#48BCE1' : '#F4CC30', 
                   cursor: 'pointer',
@@ -651,7 +653,7 @@ export default function Home() {
                   backgroundPosition: 'center right'
                 }}>
                 <div className="dev-day-badge" style={{ backgroundColor: i === 0 ? '#48BCE1' : '#F4CC30' }}>Mới nhất</div>
-                <h3 className="dev-title">{d.title}</h3>
+                <h3 className="dev-title">{getDbField(d, 'title')}</h3>
                 <p className="dev-text">&quot;{htmlExcerpt(d.content || '', 120)}&quot;</p>
                 <div className="dev-footer">
                   <span className="dev-duration">5 phút đọc</span>
@@ -695,7 +697,7 @@ export default function Home() {
                 </div>
                 <div className="sermon-info">
                   <span className="sermon-series">{sermon.series}</span>
-                  <h3 className="sermon-title">{sermon.title}</h3>
+                  <h3 className="sermon-title">{getDbField(sermon, 'title')}</h3>
                   <p className="sermon-meta">{sermon.speaker} • {sermon.created_at ? new Date(sermon.created_at).toLocaleDateString('vi-VN') : ''}</p>
                 </div>
                 <div style={{ paddingRight: '12px', color: '#48BCE1' }}>
@@ -729,7 +731,7 @@ export default function Home() {
                 <button onClick={() => setSelectedNews(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16}/></button>
               </div>
               {selectedNews.image_url && <img src={selectedNews.image_url} alt="" style={{ width: '100%', borderRadius: '12px', marginBottom: '1rem', objectFit: 'cover', maxHeight: '220px' }} />}
-              <h2 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1.2rem', lineHeight: '1.4' }}>{selectedNews.title}</h2>
+              <h2 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1.2rem', lineHeight: '1.4' }}>{getDbField(selectedNews, 'title')}</h2>
               <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '0.35rem' }}>{selectedNews.created_at ? new Date(selectedNews.created_at).toLocaleDateString('vi-VN') : selectedNews.date}</p>
               {selectedNews.author && <p style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '1rem' }}>Bởi {selectedNews.author}{selectedNews.location ? ` • ${selectedNews.location}` : ''}</p>}
               <div className="rich-text-content" style={{ color: '#ccc', lineHeight: '1.7', whiteSpace: 'normal', fontSize: '1rem', marginBottom: '1rem' }} dangerouslySetInnerHTML={{ __html: selectedNews.content || selectedNews.summary }}></div>
@@ -765,7 +767,7 @@ export default function Home() {
                   {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}
                 </span>
               </div>
-              <h3 className="bulletin-title">{item.title}</h3>
+              <h3 className="bulletin-title">{getDbField(item, 'title')}</h3>
               {item.author && <p className="bulletin-meta" style={{ marginBottom: '0.35rem' }}>Bởi {item.author} • {item.location || 'REACH Church'}</p>}
               <p className="bulletin-summary">{htmlExcerpt(item.content || '', 120)}</p>
               {item.audio_url && (
@@ -830,7 +832,7 @@ export default function Home() {
                     <span className="date-month">Th.{d.getMonth() + 1}</span>
                   </div>
                   <div className="event-details">
-                    <h4 className="event-title">{ev.title}</h4>
+                    <h4 className="event-title">{getDbField(ev, 'title')}</h4>
                     <p className="event-time">{d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
                     <p className="event-loc">📍 {ev.location || 'Hội trường chính'}</p>
                   </div>

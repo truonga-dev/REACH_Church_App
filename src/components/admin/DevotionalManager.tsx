@@ -45,6 +45,7 @@ export default function AdminDevotionalManager() {
   const ITEMS_PER_PAGE = 10;
   const [toast, setToast] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [formLang, setFormLang] = useState<'vi' | 'en' | 'ko'>('vi');
 
   useEffect(() => {
     loadDevotionals();
@@ -102,12 +103,17 @@ export default function AdminDevotionalManager() {
       id: devotional.id,
       data: {
         title: devotional.title,
+        title_en: devotional.title_en || '',
+        title_ko: devotional.title_ko || '',
         content: devotional.content,
+        content_en: devotional.content_en || '',
+        content_ko: devotional.content_ko || '',
         author: devotional.author,
         featured_image_url: devotional.featured_image_url,
         category: devotional.category || '',
       },
     });
+    setFormLang('vi');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -221,16 +227,25 @@ export default function AdminDevotionalManager() {
             </button>
           </div>
           <form onSubmit={handleSave} className="cms-form">
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <button type="button" onClick={() => setFormLang('vi')} style={{ padding: '6px 12px', background: formLang === 'vi' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Tiếng Việt</button>
+              <button type="button" onClick={() => setFormLang('en')} style={{ padding: '6px 12px', background: formLang === 'en' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>English</button>
+              <button type="button" onClick={() => setFormLang('ko')} style={{ padding: '6px 12px', background: formLang === 'ko' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>한국어</button>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Tiêu đề *</label>
+                <label className="form-label">Tiêu đề {formLang === 'vi' ? '*' : ''}</label>
                 <input
                   type="text"
                   className="form-input"
-                  value={editing.data.title}
-                  onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
+                  value={formLang === 'vi' ? editing.data.title : (formLang === 'en' ? (editing.data.title_en || '') : (editing.data.title_ko || ''))}
+                  onChange={(e) => {
+                    const key = formLang === 'vi' ? 'title' : (formLang === 'en' ? 'title_en' : 'title_ko');
+                    setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                  }}
                   placeholder="Nhập tiêu đề bài dưỡng linh"
-                  required
+                  required={formLang === 'vi'}
                 />
               </div>
               <div className="form-group">
@@ -256,15 +271,20 @@ export default function AdminDevotionalManager() {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Nội dung *</label>
-              <ReactQuill
-                theme="snow"
-                modules={quillModules}
-                value={editing.data.content}
-                onChange={(val) => setEditing({ ...editing, data: { ...editing.data, content: val } })}
-                placeholder="Nhập nội dung bài dưỡng linh..."
-              />
+            <div className="form-group" style={{ marginBottom: '3rem' }}>
+              <label className="form-label">Nội dung {formLang === 'vi' ? '*' : ''}</label>
+              <div style={{ height: '300px', background: '#fff', color: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+                <ReactQuill
+                  theme="snow"
+                  value={formLang === 'vi' ? editing.data.content : (formLang === 'en' ? (editing.data.content_en || '') : (editing.data.content_ko || ''))}
+                  onChange={(val) => {
+                    const key = formLang === 'vi' ? 'content' : (formLang === 'en' ? 'content_en' : 'content_ko');
+                    setEditing({ ...editing, data: { ...editing.data, [key]: val } });
+                  }}
+                  modules={quillModules}
+                  style={{ height: '258px' }}
+                />
+              </div>
             </div>
 
             <div className="form-group">

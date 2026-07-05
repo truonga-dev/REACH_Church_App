@@ -8,12 +8,14 @@ import { htmlExcerpt } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import CommentSection from '@/components/CommentSection';
 import { useDraggableScroll } from '@/hooks/useDraggableScroll';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 import { NewsSkeleton } from '@/components/ui/Skeleton';
 
 const TABS = ['Tất cả', ...POST_CONTENT_TYPES];
 
 export default function NewsPage() {
+  const { t, getDbField } = useLanguage();
   const [news, setNews] = useState<any[]>([]);  
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Tất cả');
@@ -52,8 +54,8 @@ export default function NewsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        n.title.toLowerCase().includes(query) ||
-        (n.content && n.content.toLowerCase().includes(query))
+        getDbField(n, 'title').toLowerCase().includes(query) ||
+        (getDbField(n, 'content') && getDbField(n, 'content').toLowerCase().includes(query))
       );
     }
     return true;
@@ -87,7 +89,7 @@ export default function NewsPage() {
               {selectedNews.image_url && (
                 <img 
                   src={selectedNews.image_url} 
-                  alt={selectedNews.title} 
+                  alt={getDbField(selectedNews, 'title')} 
                   className="news-modal-hero-img" 
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?auto=format&fit=crop&q=80';
@@ -107,8 +109,8 @@ export default function NewsPage() {
                     </span>
                   )}
                 </div>
-                <h2 className="news-modal-title">{selectedNews.title}</h2>
-                <div className="rich-content" dangerouslySetInnerHTML={{ __html: selectedNews.content || '' }} />
+                <h2 className="news-modal-title">{getDbField(selectedNews, 'title')}</h2>
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: getDbField(selectedNews, 'content') || '' }} />
                 
                 {selectedNews.pdf_url && (
                   <a href={selectedNews.pdf_url} target="_blank" rel="noopener noreferrer" className="news-modal-pdf-btn">
@@ -132,7 +134,7 @@ export default function NewsPage() {
             <ArrowLeft size={20} />
           </Link>
           <div className="news-header-title-wrap">
-            <h1 className="news-page-title">Bản tin Hội Thánh</h1>
+            <h1 className="news-page-title">{t('news')}</h1>
             <p className="news-page-sub">Tin tức, thông báo & sự kiện mới nhất</p>
           </div>
         </div>
@@ -199,7 +201,8 @@ export default function NewsPage() {
                 <div className={`news-featured-badge ${getBadgeClass(featured.type)}`}>
                   {featured.type}
                 </div>
-                <h2 className="news-featured-title">{featured.title}</h2>
+                <h2 className="news-featured-title">{getDbField(featured, 'title')}</h2>
+                <p className="news-featured-excerpt">{htmlExcerpt(getDbField(featured, 'content'), 100)}</p>
                 <div className="news-featured-meta">
                   <span>{new Date(featured.created_at).toLocaleDateString('vi-VN')}</span>
                   {featured.author && <span>• {featured.author}</span>}
@@ -231,10 +234,8 @@ export default function NewsPage() {
                       {new Date(item.created_at).toLocaleDateString('vi-VN')}
                     </span>
                   </div>
-                  <h3 className="news-card-title">{item.title}</h3>
-                  <div className="news-card-excerpt">
-                    {htmlExcerpt(item.content || '', 120)}
-                  </div>
+                  <h3 className="news-card-title">{getDbField(item, 'title')}</h3>
+                  <p className="news-card-excerpt">{htmlExcerpt(getDbField(item, 'content'), 80)}</p>
                   <div className="news-card-footer">
                     <span className="news-card-author">
                       <User size={12} /> {item.author || 'Admin'}

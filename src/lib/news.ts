@@ -8,7 +8,11 @@ import { supabase } from './supabase';
 export interface NewsPost {
   id: string;
   title: string;
+  title_en?: string;
+  title_ko?: string;
   content: string;
+  content_en?: string;
+  content_ko?: string;
   category: string;
   image_url?: string;
   published_at: string;
@@ -20,7 +24,11 @@ export interface NewsPost {
 
 export interface NewsPostCreateInput {
   title: string;
+  title_en?: string;
+  title_ko?: string;
   content: string;
+  content_en?: string;
+  content_ko?: string;
   category: string;
   image_url?: string;
 }

@@ -8,7 +8,11 @@ import { supabase } from './supabase';
 export interface Devotional {
   id: string;
   title: string;
+  title_en?: string;
+  title_ko?: string;
   content: string;
+  content_en?: string;
+  content_ko?: string;
   author: string;
   category?: string;
   featured_image_url?: string;
@@ -21,7 +25,11 @@ export interface Devotional {
 
 export interface DevotionalCreateInput {
   title: string;
+  title_en?: string;
+  title_ko?: string;
   content: string;
+  content_en?: string;
+  content_ko?: string;
   author: string;
   category?: string;
   featured_image_url?: string;

@@ -8,6 +8,7 @@ import { fetchUpcomingEvents, fetchPastEvents, registerForEvent, cancelEventRegi
 import type { Event } from '@/lib/events';
 import Link from 'next/link';
 import AddToCalendar from '@/components/ui/AddToCalendar';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Countdown = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -49,7 +50,8 @@ const Countdown = ({ targetDate }: { targetDate: string }) => {
 };
 
 export default function EventsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, getDbField } = useLanguage();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -322,7 +324,7 @@ export default function EventsPage() {
                   boxShadow: activeTab === tab ? '0 4px 12px rgba(72,188,225,0.35)' : 'none',
                 }}
               >
-                {tab === 'upcoming' ? '📅 Sắp diễn ra' : '📋 Đã qua'}
+                {tab === 'upcoming' ? t('events_upcoming') : t('events_past')}
               </button>
             ))}
           </div>
@@ -430,7 +432,7 @@ export default function EventsPage() {
                           color: '#fff', fontWeight: 700, fontSize: '1rem',
                           margin: 0, lineHeight: 1.35, flex: 1,
                         }}>
-                          {event.title}
+                          {getDbField(event, 'title')}
                         </h3>
                         {isReg && (
                           <span style={{
@@ -466,19 +468,31 @@ export default function EventsPage() {
                       <Clock size={13} style={{ color: '#48bce1', flexShrink: 0 }} />
                       {dateInfo.full}
                     </div>
-                    {event.location && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af', fontSize: '0.83rem' }}>
-                        <MapPin size={13} style={{ color: '#f4cc30', flexShrink: 0 }} />
-                        {event.location}
+                    {getDbField(event, 'location') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af', fontSize: '0.83rem' }}>
+                          <MapPin size={13} style={{ color: '#f4cc30', flexShrink: 0 }} />
+                          {getDbField(event, 'location')}
+                        </div>
+                        <div style={{ width: '100%', height: '150px', borderRadius: '8px', overflow: 'hidden' }}>
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            style={{ border: 0 }}
+                            src={`https://maps.google.com/maps?q=${encodeURIComponent(getDbField(event, 'location'))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                            allowFullScreen
+                          ></iframe>
+                        </div>
                       </div>
                     )}
-                    {event.description && (
+                    {getDbField(event, 'description') && (
                       <p style={{
                         color: '#7a8599', fontSize: '0.85rem', lineHeight: 1.55,
                         margin: '0.25rem 0 0', display: '-webkit-box',
                         WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                       }}>
-                        {event.description}
+                        {getDbField(event, 'description')}
                       </p>
                     )}
                     
@@ -511,10 +525,10 @@ export default function EventsPage() {
                     <div style={{ padding: '0 1rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <AddToCalendar 
                         event={{ 
-                          title: event.title, 
-                          description: event.description || '', 
+                          title: getDbField(event, 'title'), 
+                          description: getDbField(event, 'description'), 
                           startDate: event.event_date, 
-                          location: event.location || '' 
+                          location: getDbField(event, 'location')
                         }} 
                       />
                       {/* Tham gia */}

@@ -30,6 +30,7 @@ export default function AdminSermonManager() {
   const ITEMS_PER_PAGE = 10;
    
   const [toast, setToast] = useState('');
+  const [formLang, setFormLang] = useState<'vi' | 'en' | 'ko'>('vi');
 
   const showToast = (message: string) => {
     setToast(message);
@@ -88,7 +89,11 @@ export default function AdminSermonManager() {
       id: sermon.id,
       data: {
         title: sermon.title,
+        title_en: sermon.title_en || '',
+        title_ko: sermon.title_ko || '',
         description: sermon.description || '',
+        description_en: sermon.description_en || '',
+        description_ko: sermon.description_ko || '',
         preacher: sermon.preacher,
         sermon_date: sermon.sermon_date,
         audio_url: sermon.audio_url,
@@ -96,6 +101,7 @@ export default function AdminSermonManager() {
         duration_minutes: sermon.duration_minutes,
       },
     });
+    setFormLang('vi');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -170,19 +176,28 @@ export default function AdminSermonManager() {
             </button>
           </div>
           <form onSubmit={handleSave} className="cms-form">
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <button type="button" onClick={() => setFormLang('vi')} style={{ padding: '6px 12px', background: formLang === 'vi' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Tiếng Việt</button>
+              <button type="button" onClick={() => setFormLang('en')} style={{ padding: '6px 12px', background: formLang === 'en' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>English</button>
+              <button type="button" onClick={() => setFormLang('ko')} style={{ padding: '6px 12px', background: formLang === 'ko' ? '#48bce1' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>한국어</button>
+            </div>
+
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Tiêu đề *</label>
+              <div className="form-group" style={{ flex: 2 }}>
+                <label className="form-label">Tiêu đề {formLang === 'vi' ? '*' : ''}</label>
                 <input
                   type="text"
                   className="form-input"
-                  value={editing.data.title}
-                  onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
+                  value={formLang === 'vi' ? editing.data.title : (formLang === 'en' ? (editing.data.title_en || '') : (editing.data.title_ko || ''))}
+                  onChange={(e) => {
+                    const key = formLang === 'vi' ? 'title' : (formLang === 'en' ? 'title_en' : 'title_ko');
+                    setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                  }}
                   placeholder="Nhập tiêu đề bài giảng"
-                  required
+                  required={formLang === 'vi'}
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Giảng viên *</label>
                 <input
                   type="text"
@@ -226,8 +241,11 @@ export default function AdminSermonManager() {
               <label className="form-label">Mô tả</label>
               <textarea
                 className="form-textarea"
-                value={editing.data.description || ''}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, description: e.target.value } })}
+                value={formLang === 'vi' ? (editing.data.description || '') : (formLang === 'en' ? (editing.data.description_en || '') : (editing.data.description_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'description' : (formLang === 'en' ? 'description_en' : 'description_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 placeholder="Mô tả ngắn về bài giảng..."
                 rows={3}
               />

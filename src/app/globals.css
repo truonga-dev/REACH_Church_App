@@ -22,14 +22,12 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #111827;
-    --color-surface: #1F2937;
-    --color-text-main: #F9FAFB;
-    --color-text-muted: #9CA3AF;
-    --color-border: #374151;
-  }
+.dark {
+  --color-background: #111827;
+  --color-surface: #1F2937;
+  --color-text-main: #F9FAFB;
+  --color-text-muted: #9CA3AF;
+  --color-border: #374151;
 }
 
 * {

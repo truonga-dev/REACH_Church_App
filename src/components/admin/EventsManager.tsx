@@ -31,6 +31,7 @@ export default function EventsManager() {
   const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const [toast, setToast] = useState('');
+  const [formLang, setFormLang] = useState<'vi' | 'en' | 'ko'>('vi');
   
   const [viewingRegistrants, setViewingRegistrants] = useState<{eventId: string, title: string} | null>(null);
   const [registrants, setRegistrants] = useState<EventRegistration[]>([]);
@@ -100,12 +101,19 @@ export default function EventsManager() {
       id: ev.id,
       data: {
         title: ev.title,
+        title_en: ev.title_en || '',
+        title_ko: ev.title_ko || '',
         description: ev.description || '',
+        description_en: ev.description_en || '',
+        description_ko: ev.description_ko || '',
         event_date: new Date(new Date(ev.event_date).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0,16),
         location: ev.location || '',
+        location_en: ev.location_en || '',
+        location_ko: ev.location_ko || '',
         max_attendees: ev.max_attendees,
       },
     });
+    setFormLang('vi');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -205,13 +213,22 @@ export default function EventsManager() {
           </div>
 
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" onClick={() => setFormLang('vi')} style={{ padding: '6px 12px', background: formLang === 'vi' ? '#f12d5c' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Tiếng Việt</button>
+              <button type="button" onClick={() => setFormLang('en')} style={{ padding: '6px 12px', background: formLang === 'en' ? '#f12d5c' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>English</button>
+              <button type="button" onClick={() => setFormLang('ko')} style={{ padding: '6px 12px', background: formLang === 'ko' ? '#f12d5c' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>한국어</button>
+            </div>
+
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Tiêu đề *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Tiêu đề {formLang === 'vi' ? '*' : ''}</label>
               <input
-                required
+                required={formLang === 'vi'}
                 type="text"
-                value={editing.data.title}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
+                value={formLang === 'vi' ? editing.data.title : (formLang === 'en' ? (editing.data.title_en || '') : (editing.data.title_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'title' : (formLang === 'en' ? 'title_en' : 'title_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.95rem' }}
                 placeholder="VD: Cầu Nguyện Kiêng Ăn"
               />
@@ -246,8 +263,11 @@ export default function EventsManager() {
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Địa điểm</label>
               <input
                 type="text"
-                value={editing.data.location || ''}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, location: e.target.value } })}
+                value={formLang === 'vi' ? (editing.data.location || '') : (formLang === 'en' ? (editing.data.location_en || '') : (editing.data.location_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'location' : (formLang === 'en' ? 'location_en' : 'location_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.95rem' }}
                 placeholder="VD: Hội trường chính"
               />
@@ -256,8 +276,11 @@ export default function EventsManager() {
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Mô tả chi tiết</label>
               <textarea
-                value={editing.data.description || ''}
-                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, description: e.target.value } })}
+                value={formLang === 'vi' ? (editing.data.description || '') : (formLang === 'en' ? (editing.data.description_en || '') : (editing.data.description_ko || ''))}
+                onChange={(e) => {
+                  const key = formLang === 'vi' ? 'description' : (formLang === 'en' ? 'description_en' : 'description_ko');
+                  setEditing({ ...editing, data: { ...editing.data, [key]: e.target.value } });
+                }}
                 rows={5}
                 style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.95rem', resize: 'vertical' }}
                 placeholder="Thông tin thêm về sự kiện..."
