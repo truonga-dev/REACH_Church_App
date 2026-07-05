@@ -118,7 +118,7 @@ export default function AdminNewsTabPanel({
                 <div key={n.id} className="data-item wp-post-list-item">
                   <div className="data-item-content">
                     {n.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img src={n.image_url} alt="" className="wp-post-list-thumb" />
                     )}
                     <div>

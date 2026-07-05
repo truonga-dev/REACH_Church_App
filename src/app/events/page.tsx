@@ -56,7 +56,7 @@ export default function EventsPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [registrations, setRegistrations] = useState<Record<string, boolean>>({});
-  const [volunteerRoles, setVolunteerRoles] = useState<Record<string, any>>({}); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [volunteerRoles, setVolunteerRoles] = useState<Record<string, any>>({});  
   const [registering, setRegistering] = useState<string | null>(null);
   const [volunteeringModal, setVolunteeringModal] = useState<Event | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('Tiếp tân');
@@ -65,14 +65,14 @@ export default function EventsPage() {
 
   useEffect(() => {
     loadEvents();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [activeTab]);
 
   useEffect(() => {
     if (user && events.length > 0) {
       checkRegistrations();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [user, events]);
 
   const loadEvents = async () => {

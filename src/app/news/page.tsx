@@ -14,11 +14,11 @@ import { NewsSkeleton } from '@/components/ui/Skeleton';
 const TABS = ['Tất cả', ...POST_CONTENT_TYPES];
 
 export default function NewsPage() {
-  const [news, setNews] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [news, setNews] = useState<any[]>([]);  
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNews, setSelectedNews] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [selectedNews, setSelectedNews] = useState<any>(null);  
 
   const tabsScroll = useDraggableScroll<HTMLDivElement>();
 

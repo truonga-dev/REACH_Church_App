@@ -17,7 +17,7 @@ import './page.css';
 
 type Tab = 'sermons' | 'audiobooks' | 'pdfs' | 'devotionals' | 'events';
 
-const TABS: { id: Tab; label: string; icon: any }[] = [ // eslint-disable-line @typescript-eslint/no-explicit-any
+const TABS: { id: Tab; label: string; icon: any }[] = [  
   { id: 'sermons',    label: 'Bài giảng', icon: Video      },
   { id: 'audiobooks', label: 'Sách nói',  icon: Headphones },
   { id: 'pdfs',       label: 'Sách PDF',  icon: FileText   },
@@ -37,7 +37,7 @@ export default function Library() {
   const [devotionals, setDevotionals]       = useState<NewsItem[]>([]);
   const [loading, setLoading]               = useState(true);
   const [playingSermon, setPlayingSermon]   = useState<Sermon | null>(null);
-  const [playingMedia, setPlayingMedia]     = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [playingMedia, setPlayingMedia]     = useState<any>(null);  
   const [playingPdf, setPlayingPdf]         = useState<NewsItem | null>(null);
   const [activeFilter, setActiveFilter]     = useState('Tất cả');
   const { user } = useAuth();
@@ -98,7 +98,7 @@ export default function Library() {
         setPdfs(news.filter(n => n.type === 'Tài liệu'));
       }
       if (devotionalsRes.data) {
-        setDevotionals(devotionalsRes.data as any[]); // eslint-disable-line @typescript-eslint/no-explicit-any
+        setDevotionals(devotionalsRes.data as any[]);  
       }
     } catch (err) {
       console.error(err);
@@ -150,7 +150,7 @@ export default function Library() {
               <div key={s.id} className="sermon-card" onClick={() => setPlayingSermon(s)}>
                 <div className="lib-sermon-thumb">
                   {thumb
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     ? <img src={thumb} alt={s.title} />
                     : (
                       <div className="lib-sermon-thumb-placeholder">

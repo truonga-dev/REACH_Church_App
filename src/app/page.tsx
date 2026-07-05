@@ -627,7 +627,7 @@ export default function Home() {
               <div key={sermon.id} className="sermon-item" onClick={() => handleSermonClick(sermon)} style={{ cursor: 'pointer' }}>
                 <div className="sermon-thumb">
                   {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     <img src={thumb} alt="" className="sermon-thumb-image" />
                   ) : (
                     <PlayCircle size={30} className="play-icon" />
@@ -694,7 +694,7 @@ export default function Home() {
             <div key={item.id} className="bulletin-card" onClick={() => setSelectedNews(item)} style={{ cursor: 'pointer' }}>
               {item.image_url && (
                 <div className="bulletin-featured-image">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={item.image_url} alt={item.title} />
                 </div>
               )}

@@ -118,7 +118,7 @@ export async function updateMinistry(id: string, updates: Partial<MinistryCreate
       throw error;
     }
     return data || null;
-  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {  
     console.error('Error updating ministry:', error?.message || error, JSON.stringify(error));
     throw error;
   }

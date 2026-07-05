@@ -339,7 +339,7 @@ export async function getVolunteerInfo(eventId: string, userId: string): Promise
 
     if (error && error.code !== 'PGRST116') throw error;
     return data || null;
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars */) {
     return null;
   }
 }

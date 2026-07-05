@@ -138,7 +138,7 @@ function BibleReader() {
         return () => clearTimeout(timer);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   const refreshHighlights = useCallback(() => {
@@ -221,11 +221,11 @@ function BibleReader() {
     const endVerse = sorted[sorted.length - 1];
     const bookName = books[bookIndex - 1];
 
-    let vLabel = sorted.length === 1 ? `${startVerse}` : `${startVerse}-${endVerse}`;
+    const vLabel = sorted.length === 1 ? `${startVerse}` : `${startVerse}-${endVerse}`;
     const label = `${bookName} ${chapter}:${vLabel} ${version}`;
 
-    let textParts = [];
-    let ranges: VerseRange[] = [];
+    const textParts = [];
+    const ranges: VerseRange[] = [];
 
     for (const vNum of sorted) {
       const vData = verses.find(v => v.verse === vNum);

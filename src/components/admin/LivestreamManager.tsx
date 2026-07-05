@@ -28,7 +28,7 @@ export default function LivestreamManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 10;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [toast, setToast] = useState('');
 
   const showToast = (message: string) => {
@@ -50,7 +50,7 @@ export default function LivestreamManager() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     loadLivestreams();
   }, [currentPage]);
 

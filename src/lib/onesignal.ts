@@ -47,7 +47,7 @@ export async function initOneSignal(): Promise<boolean> {
     autoResubscribe: false,
     notifyButton: {
       enable: false,
-    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    } as any,  
     promptOptions: {
       slidedown: {
         prompts: [

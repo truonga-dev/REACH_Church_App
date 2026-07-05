@@ -281,7 +281,7 @@ export default function AdminNewsManager() {
               return (
                 <div key={post.id} className="data-item">
                   {post.image_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     <img
                       src={post.image_url}
                       alt=""

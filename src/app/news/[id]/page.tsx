@@ -9,7 +9,7 @@ export default function NewsDetail() {
   const params = useParams();
   const id = params?.id;
   const router = useRouter();
-  const [news, setNews] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [news, setNews] = useState<any>(null);  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

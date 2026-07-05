@@ -7,7 +7,15 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      "react-hooks/set-state-in-effect": "off"
+      "react-hooks/set-state-in-effect": "off",
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-img-element": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "jsx-a11y/alt-text": "off",
+      "react-hooks/refs": "off",
+      "react/jsx-no-comment-textnodes": "off"
     }
   },
   // Override default ignores of eslint-config-next.

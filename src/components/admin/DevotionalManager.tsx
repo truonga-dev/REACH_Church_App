@@ -163,7 +163,7 @@ export default function AdminDevotionalManager() {
         data: { ...editing.data, featured_image_url: urlData.publicUrl }
       });
       showToast('Tải ảnh lên thành công');
-    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {  
       console.error(error);
       showToast('Lỗi khi tải ảnh: ' + error.message);
     } finally {

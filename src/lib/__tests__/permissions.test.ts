@@ -20,7 +20,7 @@ describe('Permissions Logic', () => {
     });
 
     it('should return false for invalid roles', () => {
-      expect(hasPermission('UnknownRole' as any, 'content:view')).toBe(false); // eslint-disable-line @typescript-eslint/no-explicit-any
+      expect(hasPermission('UnknownRole' as any, 'content:view')).toBe(false);  
     });
   });
 

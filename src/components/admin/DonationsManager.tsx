@@ -854,7 +854,7 @@ export default function AdminDonationsManager() {
             >
               ✕
             </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img
               src={receiptModal}
               alt="Biên lai chuyển khoản"

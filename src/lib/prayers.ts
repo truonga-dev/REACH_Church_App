@@ -41,7 +41,7 @@ export async function fetchPrayerRequests(limit = 20, offset = 0): Promise<Praye
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars */) {
     return [];
   }
 }
@@ -61,7 +61,7 @@ export async function fetchUserPrayerRequests(userId: string): Promise<PrayerReq
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars */) {
     return [];
   }
 }
@@ -95,7 +95,7 @@ export async function createPrayerRequest(
       throw error;
     }
     return data || null;
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any  ) {
     const errorMessage = error?.message || String(error) || 'Unknown error';
     console.error('Error creating prayer request:', errorMessage);
     return null;
@@ -131,7 +131,7 @@ export async function incrementPrayerCount(id: string): Promise<boolean> {
       throw updateError;
     }
     return true;
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any  ) {
     const errorMessage = error?.message || String(error) || 'Unknown error';
     console.error('Error incrementing prayer count:', errorMessage);
     return false;
@@ -165,7 +165,7 @@ export async function updatePrayerStatus(
       throw error;
     }
     return data || null;
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any  ) {
     const errorMessage = error?.message || String(error) || 'Unknown error';
     console.error('Error updating prayer status:', errorMessage);
     return null;
@@ -187,7 +187,7 @@ export async function deletePrayerRequest(id: string): Promise<boolean> {
       throw error;
     }
     return true;
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any  ) {
     const errorMessage = error?.message || String(error) || 'Unknown error';
     console.error('Error deleting prayer request:', errorMessage);
     return false;
@@ -210,7 +210,7 @@ export async function searchPrayersByCategory(category: string): Promise<PrayerR
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars */) {
     return [];
   }
 }
@@ -256,7 +256,7 @@ export async function getPrayerStatistics(): Promise<{
       totalIntercessors,
       activeCategory,
     };
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars */) {
     return {
       totalPrayers: 0,
       totalIntercessors: 0,

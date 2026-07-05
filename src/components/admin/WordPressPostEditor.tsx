@@ -173,7 +173,7 @@ export default function WordPressPostEditor({
           <Metabox title="Ảnh đại diện">
             {value.image_url ? (
               <div className="wp-featured-preview">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img src={value.image_url} alt="Ảnh đại diện" />
                 <p className="wp-featured-hint">Nhấn để thay đổi ảnh đại diện</p>
                 <label className="wp-link-btn wp-featured-change">

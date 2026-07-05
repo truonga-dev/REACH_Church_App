@@ -69,11 +69,6 @@ export default function UserManager() {
   const canEditUser   = can('users:edit');
   const canDeleteUser = can('users:delete');
 
-  useEffect(() => {
-    loadProfiles();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
-
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
@@ -92,19 +87,24 @@ export default function UserManager() {
       if (error) throw error;
       setProfiles(data || []);
       setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       showToast('Lỗi khi tải dữ liệu: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadProfiles();
+   
+  }, [currentPage]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
     setSaving(true);
     try {
-      const updateData: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+      const updateData: Record<string, any> = {  
         full_name: editing.full_name,
         username:  editing.username,
         email:     editing.email,
@@ -121,7 +121,7 @@ export default function UserManager() {
       showToast('✅ Đã cập nhật thành công');
       setEditing(null);
       loadProfiles();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       showToast('Lỗi: ' + err.message);
     } finally {
       setSaving(false);
@@ -136,7 +136,7 @@ export default function UserManager() {
       if (error) throw error;
       showToast('✅ Đã xóa hồ sơ');
       loadProfiles();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       showToast('Lỗi khi xóa: ' + err.message);
     }
   };

@@ -87,7 +87,7 @@ export default function MinistryManager() {
         }
       }
       handleCancel();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       showToast('Lỗi khi lưu mục vụ: ' + (err.message || ''));
     } finally {
       setSaving(false);
@@ -193,7 +193,7 @@ export default function MinistryManager() {
         data: { ...editing.data, image_url: urlData.publicUrl }
       });
       showToast('Tải ảnh lên thành công');
-    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {  
       console.error(error);
       showToast('Lỗi khi tải ảnh: ' + error.message);
     } finally {

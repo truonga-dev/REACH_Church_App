@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     return NextResponse.json({ success: true, data });
-  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {  
     console.error('Error sending push notification:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

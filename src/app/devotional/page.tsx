@@ -20,7 +20,7 @@ function DevotionalContent() {
   const [liked, setLiked] = useState(false);
   const [toast, setToast] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
-  const [devotionalData, setDevotionalData] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [devotionalData, setDevotionalData] = useState<any>(null);  
 
   const title = searchParams.get('title') || 'Sống trong ân điển';
   const verse = searchParams.get('verse') || 'Giăng 1:16';

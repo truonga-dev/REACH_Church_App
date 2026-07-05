@@ -40,7 +40,7 @@ export default function SetupAdminPage() {
       } else {
         setMessage('Lỗi: Không thể cập nhật quyền. Có thể do RLS chặn.');
       }
-    } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {  
       setMessage('Lỗi: ' + e.message);
     } finally {
       setLoading(false);

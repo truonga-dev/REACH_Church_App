@@ -6,7 +6,7 @@ import { fetchMinistries } from '@/lib/ministries';
 import type { Ministry } from '@/lib/ministries';
 import './page.css';
 
-const IconMap: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+const IconMap: Record<string, any> = {  
   Users,
   Heart,
   Baby,

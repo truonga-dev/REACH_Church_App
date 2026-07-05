@@ -85,7 +85,7 @@ export default function ProfilePage() {
 
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [sermonNotes, setSermonNotes] = useState<(SermonNote & { livestreams: { title: string } })[]>([]);
-  const [volunteering, setVolunteering] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [volunteering, setVolunteering] = useState<any[]>([]);  
 
   const [dataLoading, setDataLoading] = useState(true);
   const [profileInfo, setProfileInfo] = useState({

@@ -36,7 +36,7 @@ export default function EventsManager() {
   const [registrants, setRegistrants] = useState<EventRegistration[]>([]);
   const [loadingRegistrants, setLoadingRegistrants] = useState(false);
   const [viewTab, setViewTab] = useState<'attendees' | 'volunteers'>('attendees');
-  const [volunteers, setVolunteers] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [volunteers, setVolunteers] = useState<any[]>([]);  
 
   useEffect(() => {
     loadEvents();

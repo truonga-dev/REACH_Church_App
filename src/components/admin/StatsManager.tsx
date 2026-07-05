@@ -157,20 +157,20 @@ function LineChart({ series, labels, colors, height = 140 }: {
 /* ─── SVG Pie Chart ─── */
 function PieChart({ data, size = 140 }: { data: ContentDist[]; size?: number }) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  let angle = -Math.PI / 2;
   const r = size / 2 - 8;
   const cx = size / 2;
   const cy = size / 2;
 
-  const slices = data.map(d => {
+  const slices = data.map((d, i) => {
+    const prevSum = data.slice(0, i).reduce((s, x) => s + x.value, 0);
+    const startAngle = -Math.PI / 2 + (prevSum / total) * 2 * Math.PI;
     const sweep = (d.value / total) * 2 * Math.PI;
-    const x1 = cx + r * Math.cos(angle);
-    const y1 = cy + r * Math.sin(angle);
-    const x2 = cx + r * Math.cos(angle + sweep);
-    const y2 = cy + r * Math.sin(angle + sweep);
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(startAngle + sweep);
+    const y2 = cy + r * Math.sin(startAngle + sweep);
     const large = sweep > Math.PI ? 1 : 0;
     const path = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`;
-    angle += sweep;
     return { ...d, path };
   });
 
@@ -186,7 +186,7 @@ function PieChart({ data, size = 140 }: { data: ContentDist[]; size?: number }) 
 
 /* ─── Stat Card ─── */
 function StatCard({ label, value, icon: Icon, color, trend }: {
-  label: string; value: number; icon: any; color: string; trend?: number; // eslint-disable-line @typescript-eslint/no-explicit-any
+  label: string; value: number; icon: any; color: string; trend?: number;  
 }) {
   return (
     <div style={{
@@ -288,7 +288,7 @@ export default function StatsManager() {
 
       // Content distribution (news by type)
       const typeMap: Record<string, number> = {};
-      (newsData || []).forEach((n: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      (newsData || []).forEach((n: any) => {  
         typeMap[n.type || 'Khác'] = (typeMap[n.type || 'Khác'] || 0) + 1;
       });
       const COLORS = ['#48BCE1', '#F4CC30', '#10b981', '#a855f7', '#f97316', '#ef4444'];
@@ -299,10 +299,10 @@ export default function StatsManager() {
 
       // Recent activity
       const activity: RecentActivity[] = [
-        ...(recentNews || []).map((n: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+        ...(recentNews || []).map((n: any) => ({  
           id: n.id, type: n.type || 'Bài viết', title: n.title, date: n.created_at, icon: '📰',
         })),
-        ...(recentSermons || []).map((s: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+        ...(recentSermons || []).map((s: any) => ({  
           id: s.id, type: 'Bài giảng', title: s.title, date: s.created_at, icon: '🎬',
         })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);

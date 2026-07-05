@@ -63,7 +63,7 @@ export default function AdminPrayerReviewManager() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     loadPrayers();
     setSelectedIds([]);
   }, [currentPage]);

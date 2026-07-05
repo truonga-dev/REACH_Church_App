@@ -150,7 +150,7 @@ export default function AdminPanel() {
   const [, setProfilesTotalPages] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [newsTotalPages, setNewsTotalPages] = useState(1);
-  const [recentPosts, setRecentPosts] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);  
 
   /* Forms */
   const [newSermon, setNewSermon] = useState<Sermon>({ ...defaultSermon });
@@ -295,8 +295,8 @@ export default function AdminPanel() {
       supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(3),
     ]);
     const combined = [
-      ...(nd || []).map((i: any) => ({ ...i, _source: 'news' })), // eslint-disable-line @typescript-eslint/no-explicit-any
-      ...(sd || []).map((i: any) => ({ ...i, _source: 'sermon' })), // eslint-disable-line @typescript-eslint/no-explicit-any
+      ...(nd || []).map((i: any) => ({ ...i, _source: 'news' })),  
+      ...(sd || []).map((i: any) => ({ ...i, _source: 'sermon' })),  
     ].sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()).slice(0, 6);
     setRecentPosts(combined);
   }, []);
@@ -374,7 +374,7 @@ export default function AdminPanel() {
       if (isEdit) setEditItem(prev => prev ? { ...prev, [field]: publicUrl } : prev);
       else setNewNews(prev => ({ ...prev, [field]: publicUrl }));
       toast('success', 'Tải lên thành công');
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       toast('error', 'Lỗi upload', err.message);
     } finally {
       setUploading(false);
@@ -435,7 +435,7 @@ export default function AdminPanel() {
       fetchNews();
       fetchStats();
       fetchRecentPosts();
-    } catch (err: any) { toast('error', 'Lỗi đăng bài', err.message); } // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) { toast('error', 'Lỗi đăng bài', err.message); }  
     finally { setSaving(false); }
   };
 
@@ -496,7 +496,7 @@ export default function AdminPanel() {
       setEditItem(null);
       fetchRecentPosts();
       fetchStats();
-    } catch (err: any) { toast('error', 'Lỗi cập nhật', err.message); } // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) { toast('error', 'Lỗi cập nhật', err.message); }  
     finally { setSaving(false); }
   };
 
@@ -598,8 +598,8 @@ const DataItem = ({
   }) => {
     const data = isEdit ? (editItem as NewsItem) : newNews;
     const set = isEdit
-      ? (k: string, v: any) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev) // eslint-disable-line @typescript-eslint/no-explicit-any
-      : (k: string, v: any) => setNewNews(prev => ({ ...prev, [k]: v })); // eslint-disable-line @typescript-eslint/no-explicit-any
+      ? (k: string, v: any) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev)  
+      : (k: string, v: any) => setNewNews(prev => ({ ...prev, [k]: v }));  
     const cats = parseCategories(data?.categories);
 
     return (
@@ -657,7 +657,7 @@ const DataItem = ({
               </label>
             </div>
             {data?.image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
+               
               <img src={data.image_url} alt="Preview" className="img-preview" />
             )}
           </div>

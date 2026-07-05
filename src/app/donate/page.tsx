@@ -245,7 +245,7 @@ function DonateContent() {
           </p>
           
           <div style={{ margin: '20px auto', background: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={checkoutUrl} alt="Mã QR Thanh Toán" style={{ width: 250, height: 250, objectFit: 'contain' }} />
           </div>
 
@@ -470,7 +470,7 @@ function DonateContent() {
                 </div>
               ) : (
                 <div className="upload-preview">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={receiptPreview} alt="Biên lai" />
                   <button className="upload-remove-btn" onClick={handleRemoveReceipt}>✕</button>
                 </div>

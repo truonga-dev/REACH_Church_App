@@ -18,7 +18,7 @@ export default function GroupsPage() {
   const [myMemberships, setMyMemberships] = useState<CellGroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [user, setUser] = useState<any>(null);  
   const [toast, setToast] = useState('');
 
   const showToast = (msg: string) => {
@@ -41,7 +41,7 @@ export default function GroupsPage() {
       .select('*, leader:leader_id(id, full_name, avatar_url)');
     
     if (!groupsError && groupsData) {
-      setGroups(groupsData as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      setGroups(groupsData as any);  
     }
 
     // Fetch user memberships if logged in
@@ -52,7 +52,7 @@ export default function GroupsPage() {
         .eq('user_id', user.id);
       
       if (!memberError && memberData) {
-        setMyMemberships(memberData as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        setMyMemberships(memberData as any);  
         // Automatically switch to 'my-group' tab if they have a group
         if (memberData.length > 0) {
           setActiveTab('my-group');
@@ -198,7 +198,7 @@ export default function GroupsPage() {
                       {group.leader && (
                         <div className="group-leader">
                           <Image 
-                            src={(group.leader as any).avatar_url || 'https://via.placeholder.com/150'}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                            src={(group.leader as any).avatar_url || 'https://via.placeholder.com/150'}   
                             alt="Leader Avatar" 
                             width={32}
                             height={32}

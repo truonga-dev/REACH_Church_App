@@ -146,5 +146,5 @@ export async function getSermonNotesByUser(userId: string): Promise<(SermonNote 
     console.error('Error fetching user sermon notes:', error);
     return [];
   }
-  return data as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return data as any[];  
 }

@@ -21,7 +21,7 @@ export default function CellGroupsManager() {
   const [members, setMembers] = useState<(CellGroupMember & { profiles: { full_name: string; email: string; avatar_url: string } })[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
-  const [pendingRequests, setPendingRequests] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);  
   const [loadingPending, setLoadingPending] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,7 +49,7 @@ export default function CellGroupsManager() {
 
       if (error) throw error;
       setGroups(data || []);
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       console.error(err);
       showToast('Lỗi khi tải danh sách nhóm');
     } finally {
@@ -104,7 +104,7 @@ export default function CellGroupsManager() {
       setShowForm(false);
       setEditing({ id: null, data: { name: '', description: '', meeting_time: '', location: '' } });
       loadGroups();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       console.error(err);
       showToast('Lỗi khi lưu nhóm');
     }
@@ -117,7 +117,7 @@ export default function CellGroupsManager() {
         if (error) throw error;
         showToast('Đã xóa nhóm');
         setGroups(groups.filter((g) => g.id !== id));
-      } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {  
         console.error(err);
         showToast('Lỗi khi xóa nhóm');
       }
@@ -152,8 +152,8 @@ export default function CellGroupsManager() {
         .order('joined_at', { ascending: false });
 
       if (error) throw error;
-      setMembers(data as any || []); // eslint-disable-line @typescript-eslint/no-explicit-any
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      setMembers(data as any || []);  
+    } catch (err: any) {  
       console.error(err);
       showToast('Lỗi tải danh sách thành viên');
     } finally {
@@ -180,7 +180,7 @@ export default function CellGroupsManager() {
       if (status === 'approved' && viewingMembers === null) {
          loadGroups(); // reload counts if needed later
       }
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       console.error(err);
       showToast('Lỗi khi cập nhật thành viên');
     }
@@ -196,7 +196,7 @@ export default function CellGroupsManager() {
       
       setMembers(members.map(m => m.id === memberId ? { ...m, role } : m));
       showToast(`Đã thay đổi vai trò`);
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {  
       console.error(err);
       showToast('Lỗi khi cập nhật vai trò');
     }
@@ -209,7 +209,7 @@ export default function CellGroupsManager() {
         if (error) throw error;
         setMembers(members.filter(m => m.id !== memberId));
         showToast('Đã xóa thành viên');
-      } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {  
         console.error(err);
         showToast('Lỗi khi xóa thành viên');
       }
@@ -279,7 +279,7 @@ export default function CellGroupsManager() {
                       <td style={{ padding: '1rem' }}>
                         <select 
                           value={member.role}
-                          onChange={(e) => updateMemberRole(member.id, e.target.value as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
+                          onChange={(e) => updateMemberRole(member.id, e.target.value as any)}  
                           style={{ background: 'rgba(0,0,0,0.2)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}
                         >
                           <option value="member">Thành viên</option>
