@@ -195,11 +195,21 @@
 }
 .ministry-modal::-webkit-scrollbar { display: none; }
 
+.ministry-hero-img {
+  width: calc(100% + 3.5rem);
+  margin: -1.75rem -1.75rem 1.5rem -1.75rem;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 20px 20px 0 0;
+  display: block;
+}
+
 .modal-close-btn {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
-  background: rgba(255,255,255,0.05);
+  z-index: 10;
+  background: rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50%;
   width: 36px;

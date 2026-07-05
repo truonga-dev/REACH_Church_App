@@ -104,11 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const can = useCallback((permission: Permission): boolean => {
-    return hasPermission(profile?.role, permission);
-  }, [profile?.role]);
+    return hasPermission(profile?.role, permission, profile?.custom_permissions);
+  }, [profile?.role, profile?.custom_permissions]);
 
-  const isAdmin = canAccessAdmin(profile?.role);
-  const permissions = getPermissions(profile?.role);
+  const isAdmin = canAccessAdmin(profile?.role, profile?.custom_permissions);
+  const permissions = getPermissions(profile?.role, profile?.custom_permissions);
 
   return (
     <AuthContext.Provider value={{

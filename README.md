@@ -51,22 +51,31 @@
 | **Kinh Thánh** | `/bible` | Đọc Kinh Thánh tiếng Việt theo sách & chương |
 | **Thư viện** | `/library` | Tài liệu PDF, sách nói, video (tích hợp Supabase) |
 | **Mục vụ** | `/ministry` | Danh sách các ban ngành và hoạt động mục vụ |
-| **Hồ sơ** | `/profile` | Thông tin cá nhân, đề mục cầu nguyện, quyên góp |
+| **Hồ sơ** | `/profile` | Thông tin cá nhân, lịch sử quyên góp, đề mục cầu nguyện |
+| **Quyên góp** | `/donate` | Dâng hiến qua QR tĩnh, chuyển khoản thủ công kèm biên lai, tích hợp PayOS |
 | **Cầu nguyện** | `/prayer` | Gửi nhu cầu cầu nguyện đến ban cầu nguyện |
 | **Dưỡng linh** | `/devotional` | Bài đọc dưỡng linh chi tiết, chia sẻ |
-| **Tin tức** | `/news/[id]` | Chi tiết bản tin / sự kiện |
+| **Tin tức** | `/news/[id]` | Chi tiết bản tin / thông báo |
+| **Sự kiện** | `/events` | Lịch trình và đăng ký các sự kiện sắp tới |
+| **Nhóm nhỏ** | `/groups` | Thông tin về các nhóm tế bào, đăng ký tham gia |
+| **Trực tuyến** | `/live` | Xem phát trực tiếp bài giảng và sự kiện |
+| **Tài khoản** | `/login`, `/register` | Xác thực người dùng qua Supabase |
 
 ### Quản trị
 
 | Trang | Đường dẫn | Mô tả |
 | ----- | --------- | ----- |
 | **Admin** | `/admin` | Quản lý bài giảng, sách nói, PDF, dưỡng linh, sự kiện, tín hữu, cầu nguyện |
+| **Thiết lập Admin** | `/setup-admin` | Công cụ gán quyền admin cho tài khoản (chỉ dùng cục bộ/dev) |
 
 ### API nội bộ
 
 | Endpoint | Mô tả |
 | -------- | ----- |
-| `GET /api/bible?book=&chapter=` | Trả về các câu Kinh Thánh từ file `public/bible_vie.json` |
+| `GET /api/bible` | Trả về các câu Kinh Thánh từ file JSON |
+| `POST /api/donations/create-payment` | Xử lý tạo thanh toán PayOS / Chuyển khoản |
+| `POST /api/donations/upload-receipt` | Upload biên lai thanh toán thủ công |
+| `POST /api/webhooks/payos` | Nhận webhook trạng thái từ PayOS |
 
 ### Điều hướng
 
@@ -84,10 +93,14 @@
 | UI Library | [React 19](https://react.dev/) |
 | Ngôn ngữ | [TypeScript 5](https://www.typescriptlang.org/) |
 | Backend / Database | [Supabase](https://supabase.com/) |
+| Payment Gateway | [PayOS](https://payos.vn/) |
+| Error Tracking | [Sentry](https://sentry.io/) |
+| Push Notification | [OneSignal](https://onesignal.com/) |
+| Form Validation | Zod |
+| Testing | Jest, React Testing Library |
 | Icons | [Lucide React](https://lucide.dev/) |
 | Rich Text Editor | react-quill-new (trang Admin) |
 | PWA | next-pwa |
-| Linting | ESLint + eslint-config-next |
 | Package Manager | npm |
 
 ---
@@ -167,35 +180,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ## Cấu trúc thư mục
 
-```
+```text
 reach-church/
 ├── public/
 │   ├── logo.png              # Logo hội thánh
 │   ├── manifest.json         # Cấu hình PWA
 │   └── bible_vie.json        # Dữ liệu Kinh Thánh tiếng Việt
 ├── src/
-│   ├── app/
-│   │   ├── page.tsx          # Trang chủ
-│   │   ├── layout.tsx        # Layout gốc + BottomNav
-│   │   ├── globals.css       # CSS toàn cục
-│   │   ├── admin/            # Trang quản trị
-│   │   ├── api/bible/        # API Kinh Thánh
-│   │   ├── bible/            # Đọc Kinh Thánh
-│   │   ├── devotional/       # Dưỡng linh
-│   │   ├── library/          # Thư viện tài liệu
-│   │   ├── ministry/         # Ban ngành / mục vụ
-│   │   ├── news/[id]/        # Chi tiết tin tức
-│   │   ├── prayer/           # Cầu nguyện
-│   │   └── profile/          # Hồ sơ cá nhân
-│   ├── components/
-│   │   └── BottomNav.tsx     # Thanh điều hướng dưới
-│   └── lib/
-│       └── supabase.ts       # Client Supabase
+│   ├── app/                  # Chứa toàn bộ các trang giao diện & API nội bộ
+│   ├── components/           # Các component dùng chung (BottomNav, UI, ...)
+│   └── lib/                  # Tiện ích, cấu hình Supabase, etc.
 ├── .env.example              # Mẫu biến môi trường
 ├── .gitignore
-├── next.config.mjs           # Cấu hình Next.js + PWA
-├── package.json
-└── tsconfig.json
+├── Dockerfile                # Cấu hình Docker build
+├── docker-compose.yml        # Cấu hình Docker compose
+├── eslint.config.mjs         # Cấu hình ESLint
+├── jest.config.js            # Cấu hình Unit Tests (Jest)
+├── next.config.mjs           # Cấu hình Next.js + PWA + Sentry
+├── package.json              # Khai báo thư viện & scripts
+├── sentry.*.config.ts        # Các file cấu hình Sentry (Client/Edge/Server)
+└── tsconfig.json             # Cấu hình TypeScript
 ```
 
 ---

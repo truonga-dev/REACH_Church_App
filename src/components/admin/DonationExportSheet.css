@@ -1,0 +1,313 @@
+/* Modal xuất báo cáo — giao diện Excel */
+.donation-export-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.donation-export-modal {
+  width: min(1100px, 100%);
+  max-height: min(90vh, 820px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  font-family: 'Segoe UI', Calibri, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Ribbon Excel xanh */
+.donation-export-ribbon {
+  background: linear-gradient(180deg, #217346 0%, #185c37 100%);
+  color: #fff;
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.donation-export-ribbon-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.donation-export-ribbon-icon {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.donation-export-ribbon-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.donation-export-ribbon-sub {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  margin: 2px 0 0;
+}
+
+.donation-export-ribbon-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.donation-export-ribbon-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.donation-export-ribbon-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.donation-export-ribbon-btn.primary {
+  background: #fff;
+  color: #185c37;
+  border-color: #fff;
+}
+
+.donation-export-ribbon-btn.primary:hover {
+  background: #f0f0f0;
+}
+
+.donation-export-ribbon-btn.close-btn {
+  background: transparent;
+  border: none;
+  padding: 0.35rem;
+  opacity: 0.9;
+}
+
+/* Formula bar */
+.donation-export-formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: #f3f3f3;
+  border-bottom: 1px solid #d4d4d4;
+  font-size: 0.75rem;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.donation-export-formula-label {
+  font-weight: 700;
+  color: #217346;
+  min-width: 36px;
+}
+
+.donation-export-formula-input {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #333;
+}
+
+/* Vùng bảng tính */
+.donation-export-sheet-wrap {
+  flex: 1;
+  overflow: auto;
+  background: #e8e8e8;
+  padding: 0.75rem;
+}
+
+.donation-export-sheet {
+  background: #fff;
+  border: 1px solid #b4b4b4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  min-width: max-content;
+}
+
+.donation-export-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  color: #000;
+  table-layout: fixed;
+}
+
+.donation-export-table th,
+.donation-export-table td {
+  border: 1px solid #d4d4d4;
+  padding: 4px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.donation-export-table .col-corner {
+  width: 36px;
+  min-width: 36px;
+  background: #f3f3f3;
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+}
+
+.donation-export-table .col-letter {
+  background: #f3f3f3;
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+  font-size: 0.7rem;
+  height: 22px;
+}
+
+.donation-export-table .row-num {
+  background: #f3f3f3;
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+  width: 36px;
+  min-width: 36px;
+}
+
+.donation-export-table .header-cell {
+  background: #217346;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  height: 26px;
+}
+
+.donation-export-table tbody tr:nth-child(even) td.data-cell {
+  background: #f9f9f9;
+}
+
+.donation-export-table tbody tr:hover td.data-cell {
+  background: #e7f4ee;
+}
+
+.donation-export-table .data-cell {
+  background: #fff;
+  color: #000;
+}
+
+.donation-export-table .num-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.donation-export-table .dup-cell {
+  background: #fff3cd !important;
+  color: #856404;
+  font-weight: 600;
+}
+
+.donation-export-table .total-row td {
+  background: #fff2cc !important;
+  font-weight: 700;
+  border-top: 2px solid #217346;
+}
+
+.donation-export-table .total-label {
+  text-align: right;
+  color: #185c37;
+}
+
+.donation-export-footer {
+  padding: 0.5rem 0.75rem;
+  background: #f3f3f3;
+  border-top: 1px solid #d4d4d4;
+  font-size: 0.72rem;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.donation-export-loading {
+  padding: 3rem;
+  text-align: center;
+  color: #666;
+  background: #fff;
+}
+
+@media print {
+  body.printing-donation-export * {
+    visibility: hidden;
+  }
+
+  body.printing-donation-export .donation-export-overlay,
+  body.printing-donation-export .donation-export-overlay * {
+    visibility: visible;
+  }
+
+  body.printing-donation-export .donation-export-overlay {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    padding: 0;
+  }
+
+  .donation-export-overlay {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .donation-export-modal {
+    max-height: none;
+    box-shadow: none;
+    width: 100%;
+  }
+
+  .donation-export-ribbon-actions,
+  .donation-export-ribbon-btn.close-btn {
+    display: none !important;
+  }
+
+  .donation-export-sheet-wrap {
+    overflow: visible;
+    padding: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .donation-export-ribbon {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .donation-export-ribbon-actions {
+    flex-wrap: wrap;
+  }
+}

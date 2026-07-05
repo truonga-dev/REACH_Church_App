@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Send, Loader2 } from 'lucide-react';
+import { Heart, Send } from 'lucide-react';
+import { PrayerWallSkeleton } from '@/components/ui/Skeleton';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { formatSupabaseError } from '@/lib/supabase-errors';
@@ -196,9 +197,7 @@ export default function PrayerPage() {
       <section className="section mt-md">
         <h2 className="section-title">Danh Sách Cầu Nguyện</h2>
         {loadingWall ? (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <Loader2 size={24} className="spin" style={{ margin: '0 auto', color: '#48BCE1' }} />
-          </div>
+          <PrayerWallSkeleton />
         ) : wall.length === 0 ? (
           <p className="text-muted text-sm" style={{ textAlign: 'center', padding: '1rem' }}>
             Chưa có lời cầu nguyện công khai. Hãy là người đầu tiên!

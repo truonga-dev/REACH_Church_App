@@ -2,17 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FileText, Headphones, Video, BookOpen, Loader2, PlayCircle, X, ChevronRight, ExternalLink, Calendar } from 'lucide-react';
+import { FileText, Headphones, Video, BookOpen, PlayCircle, X, ChevronRight, ExternalLink, Calendar, Heart } from 'lucide-react';
+import { LibrarySkeleton } from '@/components/ui/Skeleton';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Sermon, NewsItem } from '@/types';
 import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
 import CommentSection from '@/components/CommentSection';
+import MediaPlayer from '@/components/library/MediaPlayer';
+import { useAuth } from '@/contexts/AuthContext';
+import { checkIsFavorite, addFavorite, removeFavorite } from '@/lib/favorites';
+import { useDraggableScroll } from '@/hooks/useDraggableScroll';
 import './page.css';
 
 type Tab = 'sermons' | 'audiobooks' | 'pdfs' | 'devotionals' | 'events';
 
-const TABS: { id: Tab; label: string; icon: any }[] = [
+const TABS: { id: Tab; label: string; icon: any }[] = [ // eslint-disable-line @typescript-eslint/no-explicit-any
   { id: 'sermons',    label: 'Bài giảng', icon: Video      },
   { id: 'audiobooks', label: 'Sách nói',  icon: Headphones },
   { id: 'pdfs',       label: 'Sách PDF',  icon: FileText   },
@@ -32,7 +37,49 @@ export default function Library() {
   const [devotionals, setDevotionals]       = useState<NewsItem[]>([]);
   const [loading, setLoading]               = useState(true);
   const [playingSermon, setPlayingSermon]   = useState<Sermon | null>(null);
+  const [playingMedia, setPlayingMedia]     = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [playingPdf, setPlayingPdf]         = useState<NewsItem | null>(null);
   const [activeFilter, setActiveFilter]     = useState('Tất cả');
+  const { user } = useAuth();
+  const [likedSermon, setLikedSermon]       = useState(false);
+  const [likedPdf, setLikedPdf]             = useState(false);
+
+  useEffect(() => {
+    if (user && playingSermon) {
+      checkIsFavorite(user.id, 'sermon', playingSermon.id).then(setLikedSermon);
+    }
+  }, [user, playingSermon]);
+
+  useEffect(() => {
+    if (user && playingPdf) {
+      checkIsFavorite(user.id, 'pdf', playingPdf.id).then(setLikedPdf);
+    }
+  }, [user, playingPdf]);
+
+  const handleFavoriteSermon = async () => {
+    if (!user || !playingSermon) return alert('Vui lòng đăng nhập');
+    if (likedSermon) {
+      const ok = await removeFavorite(user.id, 'sermon', playingSermon.id);
+      if (ok) setLikedSermon(false);
+    } else {
+      const ok = await addFavorite(user.id, 'sermon', playingSermon.id);
+      if (ok) setLikedSermon(true);
+    }
+  };
+
+  const handleFavoritePdf = async () => {
+    if (!user || !playingPdf) return alert('Vui lòng đăng nhập');
+    if (likedPdf) {
+      const ok = await removeFavorite(user.id, 'pdf', playingPdf.id);
+      if (ok) setLikedPdf(false);
+    } else {
+      const ok = await addFavorite(user.id, 'pdf', playingPdf.id);
+      if (ok) setLikedPdf(true);
+    }
+  };
+
+  const tabsScroll = useDraggableScroll<HTMLDivElement>();
+  const filtersScroll = useDraggableScroll<HTMLDivElement>();
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -51,7 +98,7 @@ export default function Library() {
         setPdfs(news.filter(n => n.type === 'Tài liệu'));
       }
       if (devotionalsRes.data) {
-        setDevotionals(devotionalsRes.data as any[]);
+        setDevotionals(devotionalsRes.data as any[]); // eslint-disable-line @typescript-eslint/no-explicit-any
       }
     } catch (err) {
       console.error(err);
@@ -90,12 +137,7 @@ export default function Library() {
 
   /* ── Render content per tab ── */
   const renderContent = () => {
-    if (loading) return (
-      <div className="lib-loading">
-        <Loader2 size={28} className="spin" />
-        <p>Đang tải thư viện...</p>
-      </div>
-    );
+    if (loading) return <LibrarySkeleton />;
 
     /* SERMONS */
     if (activeTab === 'sermons') {
@@ -152,7 +194,15 @@ export default function Library() {
                 </div>
               </div>
               {a.audio_url
-                ? <audio controls src={a.audio_url} className="lib-audio" />
+                ? (
+                  <button 
+                    className="btn-read" 
+                    onClick={() => setPlayingMedia({ id: a.id, title: a.title, url: a.audio_url, type: 'audio' })}
+                    style={{ marginTop: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
+                  >
+                    <PlayCircle size={16} /> Nghe sách
+                  </button>
+                )
                 : <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>Chưa có file audio</p>
               }
             </div>
@@ -178,10 +228,10 @@ export default function Library() {
               <button
                 type="button"
                 className="btn-read"
-                onClick={() => pdf.pdf_url ? window.open(pdf.pdf_url, '_blank') : alert('Tài liệu chưa có file PDF.')}
+                onClick={() => pdf.pdf_url ? setPlayingPdf(pdf) : alert('Tài liệu chưa có file PDF.')}
               >
                 <ExternalLink size={14} />
-                Mở tài liệu
+                Đọc tài liệu
               </button>
             </div>
           ))}
@@ -221,7 +271,15 @@ export default function Library() {
       </header>
 
       {/* ── Tabs ── */}
-      <div className="library-tabs">
+      <div 
+        className="library-tabs"
+        ref={tabsScroll.ref}
+        onMouseDown={tabsScroll.onMouseDown}
+        onMouseLeave={tabsScroll.onMouseLeave}
+        onMouseUp={tabsScroll.onMouseUp}
+        onMouseMove={tabsScroll.onMouseMove}
+        style={tabsScroll.style}
+      >
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -236,7 +294,15 @@ export default function Library() {
       </div>
 
       {/* ── Filter chips ── */}
-      <div className="lib-filters">
+      <div 
+        className="lib-filters"
+        ref={filtersScroll.ref}
+        onMouseDown={filtersScroll.onMouseDown}
+        onMouseLeave={filtersScroll.onMouseLeave}
+        onMouseUp={filtersScroll.onMouseUp}
+        onMouseMove={filtersScroll.onMouseMove}
+        style={filtersScroll.style}
+      >
         {filters.map(f => (
           <button
             key={f}
@@ -262,9 +328,14 @@ export default function Library() {
                 <h3 className="sermon-modal-title">{playingSermon.title}</h3>
                 {(playingSermon.preacher || playingSermon.speaker) && <p className="sermon-modal-speaker">{playingSermon.preacher || playingSermon.speaker} · {playingSermon.sermon_date || playingSermon.date ? new Date(playingSermon.sermon_date || playingSermon.date as string).toLocaleDateString('vi-VN') : ''}</p>}
               </div>
-              <button type="button" onClick={() => setPlayingSermon(null)} aria-label="Đóng">
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button type="button" onClick={handleFavoriteSermon} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: likedSermon ? '#ef4444' : '#fff', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={18} fill={likedSermon ? "#ef4444" : "none"} />
+                </button>
+                <button type="button" onClick={() => setPlayingSermon(null)} aria-label="Đóng" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {getYoutubeId(playingSermon.youtube_url || playingSermon.youtube_id || playingSermon.video_url) ? (
@@ -291,6 +362,42 @@ export default function Library() {
           </div>
         </div>
       )}
+
+      {/* ── PDF Viewer Modal ── */}
+      {playingPdf && (
+        <div className="sermon-modal-overlay" onClick={() => setPlayingPdf(null)} style={{ zIndex: 10000 }}>
+          <div className="sermon-modal" onClick={e => e.stopPropagation()} style={{ height: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="sermon-modal-handle" />
+            <div className="sermon-modal-header">
+              <div>
+                <p className="sermon-modal-series">{playingPdf.type || 'Tài liệu PDF'}</p>
+                <h3 className="sermon-modal-title">{playingPdf.title}</h3>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button type="button" onClick={handleFavoritePdf} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: likedPdf ? '#ef4444' : '#fff', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={18} fill={likedPdf ? "#ef4444" : "none"} />
+                </button>
+                <button type="button" onClick={() => setPlayingPdf(null)} aria-label="Đóng" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '12px', overflow: 'hidden' }}>
+              <iframe 
+                src={`${playingPdf.pdf_url}#toolbar=0`} 
+                width="100%" 
+                height="100%" 
+                style={{ border: 'none' }}
+                title={playingPdf.title}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sticky Media Player ── */}
+      <MediaPlayer item={playingMedia} onClose={() => setPlayingMedia(null)} />
     </div>
   );
 }

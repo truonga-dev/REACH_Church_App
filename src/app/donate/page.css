@@ -1,0 +1,634 @@
+/* ============================================
+   /donate – Trang Dâng Hiến REACH Church
+   Mobile-first, dark glassmorphism
+   ============================================ */
+
+/* ---- Base Layout ---- */
+.donate-page {
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #0a0f1e 0%, #0d1528 50%, #0a0f1e 100%);
+  padding-bottom: 100px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #f1f5f9;
+}
+
+/* ---- Back Button ---- */
+.donate-back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+.donate-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.donate-back-btn:active { transform: scale(0.93); }
+
+/* ---- Hero Banner ---- */
+.donate-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 72px 20px 40px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(72,188,225,0.10) 0%, transparent 100%);
+}
+
+.donate-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(72,188,225,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.donate-hero-icon {
+  font-size: 52px;
+  display: block;
+  margin-bottom: 12px;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.donate-hero h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #48bce1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.donate-hero p {
+  font-size: 14px;
+  color: rgba(241,245,249,0.65);
+  margin: 0;
+  max-width: 300px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+/* ---- Cards ---- */
+.donate-card {
+  margin: 16px 16px 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.donate-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(241,245,249,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 14px;
+}
+
+/* ---- Amount Presets ---- */
+.amount-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.amount-btn {
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.amount-btn:hover {
+  border-color: #48bce1;
+  background: rgba(72,188,225,0.1);
+}
+
+.amount-btn.active {
+  border-color: #48bce1;
+  background: rgba(72,188,225,0.18);
+  color: #48bce1;
+  box-shadow: 0 0 16px rgba(72,188,225,0.2);
+}
+
+.amount-btn small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(241,245,249,0.5);
+  margin-top: 2px;
+}
+
+.amount-btn.active small {
+  color: rgba(72,188,225,0.8);
+}
+
+.amount-custom-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 13px 16px;
+  color: #f1f5f9;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.18s;
+  box-sizing: border-box;
+}
+
+.amount-custom-input:focus {
+  border-color: #48bce1;
+}
+
+.amount-custom-input::placeholder {
+  color: rgba(241,245,249,0.3);
+  font-weight: 400;
+}
+
+/* ---- Category Grid ---- */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.category-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #f1f5f9;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+}
+
+.category-btn:hover {
+  border-color: rgba(72,188,225,0.4);
+  background: rgba(72,188,225,0.06);
+}
+
+.category-btn.active {
+  border-color: #48bce1;
+  background: rgba(72,188,225,0.14);
+}
+
+.category-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.category-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---- Notes Input ---- */
+.donate-textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 13px 16px;
+  color: #f1f5f9;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.18s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.donate-textarea:focus {
+  border-color: #48bce1;
+}
+
+.donate-textarea::placeholder {
+  color: rgba(241,245,249,0.3);
+}
+
+/* ---- Payment Method Toggle ---- */
+.payment-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.method-card {
+  padding: 18px 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.method-card:hover {
+  border-color: rgba(72,188,225,0.35);
+  background: rgba(72,188,225,0.07);
+}
+
+.method-card.active {
+  border-color: #48bce1;
+  background: rgba(72,188,225,0.14);
+  box-shadow: 0 0 24px rgba(72,188,225,0.15);
+}
+
+.method-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.method-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.method-desc {
+  font-size: 11px;
+  color: rgba(241,245,249,0.5);
+  line-height: 1.4;
+}
+
+.method-card.active .method-name {
+  color: #48bce1;
+}
+
+/* ---- Bank Info Block (Manual) ---- */
+.bank-info-block {
+  background: rgba(72,188,225,0.06);
+  border: 1px solid rgba(72,188,225,0.2);
+  border-radius: 16px;
+  padding: 18px;
+  margin-top: 16px;
+}
+
+.bank-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bank-info-header span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #48bce1;
+}
+
+.bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.bank-row:last-of-type {
+  border-bottom: none;
+}
+
+.bank-row-label {
+  font-size: 12px;
+  color: rgba(241,245,249,0.5);
+}
+
+.bank-row-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-align: right;
+}
+
+.bank-account-number {
+  font-size: 20px;
+  font-weight: 800;
+  color: #48bce1;
+  letter-spacing: 2px;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(72,188,225,0.4);
+  background: transparent;
+  color: #48bce1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.copy-btn:hover, .copy-btn.copied {
+  background: rgba(72,188,225,0.15);
+  border-color: #48bce1;
+}
+
+/* ---- Upload Receipt ---- */
+.upload-section {
+  margin-top: 16px;
+}
+
+.upload-label {
+  font-size: 13px;
+  color: rgba(241,245,249,0.6);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.upload-zone {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.upload-zone:hover {
+  border-color: rgba(72,188,225,0.5);
+  background: rgba(72,188,225,0.04);
+}
+
+.upload-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: rgba(241,245,249,0.45);
+}
+
+.upload-preview {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.upload-preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.upload-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Submit Button ---- */
+.donate-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: calc(100% - 32px);
+  margin: 20px 16px 0;
+  padding: 18px;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(135deg, #48bce1 0%, #3a9dbf 100%);
+  color: #0a0f1e;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(72,188,225,0.35);
+  letter-spacing: 0.3px;
+}
+
+.donate-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(72,188,225,0.45);
+}
+
+.donate-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ---- Status Messages ---- */
+.status-banner {
+  margin: 16px 16px 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-banner.success {
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.3);
+  color: #10b981;
+}
+
+.status-banner.error {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #ef4444;
+}
+
+.status-banner.info {
+  background: rgba(72,188,225,0.1);
+  border: 1px solid rgba(72,188,225,0.25);
+  color: #48bce1;
+}
+
+/* ---- Checkout redirect panel ---- */
+.checkout-panel {
+  margin: 16px 16px 0;
+  background: rgba(72,188,225,0.07);
+  border: 1.5px solid rgba(72,188,225,0.25);
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.checkout-panel h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #48bce1;
+  margin: 0 0 8px;
+}
+
+.checkout-panel p {
+  font-size: 13px;
+  color: rgba(241,245,249,0.6);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.checkout-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: 14px;
+  background: #48bce1;
+  color: #0a0f1e;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 6px 24px rgba(72,188,225,0.35);
+}
+
+.checkout-open-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(72,188,225,0.5);
+}
+
+.checkout-cancel-btn {
+  display: block;
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: rgba(241,245,249,0.4);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---- Amount display ---- */
+.amount-display {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.amount-display-value {
+  font-size: 36px;
+  font-weight: 800;
+  color: #48bce1;
+  letter-spacing: -1px;
+}
+
+.amount-display-unit {
+  font-size: 16px;
+  color: rgba(72,188,225,0.7);
+  margin-left: 4px;
+}
+
+/* ---- Loader ---- */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(0,0,0,0.2);
+  border-top-color: #0a0f1e;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Receipt submitted info ---- */
+.receipt-submitted {
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.receipt-submitted p {
+  margin: 0;
+  font-size: 14px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.receipt-submitted small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(241,245,249,0.5);
+}
+
+/* ---- Responsive ---- */
+@media (min-width: 480px) {
+  .donate-hero h1 { font-size: 30px; }
+  .amount-presets { grid-template-columns: repeat(4, 1fr); }
+  .category-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .donate-page { max-width: 520px; margin-inline: auto; }
+}

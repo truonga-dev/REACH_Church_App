@@ -1,0 +1,342 @@
+.groups-container {
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+}
+
+.groups-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 10000;
+  animation: slideDown 0.3s ease-out;
+  font-weight: 500;
+}
+
+.groups-header {
+  padding: 24px 20px 16px;
+  position: relative;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.groups-back-btn {
+  position: absolute;
+  top: 24px;
+  left: 16px;
+  color: var(--color-text);
+}
+
+.groups-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 4px 0;
+}
+
+.groups-subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.groups-tabs {
+  display: flex;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.groups-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 16px 0;
+  position: relative;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.groups-tab.active {
+  color: var(--color-primary);
+}
+
+.groups-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+}
+
+.groups-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px; /* Space for BottomNav */
+}
+
+.discover-tab, .my-group-tab {
+  padding: 20px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+}
+
+.search-icon {
+  color: var(--color-text-muted);
+  margin-right: 12px;
+}
+
+.search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.search-bar input:focus {
+  outline: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.empty-state svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin-bottom: 24px;
+}
+
+.groups-list, .my-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.group-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.group-card-header h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.approved {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.group-desc {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.group-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.group-leader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.group-leader img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.group-leader span {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-join {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  background: rgba(72,188,225,0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(72,188,225,0.3);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-join:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-group-detail-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.my-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.my-group-header h2 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.role-badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: rgba(72,188,225,0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(72,188,225,0.2);
+}
+
+.pending-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.my-group-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.detail-item svg {
+  color: var(--color-primary);
+  margin-top: 2px;
+}
+
+.detail-item strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.detail-item p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.btn-danger {
+  width: 100%;
+  padding: 12px;
+  background: rgba(241,45,92,0.1);
+  color: #f12d5c;
+  border: 1px solid rgba(241,45,92,0.2);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  background: #f12d5c;
+  color: #fff;
+}

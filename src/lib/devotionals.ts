@@ -10,6 +10,7 @@ export interface Devotional {
   title: string;
   content: string;
   author: string;
+  category?: string;
   featured_image_url?: string;
   published_at: string;
   created_at: string;
@@ -22,6 +23,7 @@ export interface DevotionalCreateInput {
   title: string;
   content: string;
   author: string;
+  category?: string;
   featured_image_url?: string;
 }
 

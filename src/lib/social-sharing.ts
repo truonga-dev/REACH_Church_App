@@ -104,7 +104,6 @@ export const showShareMenu = (
   verseText: string,
   bookName: string,
   shareUrl: string,
-  _onPlatformSelect?: (platform: string) => void
 ): { name: string; icon: string; action: () => void }[] => {
   const platforms = [
     {
@@ -145,7 +144,7 @@ export const showShareMenu = (
 /**
  * Get share count for social platforms
  */
-export const getShareMetrics = async (_url: string): Promise<Record<string, number>> => {
+export const getShareMetrics = async (): Promise<Record<string, number>> => {
   // This would require backend integration with social APIs
   // For now, return empty metrics
   return {

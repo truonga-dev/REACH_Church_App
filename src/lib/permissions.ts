@@ -9,7 +9,7 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-export type UserRole = 'Quản trị viên' | 'Ban điều hành' | 'Thành viên';
+export type UserRole = 'Quản trị viên' | 'Ban điều hành' | 'Trưởng ban' | 'Thành viên';
 
 /** Danh sách tất cả quyền trong hệ thống */
 export type Permission =
@@ -44,6 +44,9 @@ export type Permission =
   | 'library:create'
   | 'library:edit'
   | 'library:delete'
+  // === Livestream ===
+  | 'livestreams:view'
+  | 'livestreams:manage'
   // === Cầu nguyện ===
   | 'prayers:view'          // Xem danh sách cầu nguyện
   | 'prayers:review'        // Duyệt / đánh dấu nhậm lời
@@ -56,6 +59,12 @@ export type Permission =
   | 'users:edit'            // Sửa thông tin tín hữu
   | 'users:delete'          // Xóa hồ sơ tín hữu
   | 'users:assign_role'     // Phân quyền (chỉ admin mới có)
+  // === Nhóm nhỏ ===
+  | 'cell_groups:view'      // Xem nhóm nhỏ
+  | 'cell_groups:manage'    // Quản lý nhóm nhỏ & duyệt thành viên
+  // === Sự kiện & Phục vụ ===
+  | 'volunteers:view'       // Xem danh sách phục vụ
+  | 'volunteers:manage'     // Quản lý / duyệt phục vụ
   // === Thống kê & Hệ thống ===
   | 'stats:view'            // Xem tổng quan thống kê
   | 'notifications:send'    // Gửi thông báo push
@@ -74,9 +83,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ministries:view', 'ministries:create', 'ministries:edit', 'ministries:delete',
     'devotionals:view', 'devotionals:create', 'devotionals:edit', 'devotionals:delete',
     'library:view', 'library:create', 'library:edit', 'library:delete',
+    'livestreams:view', 'livestreams:manage',
     'prayers:view', 'prayers:review', 'prayers:delete',
     'donations:view', 'donations:manage',
     'users:view', 'users:edit', 'users:delete', 'users:assign_role',
+    'cell_groups:view', 'cell_groups:manage',
+    'volunteers:view', 'volunteers:manage',
   ],
   'Ban điều hành': [
     // Quản lý nội dung — không phân quyền user, không xóa tín hữu
@@ -88,9 +100,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ministries:view', 'ministries:create', 'ministries:edit', 'ministries:delete',
     'devotionals:view', 'devotionals:create', 'devotionals:edit', 'devotionals:delete',
     'library:view', 'library:create', 'library:edit', 'library:delete',
+    'livestreams:view', 'livestreams:manage',
     'prayers:view', 'prayers:review',
     'donations:view',
     'users:view',
+    'cell_groups:view', 'cell_groups:manage',
+    'volunteers:view', 'volunteers:manage',
+  ],
+  'Trưởng ban': [
+    // Mặc định chỉ có quyền vào admin. Quyền chi tiết được gán qua custom_permissions
+    'admin:access',
+    'stats:view',
   ],
   'Thành viên': [
     // Chỉ xem — không có quyền admin
@@ -100,24 +120,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 /**
  * Lấy danh sách quyền của một role
  */
-export function getPermissions(role?: string | null): Permission[] {
+export function getPermissions(role?: string | null, customPermissions?: string[] | null): Permission[] {
   if (!role) return [];
-  return ROLE_PERMISSIONS[role as UserRole] ?? [];
+  const basePermissions = ROLE_PERMISSIONS[role as UserRole] ?? [];
+  if (role === 'Trưởng ban' && customPermissions && Array.isArray(customPermissions)) {
+    return Array.from(new Set([...basePermissions, ...(customPermissions as Permission[])]));
+  }
+  return basePermissions;
 }
 
 /**
  * Kiểm tra một role có quyền cụ thể không
  */
-export function hasPermission(role?: string | null, permission?: Permission): boolean {
+export function hasPermission(role?: string | null, permission?: Permission, customPermissions?: string[] | null): boolean {
   if (!role || !permission) return false;
-  return getPermissions(role).includes(permission);
+  return getPermissions(role, customPermissions).includes(permission);
 }
 
 /**
  * Kiểm tra có thể vào Admin Panel không
  */
-export function canAccessAdmin(role?: string | null): boolean {
-  return hasPermission(role, 'admin:access');
+export function canAccessAdmin(role?: string | null, customPermissions?: string[] | null): boolean {
+  return hasPermission(role, 'admin:access', customPermissions);
 }
 
 /**
@@ -137,6 +161,7 @@ export const TAB_PERMISSIONS: Record<string, Permission> = {
   donations:    'donations:view',
   prayers:      'prayers:view',
   users:        'users:view',
+  cell_groups:  'cell_groups:view',
 };
 
 /** Mô tả vai trò dùng trong UI */
@@ -157,6 +182,13 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, {
     desc: 'Quản lý nội dung, tin tức, sự kiện và cầu nguyện',
     icon: '✍️',
   },
+  'Trưởng ban': {
+    label: 'Trưởng ban',
+    color: '#FF8A65',
+    bg: 'rgba(255,138,101,0.12)',
+    desc: 'Quản lý một ban ngành cụ thể, được phân quyền tùy chỉnh bởi Quản trị viên',
+    icon: '🎯',
+  },
   'Thành viên': {
     label: 'Thành viên',
     color: '#aaa',
@@ -166,4 +198,16 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, {
   },
 };
 
-export const ALL_ROLES: UserRole[] = ['Quản trị viên', 'Ban điều hành', 'Thành viên'];
+export const ALL_ROLES: UserRole[] = ['Quản trị viên', 'Ban điều hành', 'Trưởng ban', 'Thành viên'];
+
+export const ALL_DEPARTMENTS = [
+  'Ban điều hành',
+  'Ban tài chính',
+  'Ban thanh niên',
+  'Ban thiếu nhi',
+  'Ban thể thao',
+  'Ban truyền giáo',
+  'Ban media'
+] as const;
+
+export type Department = typeof ALL_DEPARTMENTS[number];

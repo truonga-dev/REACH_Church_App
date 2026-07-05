@@ -98,7 +98,7 @@ export default function AdminNewsManager() {
         title: post.title,
         content: post.content,
         category: post.category,
-        featured_image_url: post.featured_image_url,
+        image_url: post.image_url,
       },
     });
     setShowForm(true);
@@ -207,9 +207,9 @@ export default function AdminNewsManager() {
                     type="url"
                     className="form-input"
                     style={{ paddingLeft: 32 }}
-                    value={editing.data.featured_image_url || ''}
+                    value={editing.data.image_url || ''}
                     onChange={(e) =>
-                      setEditing({ ...editing, data: { ...editing.data, featured_image_url: e.target.value } })
+                      setEditing({ ...editing, data: { ...editing.data, image_url: e.target.value } })
                     }
                     placeholder="https://example.com/image.jpg"
                   />
@@ -280,10 +280,10 @@ export default function AdminNewsManager() {
               const catColor = CATEGORY_COLORS[post.category] || '#64748b';
               return (
                 <div key={post.id} className="data-item">
-                  {post.featured_image_url && (
+                  {post.image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={post.featured_image_url}
+                      src={post.image_url}
                       alt=""
                       className="news-thumb"
                     />

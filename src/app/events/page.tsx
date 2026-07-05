@@ -2,10 +2,50 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Loader2, Clock, CheckCircle2, Search, ChevronLeft, ArrowRight, List as ListIcon, CalendarDays } from 'lucide-react';
+import { EventsSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchUpcomingEvents, fetchPastEvents, registerForEvent, cancelEventRegistration, isUserRegisteredForEvent } from '@/lib/events';
+import { fetchUpcomingEvents, fetchPastEvents, registerForEvent, cancelEventRegistration, isUserRegisteredForEvent, getVolunteerRolesForUser, registerVolunteer, cancelVolunteer } from '@/lib/events';
 import type { Event } from '@/lib/events';
 import Link from 'next/link';
+
+const Countdown = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  
+  useEffect(() => {
+    const target = new Date(targetDate).getTime();
+    const updateTime = () => {
+      const now = new Date().getTime();
+      const diff = target - now;
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      } else {
+        setTimeLeft({
+          d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          h: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          m: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          s: Math.floor((diff % (1000 * 60)) / 1000)
+        });
+      }
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  const isExpired = timeLeft.d === 0 && timeLeft.h === 0 && timeLeft.m === 0 && timeLeft.s === 0;
+  if (isExpired) return null;
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+      {Object.entries(timeLeft).map(([unit, value]) => (
+        <div key={unit} style={{ background: 'rgba(72,188,225,0.1)', border: '1px solid rgba(72,188,225,0.2)', padding: '6px 10px', borderRadius: '8px', textAlign: 'center', minWidth: '45px' }}>
+          <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem', lineHeight: 1 }}>{value.toString().padStart(2, '0')}</div>
+          <div style={{ fontSize: '0.65rem', color: '#48bce1', textTransform: 'uppercase', marginTop: '4px', fontWeight: 700 }}>{unit === 'd' ? 'Ngày' : unit === 'h' ? 'Giờ' : unit === 'm' ? 'Phút' : 'Giây'}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -16,7 +56,10 @@ export default function EventsPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [registrations, setRegistrations] = useState<Record<string, boolean>>({});
+  const [volunteerRoles, setVolunteerRoles] = useState<Record<string, any>>({}); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [registering, setRegistering] = useState<string | null>(null);
+  const [volunteeringModal, setVolunteeringModal] = useState<Event | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('Tiếp tân');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
 
@@ -51,6 +94,9 @@ export default function EventsPage() {
       regStatus[event.id] = await isUserRegisteredForEvent(event.id, user.id);
     }
     setRegistrations(regStatus);
+
+    const roles = await getVolunteerRolesForUser(user.id);
+    setVolunteerRoles(roles);
   };
 
   const showToast = (msg: string) => {
@@ -84,6 +130,36 @@ export default function EventsPage() {
       setRegistrations(prev => ({ ...prev, [eventId]: false }));
       setEvents(events.map(e => e.id === eventId ? { ...e, registrations_count: Math.max(0, e.registrations_count - 1) } : e));
       showToast('Đã hủy đăng ký');
+    }
+    setRegistering(null);
+  };
+
+  const handleRegisterVolunteer = async () => {
+    if (!user || !volunteeringModal) return;
+    setRegistering(volunteeringModal.id);
+    const res = await registerVolunteer(volunteeringModal.id, user.id, selectedRole);
+    if (res) {
+      setVolunteerRoles(prev => ({ ...prev, [volunteeringModal.id]: res }));
+      showToast('✅ Đăng ký phục vụ thành công! Đang chờ duyệt.');
+    } else {
+      showToast('❌ Đăng ký thất bại, thử lại.');
+    }
+    setRegistering(null);
+    setVolunteeringModal(null);
+  };
+
+  const handleCancelVolunteer = async (eventId: string) => {
+    if (!user) return;
+    if (!confirm('Bạn có chắc muốn hủy đăng ký phục vụ?')) return;
+    setRegistering(eventId);
+    const success = await cancelVolunteer(eventId, user.id);
+    if (success) {
+      setVolunteerRoles(prev => {
+        const next = { ...prev };
+        delete next[eventId];
+        return next;
+      });
+      showToast('Đã hủy phục vụ');
     }
     setRegistering(null);
   };
@@ -280,10 +356,7 @@ export default function EventsPage() {
         {viewMode === 'calendar' && renderCalendarGrid()}
 
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '3rem 0' }}>
-            <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: '#48bce1' }} />
-            <p style={{ color: '#7a8599', fontSize: '0.9rem' }}>Đang tải sự kiện...</p>
-          </div>
+          <EventsSkeleton />
         ) : displayedEvents.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -312,6 +385,7 @@ export default function EventsPage() {
             )}
             {displayedEvents.map(event => {
               const isReg = registrations[event.id];
+              const volRole = volunteerRoles[event.id];
               const isFull = event.max_attendees ? event.registrations_count >= event.max_attendees : false;
               const dateInfo = formatDate(event.event_date);
               const fillPct = event.max_attendees
@@ -406,6 +480,11 @@ export default function EventsPage() {
                         {event.description}
                       </p>
                     )}
+                    
+                    {/* Countdown for Upcoming Events (first event or within 7 days) */}
+                    {activeTab === 'upcoming' && (new Date(event.event_date).getTime() - new Date().getTime() > 0) && (
+                       <Countdown targetDate={event.event_date} />
+                    )}
 
                     {/* Registrations Progress */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.25rem' }}>
@@ -428,7 +507,8 @@ export default function EventsPage() {
 
                   {/* Action Button */}
                   {activeTab === 'upcoming' && (
-                    <div style={{ padding: '0 1rem 1rem' }}>
+                    <div style={{ padding: '0 1rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {/* Tham gia */}
                       {isReg ? (
                         <button
                           onClick={() => handleCancel(event.id)}
@@ -442,10 +522,8 @@ export default function EventsPage() {
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                           }}
                         >
-                          {registering === event.id
-                            ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
-                            : null}
-                          Hủy đăng ký
+                          {registering === event.id ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+                          Hủy đăng ký tham gia
                         </button>
                       ) : isFull ? (
                         <div style={{
@@ -470,11 +548,48 @@ export default function EventsPage() {
                             boxShadow: '0 4px 12px rgba(72,188,225,0.35)',
                           }}
                         >
-                          {registering === event.id
-                            ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
-                            : <CheckCircle2 size={15} />}
+                          {registering === event.id ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={15} />}
                           Đăng ký tham gia
                         </button>
+                      )}
+
+                      {/* Phục vụ */}
+                      {volRole ? (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <div style={{
+                            flex: 1, padding: '0.7rem', borderRadius: 10,
+                            border: '1px solid rgba(244, 204, 48, 0.35)',
+                            background: 'rgba(244, 204, 48, 0.08)', color: '#f4cc30',
+                            fontWeight: 700, fontSize: '0.88rem', textAlign: 'center'
+                          }}>
+                            Vai trò: {volRole.role} ({volRole.status === 'pending' ? 'Chờ duyệt' : volRole.status === 'approved' ? 'Đã duyệt' : 'Từ chối'})
+                          </div>
+                          <button
+                            onClick={() => handleCancelVolunteer(event.id)}
+                            disabled={registering === event.id}
+                            style={{
+                              padding: '0.7rem', borderRadius: 10,
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              background: 'transparent', color: '#ef4444',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      ) : (
+                         <button
+                           onClick={() => setVolunteeringModal(event)}
+                           disabled={registering === event.id}
+                           style={{
+                             width: '100%', padding: '0.7rem', borderRadius: 10,
+                             border: '1px solid rgba(244, 204, 48, 0.4)',
+                             background: 'transparent', color: '#f4cc30',
+                             fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
+                           }}
+                         >
+                           Đăng ký phục vụ
+                         </button>
                       )}
                     </div>
                   )}
@@ -490,6 +605,70 @@ export default function EventsPage() {
           </p>
         )}
       </div>
+
+      {/* Volunteer Modal */}
+      {volunteeringModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem'
+        }}>
+          <div style={{
+            background: '#1a1d24', borderRadius: 20, width: '100%', maxWidth: 400,
+            overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', fontWeight: 800 }}>Đăng ký phục vụ</h3>
+              <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>{volunteeringModal.title}</p>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <label style={{ display: 'block', color: '#fff', fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                Chọn vai trò / Ban ngành:
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.85rem', borderRadius: 12,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff', fontSize: '1rem', outline: 'none',
+                  WebkitAppearance: 'none', appearance: 'none',
+                }}
+              >
+                <option value="Tiếp tân" style={{ color: '#000' }}>Ban Tiếp tân</option>
+                <option value="Thờ phượng" style={{ color: '#000' }}>Ban Thờ phượng</option>
+                <option value="Kỹ thuật / Truyền thông" style={{ color: '#000' }}>Kỹ thuật / Truyền thông</option>
+                <option value="Hậu cần" style={{ color: '#000' }}>Hậu cần</option>
+                <option value="Khác" style={{ color: '#000' }}>Khác</option>
+              </select>
+            </div>
+            <div style={{ padding: '1.25rem 1.5rem', display: 'flex', gap: '0.75rem', background: 'rgba(0,0,0,0.2)' }}>
+              <button
+                onClick={() => setVolunteeringModal(null)}
+                style={{
+                  flex: 1, padding: '0.85rem', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'transparent', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleRegisterVolunteer}
+                disabled={registering === volunteeringModal.id}
+                style={{
+                  flex: 1, padding: '0.85rem', borderRadius: 12, border: 'none',
+                  background: '#f4cc30', color: '#000', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                }}
+              >
+                {registering === volunteeringModal.id ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

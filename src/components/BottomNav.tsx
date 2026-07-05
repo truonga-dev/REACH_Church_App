@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Library, Users, UserCircle2 } from 'lucide-react';
+import { Home, BookOpen, Library, Users, UserCircle2, Heart } from 'lucide-react';
 import './BottomNav.css';
 
 const navItems = [

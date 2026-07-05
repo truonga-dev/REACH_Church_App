@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Users, Music, Heart, Baby, MessageCircle, ChevronRight, X, Search, Sparkles, BookOpen, Target, Activity, Loader2 } from 'lucide-react';
+import { Users, Music, Heart, Baby, MessageCircle, ChevronRight, X, Search, Sparkles, BookOpen, Target, Activity } from 'lucide-react';
+import { MinistryGridSkeleton } from '@/components/ui/Skeleton';
 import { fetchMinistries } from '@/lib/ministries';
 import type { Ministry } from '@/lib/ministries';
 import './page.css';
 
-const IconMap: Record<string, any> = {
+const IconMap: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   Users,
   Heart,
   Baby,
@@ -94,6 +95,10 @@ export default function MinistryPage() {
             <button className="modal-close-btn" onClick={() => { setSelectedMinistry(null); setShowForm(false); }}>
               <X size={20} />
             </button>
+
+            {selectedMinistry.image_url && (
+              <img src={selectedMinistry.image_url} alt={selectedMinistry.name} className="ministry-hero-img" />
+            )}
 
             <div className="modal-header-flex">
               <div style={{ background: 'rgba(72,188,225,0.1)', padding: '12px', borderRadius: '16px' }}>
@@ -199,9 +204,7 @@ export default function MinistryPage() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-          <Loader2 size={32} className="spin" style={{ color: '#48BCE1' }} />
-        </div>
+        <MinistryGridSkeleton />
       ) : displayedMinistries.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8599' }}>
           Chưa có dữ liệu mục vụ
@@ -212,8 +215,12 @@ export default function MinistryPage() {
             const Icon = IconMap[ministry.icon || 'Users'] || Users;
             return (
               <div key={ministry.id} className="ministry-item" onClick={() => setSelectedMinistry(ministry)}>
-                <div className="ministry-icon-wrapper">
-                  <Icon size={24} className="ministry-icon" />
+                <div className="ministry-icon-wrapper" style={{ overflow: 'hidden' }}>
+                  {ministry.image_url ? (
+                    <img src={ministry.image_url} alt={ministry.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <Icon size={24} className="ministry-icon" />
+                  )}
                 </div>
                 <div className="ministry-info">
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.35rem' }}>

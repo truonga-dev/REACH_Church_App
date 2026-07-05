@@ -10,6 +10,7 @@ export interface Ministry {
   category: string;
   name: string;
   icon?: string;
+  image_url?: string;
   desc?: string;
   leader?: string;
   schedule?: string;
@@ -26,6 +27,7 @@ export interface MinistryCreateInput {
   category: string;
   name: string;
   icon?: string;
+  image_url?: string;
   desc?: string;
   leader?: string;
   schedule?: string;
@@ -101,21 +103,24 @@ export async function createMinistry(input: MinistryCreateInput): Promise<Minist
  */
 export async function updateMinistry(id: string, updates: Partial<MinistryCreateInput>): Promise<Ministry | null> {
   try {
+    const cleanUpdates = Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined)); // eslint-disable-line @typescript-eslint/no-unused-vars
     const { data, error } = await supabase
       .from('ministries')
       .update({
-        ...updates,
+        ...cleanUpdates,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data || null;
-  } catch (error) {
-    console.error('Error updating ministry:', error);
-    return null;
+  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.error('Error updating ministry:', error?.message || error, JSON.stringify(error));
+    throw error;
   }
 }
 

@@ -46,8 +46,6 @@ describe('Events Service', () => {
 
   describe('registerForEvent', () => {
     it('should register user for event', async () => {
-      const eventId = 'event-1';
-      const userId = 'user-1';
       expect(typeof registerForEvent).toBe('function');
     });
 

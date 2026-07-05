@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Loader2, Search, MapPin, Users, Target, Activity } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Loader2, Search, MapPin, Users, Target, Activity, Image as ImageIcon } from 'lucide-react';
 import { fetchMinistries, createMinistry, updateMinistry, deleteMinistry } from '@/lib/ministries';
+import { supabase } from '@/lib/supabase';
 import type { Ministry, MinistryCreateInput } from '@/lib/ministries';
 import Pagination from '@/components/ui/Pagination';
 
@@ -23,6 +24,7 @@ const emptyData = (): MinistryCreateInput => ({
   goal: '',
   activities: [],
   details: '',
+  image_url: '',
 });
 
 export default function MinistryManager() {
@@ -39,6 +41,7 @@ export default function MinistryManager() {
 
   // Handle activities array
   const [activityInput, setActivityInput] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     loadMinistries();
@@ -84,8 +87,8 @@ export default function MinistryManager() {
         }
       }
       handleCancel();
-    } catch {
-      showToast('Lỗi khi lưu mục vụ');
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      showToast('Lỗi khi lưu mục vụ: ' + (err.message || ''));
     } finally {
       setSaving(false);
     }
@@ -106,6 +109,7 @@ export default function MinistryManager() {
         goal: min.goal || '',
         activities: min.activities || [],
         details: min.details || '',
+        image_url: min.image_url || '',
       },
     });
     setShowForm(true);
@@ -157,6 +161,44 @@ export default function MinistryManager() {
         activities: newActivities
       }
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Kích thước file ảnh không được vượt quá 5MB');
+        return;
+      }
+
+      setUploadingImage(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `ministries/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      setEditing({
+        ...editing,
+        data: { ...editing.data, image_url: urlData.publicUrl }
+      });
+      showToast('Tải ảnh lên thành công');
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      console.error(error);
+      showToast('Lỗi khi tải ảnh: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const filteredMinistries = ministries.filter((d) =>
@@ -292,6 +334,26 @@ export default function MinistryManager() {
               </div>
             </div>
 
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Ảnh nền (Cover Image)</label>
+              <div style={{ position: 'relative' }}>
+                <ImageIcon size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem 1rem 0.75rem 32px', color: '#fff', fontSize: '0.95rem' }}
+                />
+              </div>
+              {uploadingImage && <p style={{ fontSize: '0.8rem', color: '#48BCE1', marginTop: '4px' }}>Đang tải ảnh lên...</p>}
+              {editing.data.image_url && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <img src={editing.data.image_url} alt="Preview" style={{ maxWidth: '150px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+              )}
+            </div>
+
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af', fontSize: '0.9rem' }}>Mô tả chi tiết (Details)</label>
               <textarea
@@ -425,6 +487,11 @@ export default function MinistryManager() {
                 
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', color: '#48BCE1', marginBottom: '0.25rem' }}>{min.category}</span>
                 <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem', margin: '0 0 0.5rem 0' }}>{min.name}</h4>
+                {min.image_url && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <img src={min.image_url} alt={min.name} style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }} />
+                  </div>
+                )}
                 <p style={{ color: '#9ca3af', fontSize: '0.9rem', margin: '0 0 1rem 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{min.desc}</p>
                 
                 <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem', color: '#9ca3af' }}>

@@ -186,7 +186,7 @@ function PieChart({ data, size = 140 }: { data: ContentDist[]; size?: number }) 
 
 /* ─── Stat Card ─── */
 function StatCard({ label, value, icon: Icon, color, trend }: {
-  label: string; value: number; icon: any; color: string; trend?: number;
+  label: string; value: number; icon: any; color: string; trend?: number; // eslint-disable-line @typescript-eslint/no-explicit-any
 }) {
   return (
     <div style={{
@@ -288,7 +288,7 @@ export default function StatsManager() {
 
       // Content distribution (news by type)
       const typeMap: Record<string, number> = {};
-      (newsData || []).forEach((n: any) => {
+      (newsData || []).forEach((n: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         typeMap[n.type || 'Khác'] = (typeMap[n.type || 'Khác'] || 0) + 1;
       });
       const COLORS = ['#48BCE1', '#F4CC30', '#10b981', '#a855f7', '#f97316', '#ef4444'];
@@ -299,10 +299,10 @@ export default function StatsManager() {
 
       // Recent activity
       const activity: RecentActivity[] = [
-        ...(recentNews || []).map((n: any) => ({
+        ...(recentNews || []).map((n: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: n.id, type: n.type || 'Bài viết', title: n.title, date: n.created_at, icon: '📰',
         })),
-        ...(recentSermons || []).map((s: any) => ({
+        ...(recentSermons || []).map((s: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: s.id, type: 'Bài giảng', title: s.title, date: s.created_at, icon: '🎬',
         })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);

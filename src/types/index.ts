@@ -9,6 +9,8 @@ export interface Profile {
   avatar_url: string;
   bio: string;
   email?: string;
+  cover_url?: string;
+  custom_permissions?: string[];
 }
 
 export interface Prayer {
@@ -26,6 +28,48 @@ export interface Prayer {
   prayer_count?: number;
   pray_count?: number;
   notes?: string;
+}
+
+export interface Donation {
+  id: string;
+  user_id: string;
+  amount: number;
+  message: string | null;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  payment_method: 'payos' | 'manual';
+  payment_link_id: string | null;
+  receipt_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- CELL GROUPS ---
+export interface CellGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  leader_id: string | null;
+  meeting_time: string | null;
+  location: string | null;
+  created_at: string;
+  updated_at: string;
+  
+  // Relations (optional, joined from queries)
+  leader?: Profile;
+  member_count?: number;
+}
+
+export interface CellGroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: 'member' | 'co_leader' | 'leader';
+  status: 'pending' | 'approved' | 'rejected';
+  joined_at: string;
+  
+  // Relations
+  profile?: Profile;
+  group?: CellGroup;
 }
 
 export interface Sermon {
@@ -55,6 +99,32 @@ export interface NewsItem {
   categories?: string[] | string;
   status?: 'published' | 'draft' | string;
   created_at?: string;
+}
+
+// --- EVENTS & VOLUNTEERING ---
+export interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  location: string | null;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventVolunteer {
+  id: string;
+  event_id: string;
+  user_id: string;
+  role: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at: string;
+
+  // Relations
+  event?: Event;
+  profile?: Profile;
 }
 
 export const PRAYER_TOPICS: Record<string, string> = {

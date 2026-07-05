@@ -40,27 +40,13 @@ type SelectionInfo = {
   label: string;
 };
 
-function findVerseElement(node: Node | null): Element | null {
-  if (!node) return null;
-  const el =
-    node.nodeType === Node.ELEMENT_NODE
-      ? (node as Element)
-      : node.parentElement;
-  return el?.closest?.('[data-verse]') ?? null;
-}
+type BookMetadata = {
+  bookIndex: number;
+  name: string;
+  chapterCount: number;
+  chapters: number[];
+};
 
-function verseTextLength(verseEl: Element): number {
-  return verseEl.querySelector('.verse-text')?.textContent?.length ?? 0;
-}
-
-function offsetInVerse(verseEl: Element, container: Node, offset: number): number {
-  const verseTextEl = verseEl.querySelector('.verse-text');
-  if (!verseTextEl) return 0;
-  const preRange = document.createRange();
-  preRange.selectNodeContents(verseTextEl);
-  preRange.setEnd(container, offset);
-  return preRange.toString().length;
-}
 
 function buildHighlightSegments(text: string, highlights: VerseHighlight[]) {
   if (!highlights.length) return [{ text }];
@@ -117,6 +103,14 @@ function BibleReader() {
   const [focusVerses, setFocusVerses] = useState<{ start: number; end: number } | null>(
     initial.startVerse ? { start: initial.startVerse, end: initial.endVerse || initial.startVerse } : null,
   );
+  
+  // Navigation State
+  const [metadata, setMetadata] = useState<BookMetadata[]>([]);
+  const [navOpen, setNavOpen] = useState(false);
+  const [navTab, setNavTab] = useState<'book' | 'chapter' | 'verse'>('book');
+  const [navSelectedBook, setNavSelectedBook] = useState<number>(initial.book || 1);
+  const [navSelectedChapter, setNavSelectedChapter] = useState<number>(initial.chapter || 1);
+
   const readerRef = useRef<HTMLElement>(null);
   const pendingScrollRef = useRef<number | null>(initial.startVerse || null);
   const showToast = (msg: string) => {
@@ -144,6 +138,7 @@ function BibleReader() {
         return () => clearTimeout(timer);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const refreshHighlights = useCallback(() => {
@@ -154,6 +149,13 @@ function BibleReader() {
     setSelectedVerses([]);
     setSelection(null);
   }, [bookIndex, chapter]);
+
+  useEffect(() => {
+    fetch('/api/bible/metadata')
+      .then(res => res.json())
+      .then(data => setMetadata(data))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetchChapter(bookIndex, chapter);
@@ -348,25 +350,34 @@ function BibleReader() {
       <main className="bible-reader" ref={readerRef}>
         <div className="bible-sticky-header">
           <header className="bible-header">
-            <select
-              className="book-selector"
-              value={bookIndex}
-              onChange={(e) => {
-                const nextBook = Number(e.target.value);
-                setBookIndex(nextBook);
-                setChapter(1);
-                setFocusVerses(null);
-                updateUrl(nextBook, 1);
-              }}        >
-              {books.map((b, idx) => (
-                <option key={b} value={idx + 1}>{b}</option>
-              ))}
-            </select>
-
-            <div className="bible-chapter-nav">
-              <button type="button" className="chapter-selector" onClick={() => { const ch = Math.max(1, chapter - 1); setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>«</button>
-              <span className="bible-chapter-label">Ch. {chapter}</span>
-              <button type="button" className="chapter-selector" onClick={() => { const ch = chapter + 1; setChapter(ch); setFocusVerses(null); updateUrl(bookIndex, ch); }}>»</button>        </div>
+            <div 
+              className="bible-header-title" 
+              onClick={() => {
+                setNavSelectedBook(bookIndex);
+                setNavSelectedChapter(chapter);
+                setNavTab('book');
+                setNavOpen(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: '99px',
+                cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}
+            >
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>
+                {books[bookIndex - 1]} {chapter}
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
           </header>
 
           <p className="bible-version-badge">{versionLabel}</p>
@@ -498,6 +509,68 @@ function BibleReader() {
               <button type="button" className="bible-share-btn" onClick={copySelectionLink}>
                 <Link2 size={16} /> Sao chép link
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigator Modal */}
+      {navOpen && (
+        <div className="sermon-modal-overlay" onClick={() => setNavOpen(false)} style={{ zIndex: 10000 }}>
+          <div className="sermon-modal" onClick={e => e.stopPropagation()} style={{ height: '85vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="sermon-modal-handle" />
+            <div className="bible-nav-tabs" style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem', padding: '0 1rem' }}>
+              <button 
+                onClick={() => setNavTab('book')} 
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'book' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'book' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+              >SÁCH</button>
+              <button 
+                onClick={() => setNavTab('chapter')} 
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'chapter' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'chapter' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+              >CHƯƠNG</button>
+              <button 
+                onClick={() => setNavTab('verse')} 
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'verse' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'verse' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+              >CÂU</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 1rem 1rem' }}>
+              {navTab === 'book' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a8599', marginBottom: '8px', marginTop: '4px' }}>CỰU ƯỚC</div>
+                  {books.slice(0, 39).map((b, idx) => (
+                    <button key={idx} onClick={() => { setNavSelectedBook(idx + 1); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 1 ? 'rgba(72,188,225,0.1)' : 'transparent', color: navSelectedBook === idx + 1 ? '#48bce1' : '#fff', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
+                  ))}
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a8599', marginBottom: '8px', marginTop: '16px' }}>TÂN ƯỚC</div>
+                  {books.slice(39).map((b, idx) => (
+                    <button key={idx + 39} onClick={() => { setNavSelectedBook(idx + 40); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 40 ? 'rgba(72,188,225,0.1)' : 'transparent', color: navSelectedBook === idx + 40 ? '#48bce1' : '#fff', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
+                  ))}
+                </div>
+              )}
+
+              {navTab === 'chapter' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                  {Array.from({ length: metadata[navSelectedBook - 1]?.chapterCount || 1 }).map((_, i) => (
+                    <button key={i} onClick={() => { setNavSelectedChapter(i + 1); setNavTab('verse'); }} style={{ aspectRatio: '1', background: navSelectedChapter === i + 1 ? '#48bce1' : 'rgba(255,255,255,0.06)', color: navSelectedChapter === i + 1 ? '#fff' : '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
+                  ))}
+                </div>
+              )}
+
+              {navTab === 'verse' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                  <button onClick={() => { setNavOpen(false); setBookIndex(navSelectedBook); setChapter(navSelectedChapter); setFocusVerses(null); updateUrl(navSelectedBook, navSelectedChapter); }} style={{ gridColumn: 'span 5', padding: '12px', background: 'rgba(72,188,225,0.1)', color: '#48bce1', borderRadius: '8px', border: '1px solid rgba(72,188,225,0.3)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', marginBottom: '8px' }}>Đọc cả chương</button>
+                  {Array.from({ length: metadata[navSelectedBook - 1]?.chapters[navSelectedChapter - 1] || 1 }).map((_, i) => (
+                    <button key={i} onClick={() => {
+                      setNavOpen(false);
+                      setBookIndex(navSelectedBook);
+                      setChapter(navSelectedChapter);
+                      setFocusVerses({ start: i + 1, end: i + 1 });
+                      pendingScrollRef.current = i + 1;
+                      updateUrl(navSelectedBook, navSelectedChapter, i + 1);
+                    }} style={{ aspectRatio: '1', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,0 +1,432 @@
+.donations-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Thanh tab con — ghim khi cuộn trong admin-content */
+.donations-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 0 1rem;
+  background: linear-gradient(
+    to bottom,
+    #0b0e14 0%,
+    #0b0e14 78%,
+    rgba(11, 14, 20, 0) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.donations-subtabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.donations-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.donations-subtab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.donations-subtab.active {
+  background: var(--primary-dim);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary-border);
+}
+
+.donations-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.donations-toolbar-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 200px;
+}
+
+.donations-export-btn {
+  padding: 0 1rem;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: rgba(72, 188, 225, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(72, 188, 225, 0.2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  transition: background 0.18s;
+  flex-shrink: 0;
+}
+
+.donations-export-btn:hover {
+  background: rgba(72, 188, 225, 0.18);
+}
+
+.donations-section-title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.donations-section-desc {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin: 4px 0 0;
+}
+
+.donations-page-header {
+  margin-bottom: 1.25rem;
+}
+
+.donations-add-btn {
+  padding: 0 1rem;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: opacity 0.18s;
+}
+
+.donations-add-btn:hover {
+  opacity: 0.9;
+}
+
+.donations-form-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.donations-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.donations-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.donations-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.donations-action-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.donations-action-btn.approve {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.donations-action-btn.cancel {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.donations-action-btn.edit {
+  background: rgba(72, 188, 225, 0.12);
+  color: var(--primary);
+}
+
+.donations-action-btn.delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.donations-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Biểu đồ Giai đoạn 2 */
+.donations-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.donations-chart-card {
+  min-width: 0;
+}
+
+.donations-chart-title {
+  color: #fff;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  font-weight: 700;
+}
+
+.donations-chart-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.donations-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 180px;
+  padding-top: 0.5rem;
+}
+
+.donations-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.donations-bar-value {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  min-height: 1rem;
+}
+
+.donations-bar {
+  width: 100%;
+  max-width: 28px;
+  background: linear-gradient(180deg, var(--primary), rgba(72, 188, 225, 0.45));
+  border-radius: 4px 4px 0 0;
+  margin-top: auto;
+  transition: height 0.3s ease;
+}
+
+.donations-bar-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.donations-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.donations-donut {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.donations-donut-hole {
+  position: absolute;
+  inset: 22%;
+  background: var(--surface);
+  border-radius: 50%;
+}
+
+.donations-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 160px;
+}
+
+.donations-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.donations-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.donations-legend-label {
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.donations-legend-value {
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Giai đoạn 3 — Cảnh báo vận hành */
+.donations-ops-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.donations-alert {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  align-items: flex-start;
+}
+
+.donations-alert.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+
+.donations-alert.danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+.donations-alert strong {
+  display: block;
+  color: #fff;
+  font-size: 0.88rem;
+  margin-bottom: 0.25rem;
+}
+
+.donations-alert p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.donations-alert-link {
+  margin-top: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.donations-alert-link:hover {
+  text-decoration: underline;
+}
+
+.donations-dup-chip {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  font-size: 0.72rem;
+  font-family: monospace;
+}
+
+.donations-row-dup td {
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.donations-dup-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .donations-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .donations-export-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

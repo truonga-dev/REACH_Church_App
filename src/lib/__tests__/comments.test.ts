@@ -47,7 +47,6 @@ describe('Comments Service', () => {
 
   describe('createComment', () => {
     it('should create a new comment', async () => {
-      const input = { content: 'Great devotional!' };
       expect(typeof createComment).toBe('function');
     });
   });

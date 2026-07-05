@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Loader2, Calendar, MapPin, Users } from 'lucide-react';
-import { fetchAllEvents, createEvent, updateEvent, deleteEvent, getEventRegistrations } from '@/lib/events';
+import { Plus, Trash2, Edit2, Save, X, Loader2, Calendar, MapPin, Users, UserCheck } from 'lucide-react';
+import { fetchAllEvents, createEvent, updateEvent, deleteEvent, getEventRegistrations, getEventVolunteers } from '@/lib/events';
+import { supabase } from '@/lib/supabase';
 import Pagination from '@/components/ui/Pagination';
 import type { Event, EventCreateInput, EventRegistration } from '@/lib/events';
 
@@ -34,6 +35,8 @@ export default function EventsManager() {
   const [viewingRegistrants, setViewingRegistrants] = useState<{eventId: string, title: string} | null>(null);
   const [registrants, setRegistrants] = useState<EventRegistration[]>([]);
   const [loadingRegistrants, setLoadingRegistrants] = useState(false);
+  const [viewTab, setViewTab] = useState<'attendees' | 'volunteers'>('attendees');
+  const [volunteers, setVolunteers] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   useEffect(() => {
     loadEvents();
@@ -132,13 +135,28 @@ export default function EventsManager() {
     setViewingRegistrants({ eventId: ev.id, title: ev.title });
     setLoadingRegistrants(true);
     setRegistrants([]);
+    setVolunteers([]);
+    setViewTab('attendees');
     try {
       const data = await getEventRegistrations(ev.id);
       setRegistrants(data);
+      const vols = await getEventVolunteers(ev.id);
+      setVolunteers(vols);
     } catch {
-      showToast('Lỗi khi tải danh sách đăng ký');
+      showToast('Lỗi khi tải dữ liệu');
     } finally {
       setLoadingRegistrants(false);
+    }
+  };
+
+  const updateVolunteerStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('event_volunteers').update({ status }).eq('id', id);
+      if (error) throw error;
+      setVolunteers(volunteers.map(v => v.id === id ? { ...v, status } : v));
+      showToast(`Đã ${status === 'approved' ? 'duyệt' : 'từ chối'} tình nguyện viên`);
+    } catch {
+      showToast('Lỗi khi cập nhật trạng thái');
     }
   };
 
@@ -355,42 +373,103 @@ export default function EventsManager() {
               </button>
             </div>
             
+            <div style={{ padding: '0 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <button
+                onClick={() => setViewTab('attendees')}
+                style={{ background: 'none', border: 'none', padding: '1rem 0', color: viewTab === 'attendees' ? '#48BCE1' : '#9ca3af', fontWeight: viewTab === 'attendees' ? 600 : 400, borderBottom: viewTab === 'attendees' ? '2px solid #48BCE1' : '2px solid transparent', cursor: 'pointer' }}
+              >
+                Người đăng ký ({registrants.length})
+              </button>
+              <button
+                onClick={() => setViewTab('volunteers')}
+                style={{ background: 'none', border: 'none', padding: '1rem 0', color: viewTab === 'volunteers' ? '#48BCE1' : '#9ca3af', fontWeight: viewTab === 'volunteers' ? 600 : 400, borderBottom: viewTab === 'volunteers' ? '2px solid #48BCE1' : '2px solid transparent', cursor: 'pointer' }}
+              >
+                Ban phục vụ ({volunteers.length})
+              </button>
+            </div>
+            
             <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
               {loadingRegistrants ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
                   <Loader2 size={32} className="spin" style={{ color: '#48BCE1' }} />
                 </div>
-              ) : registrants.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                  Chưa có người nào đăng ký sự kiện này.
-                </div>
+              ) : viewTab === 'attendees' ? (
+                registrants.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                    Chưa có người nào đăng ký sự kiện này.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {registrants.map(reg => {
+                      // It can be an array if supabase joins multiple, or object
+                      const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles;
+                      
+                      return (
+                        <div key={reg.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <Users size={20} color="#fff" />
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 0.25rem', color: '#fff', fontWeight: 600 }}>{profile?.full_name || 'Người dùng ẩn danh'}</p>
+                            <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.85rem' }}>{profile?.email || 'Không có email'}</p>
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: '0.8rem', textAlign: 'right' }}>
+                            <p style={{ margin: '0 0 0.25rem' }}>Ngày đăng ký:</p>
+                            <p style={{ margin: 0 }}>{new Date(reg.registered_at).toLocaleDateString('vi-VN')}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {registrants.map(reg => {
-                    // It can be an array if supabase joins multiple, or object
-                    const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles;
-                    
-                    return (
-                      <div key={reg.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <Users size={20} color="#fff" />
-                          )}
+                volunteers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                    Chưa có thành viên phục vụ nào đăng ký.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {volunteers.map(vol => {
+                      const profile = Array.isArray(vol.profiles) ? vol.profiles[0] : vol.profiles;
+                      
+                      return (
+                        <div key={vol.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <UserCheck size={20} color="#fff" />
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 0.25rem', color: '#fff', fontWeight: 600 }}>{profile?.full_name || 'Người dùng ẩn danh'}</p>
+                            <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.85rem' }}>Vai trò: <span style={{ color: '#48BCE1', fontWeight: 600 }}>{vol.role}</span></p>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {vol.status === 'pending' ? (
+                              <>
+                                <button onClick={() => updateVolunteerStatus(vol.id, 'approved')} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Duyệt</button>
+                                <button onClick={() => updateVolunteerStatus(vol.id, 'rejected')} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Từ chối</button>
+                              </>
+                            ) : (
+                              <span style={{ 
+                                padding: '4px 10px', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 600,
+                                background: vol.status === 'approved' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                color: vol.status === 'approved' ? '#10b981' : '#ef4444'
+                              }}>
+                                {vol.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ margin: '0 0 0.25rem', color: '#fff', fontWeight: 600 }}>{profile?.full_name || 'Người dùng ẩn danh'}</p>
-                          <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.85rem' }}>{profile?.email || 'Không có email'}</p>
-                        </div>
-                        <div style={{ color: '#9ca3af', fontSize: '0.8rem', textAlign: 'right' }}>
-                          <p style={{ margin: '0 0 0.25rem' }}>Ngày đăng ký:</p>
-                          <p style={{ margin: 0 }}>{new Date(reg.registered_at).toLocaleDateString('vi-VN')}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )
               )}
             </div>
           </div>

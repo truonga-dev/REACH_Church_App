@@ -41,7 +41,7 @@ export async function fetchPrayerRequests(limit = 20, offset = 0): Promise<Praye
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
     return [];
   }
 }
@@ -61,7 +61,7 @@ export async function fetchUserPrayerRequests(userId: string): Promise<PrayerReq
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
     return [];
   }
 }
@@ -210,7 +210,7 @@ export async function searchPrayersByCategory(category: string): Promise<PrayerR
       return [];
     }
     return data || [];
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
     return [];
   }
 }
@@ -256,7 +256,7 @@ export async function getPrayerStatistics(): Promise<{
       totalIntercessors,
       activeCategory,
     };
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */) {
     return {
       totalPrayers: 0,
       totalIntercessors: 0,

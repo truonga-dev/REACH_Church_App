@@ -7,9 +7,9 @@ import type { Devotional, DevotionalCreateInput } from '@/lib/devotionals';
 import Pagination from '@/components/ui/Pagination';
 import { supabase } from '@/lib/supabase';
 import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 const quillModules = {
   toolbar: [
@@ -30,6 +30,7 @@ const emptyData = (): DevotionalCreateInput => ({
   title: '',
   content: '',
   author: '',
+  category: '',
 });
 
 export default function AdminDevotionalManager() {
@@ -104,6 +105,7 @@ export default function AdminDevotionalManager() {
         content: devotional.content,
         author: devotional.author,
         featured_image_url: devotional.featured_image_url,
+        category: devotional.category || '',
       },
     });
     setShowForm(true);
@@ -161,7 +163,7 @@ export default function AdminDevotionalManager() {
         data: { ...editing.data, featured_image_url: urlData.publicUrl }
       });
       showToast('Tải ảnh lên thành công');
-    } catch (error: any) {
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       console.error(error);
       showToast('Lỗi khi tải ảnh: ' + error.message);
     } finally {
@@ -241,6 +243,17 @@ export default function AdminDevotionalManager() {
                   placeholder="Tên tác giả"
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Chủ đề / Thể loại</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editing.data.category || ''}
+                onChange={(e) => setEditing({ ...editing, data: { ...editing.data, category: e.target.value } })}
+                placeholder="VD: Gia đình, Đức tin, Hy vọng..."
+              />
             </div>
 
             <div className="form-group">
@@ -327,6 +340,7 @@ export default function AdminDevotionalManager() {
                 <div className="data-item-info">
                   <p className="data-item-title">{devotional.title}</p>
                   <p className="data-item-sub">
+                    {devotional.category && <span style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>[{devotional.category}] </span>}
                     {devotional.author && <>{devotional.author} · </>}
                     {new Date(devotional.created_at).toLocaleDateString('vi-VN')}
                     {' · '}

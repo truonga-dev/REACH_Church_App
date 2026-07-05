@@ -43,21 +43,10 @@ describe('Prayers Service', () => {
 
   describe('createPrayerRequest', () => {
     it('should create a new prayer request', async () => {
-      const input = {
-        title: 'Test Prayer',
-        content: 'Please pray for me',
-        category: 'health',
-      };
       expect(typeof createPrayerRequest).toBe('function');
     });
 
     it('should handle private prayer requests', async () => {
-      const input = {
-        title: 'Private Prayer',
-        content: 'Private request',
-        category: 'family',
-        is_private: true,
-      };
       expect(typeof createPrayerRequest).toBe('function');
     });
   });

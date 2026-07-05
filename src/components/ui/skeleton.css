@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON / SHIMMER — Global animation (imported once)
+   Used by: Skeleton.tsx and profile/page.css
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes sk-shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+
+/* ── Base block ── */
+.sk {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.11) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 800px 100%;
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Shapes ── */
+.sk-circle  { border-radius: 50%; }
+.sk-rounded { border-radius: 16px; }
+.sk-pill    { border-radius: 99px; }
+
+/* ── Common sizes ── */
+.sk-h8  { height: 8px; }
+.sk-h10 { height: 10px; }
+.sk-h12 { height: 12px; }
+.sk-h14 { height: 14px; }
+.sk-h16 { height: 16px; }
+.sk-h20 { height: 20px; }
+.sk-h24 { height: 24px; }
+.sk-h32 { height: 32px; }
+.sk-h40 { height: 40px; }
+.sk-h48 { height: 48px; }
+.sk-h56 { height: 56px; }
+.sk-h64 { height: 64px; }
+.sk-h80 { height: 80px; }
+.sk-h96 { height: 96px; }
+.sk-h120{ height: 120px; }
+.sk-h160{ height: 160px; }
+.sk-h180{ height: 180px; }
+.sk-h200{ height: 200px; }
+.sk-h220{ height: 220px; }
+
+/* ── Widths ── */
+.sk-w30  { width: 30%; }
+.sk-w40  { width: 40%; }
+.sk-w50  { width: 50%; }
+.sk-w60  { width: 60%; }
+.sk-w70  { width: 70%; }
+.sk-w75  { width: 75%; }
+.sk-w80  { width: 80%; }
+.sk-w90  { width: 90%; }
+.sk-full { width: 100%; }
+
+/* ── Fixed sizes (for circles/icons) ── */
+.sk-32  { width: 32px;  height: 32px;  }
+.sk-40  { width: 40px;  height: 40px;  }
+.sk-44  { width: 44px;  height: 44px;  }
+.sk-48  { width: 48px;  height: 48px;  }
+.sk-56  { width: 56px;  height: 56px;  }
+.sk-64  { width: 64px;  height: 64px;  }
+.sk-80  { width: 80px;  height: 80px;  }
+.sk-96  { width: 96px;  height: 96px;  }
+.sk-120 { width: 120px; height: 120px; }
+
+/* ── Layout helpers ── */
+.sk-row   { display: flex; align-items: center; gap: 12px; }
+.sk-col   { display: flex; flex-direction: column; gap: 8px; }
+.sk-gap4  { gap: 4px;  }
+.sk-gap6  { gap: 6px;  }
+.sk-gap8  { gap: 8px;  }
+.sk-gap10 { gap: 10px; }
+.sk-gap12 { gap: 12px; }
+.sk-gap16 { gap: 16px; }
+
+/* ── Card wrapper ── */
+.sk-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.sk-card-sm { padding: 12px; border-radius: 12px; }
+.sk-card-lg { padding: 20px; border-radius: 20px; }
+
+/* ── Skeleton page wrappers ── */
+.sk-page {
+  min-height: 100vh;
+  padding: 16px;
+  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.sk-page-wide {
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ── Flex fill ── */
+.sk-flex1 { flex: 1; }

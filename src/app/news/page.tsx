@@ -7,16 +7,20 @@ import { supabase } from '@/lib/supabase';
 import { htmlExcerpt } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import CommentSection from '@/components/CommentSection';
+import { useDraggableScroll } from '@/hooks/useDraggableScroll';
 import './page.css';
+import { NewsSkeleton } from '@/components/ui/Skeleton';
 
 const TABS = ['Tất cả', ...POST_CONTENT_TYPES];
 
 export default function NewsPage() {
-  const [news, setNews] = useState<any[]>([]);
+  const [news, setNews] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNews, setSelectedNews] = useState<any>(null);
+  const [selectedNews, setSelectedNews] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  const tabsScroll = useDraggableScroll<HTMLDivElement>();
 
   useEffect(() => {
     fetchNews();
@@ -63,21 +67,7 @@ export default function NewsPage() {
     return ['Bản tin', 'Thông báo', 'Sự kiện', 'Bài viết'].includes(type) ? cls : 'badge-default';
   };
 
-  const renderSkeletons = () => (
-    <div className="news-skeleton-list">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="news-skeleton-card">
-          <div className="skeleton sk-img" />
-          <div className="sk-body">
-            <div className="skeleton sk-title" />
-            <div className="skeleton sk-line" />
-            <div className="skeleton sk-line" />
-            <div className="skeleton sk-sub" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+
 
   return (
     <div className="news-page">
@@ -140,7 +130,15 @@ export default function NewsPage() {
           </div>
         </div>
 
-        <div className="news-filter-tabs">
+        <div 
+          className="news-filter-tabs"
+          ref={tabsScroll.ref}
+          onMouseDown={tabsScroll.onMouseDown}
+          onMouseLeave={tabsScroll.onMouseLeave}
+          onMouseUp={tabsScroll.onMouseUp}
+          onMouseMove={tabsScroll.onMouseMove}
+          style={tabsScroll.style}
+        >
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -164,7 +162,7 @@ export default function NewsPage() {
       </div>
 
       {loading ? (
-        renderSkeletons()
+        <NewsSkeleton />
       ) : filteredNews.length === 0 ? (
         <div className="news-empty">
           <div className="news-empty-icon">

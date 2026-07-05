@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
   LayoutDashboard, Users, FileText, Heart, Plus, Trash2, Video,
-  Upload, File, CheckCircle, Edit2, Headphones, BookOpen, X, LogOut,
+  File, CheckCircle, Edit2, Headphones, BookOpen, X, LogOut,
   ArrowLeft, Lock, Shield, Search, Bell, RefreshCw, Newspaper,
   AlertTriangle, ChevronRight, TrendingUp, Eye, Calendar, Zap,
-  CheckSquare, Clock, Activity, Coins, Mail,
+  Clock, Activity, Mail,
+  Church, BookHeart, HandCoins, AudioLines, HeartHandshake, UsersRound,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { POST_CONTENT_TYPES, POST_CATEGORIES } from '@/lib/post-categories';
-import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
+import { parseCategories } from '@/lib/html-utils';
 import PrayerReviewManager from '@/components/admin/PrayerReviewManager';
 import DonationsManager from '@/components/admin/DonationsManager';
 import SermonManager from '@/components/admin/SermonManager';
@@ -21,10 +22,12 @@ import DevotionalManager from '@/components/admin/DevotionalManager';
 import EventsManager from '@/components/admin/EventsManager';
 import MinistryManager from '@/components/admin/MinistryManager';
 import UserManager from '@/components/admin/UserManager';
+import CellGroupsManager from '@/components/admin/CellGroupsManager';
 import StatsManager from '@/components/admin/StatsManager';
+import LivestreamManager from '@/components/admin/LivestreamManager';
 import Pagination from '@/components/ui/Pagination';
 import { useAuth } from '@/contexts/AuthContext';
-import { canAccessAdmin, hasPermission, TAB_PERMISSIONS, ROLE_DESCRIPTIONS, ALL_ROLES, type UserRole } from '@/lib/permissions';
+import { canAccessAdmin, hasPermission, TAB_PERMISSIONS, ROLE_DESCRIPTIONS, type UserRole } from '@/lib/permissions';
 import './page.css';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -97,14 +100,16 @@ const TABS = [
   { id: 'news',        label: 'Tin tức',          icon: Newspaper,       group: 'NỘI DUNG' },
   { id: 'posts',       label: 'Bài viết',         icon: FileText,        group: 'NỘI DUNG' },
   { id: 'events',      label: 'Sự kiện',          icon: Calendar,        group: 'NỘI DUNG' },
-  { id: 'ministries',  label: 'Mục vụ',           icon: Users,           group: 'NỘI DUNG' },
+  { id: 'livestreams', label: 'Livestream',       icon: Video,           group: 'NỘI DUNG' },
+  { id: 'ministries',  label: 'Mục vụ',           icon: Church,          group: 'NỘI DUNG' },
+  { id: 'cell_groups', label: 'Nhóm nhỏ',         icon: Users,           group: 'NỘI DUNG' },
   { id: 'sermons',     label: 'Bài giảng',        icon: Video,           group: 'THƯ VIỆN' },
-  { id: 'audiobooks',  label: 'Sách Nói',         icon: Headphones,      group: 'THƯ VIỆN' },
+  { id: 'audiobooks',  label: 'Sách Nói',         icon: AudioLines,      group: 'THƯ VIỆN' },
   { id: 'pdfs',        label: 'Sách PDF',         icon: File,            group: 'THƯ VIỆN' },
-  { id: 'devotionals', label: 'Dưỡng Linh',       icon: BookOpen,        group: 'THƯ VIỆN' },
-  { id: 'donations',   label: 'Dâng hiến',        icon: Coins,           group: 'CỘNG ĐỒNG' },
-  { id: 'prayers',     label: 'Cầu nguyện',       icon: Heart,           group: 'CỘNG ĐỒNG' },
-  { id: 'users',       label: 'Tín hữu',          icon: Users,           group: 'CỘNG ĐỒNG' },
+  { id: 'devotionals', label: 'Dưỡng Linh',       icon: BookHeart,       group: 'THƯ VIỆN' },
+  { id: 'donations',   label: 'Dâng hiến',        icon: HandCoins,       group: 'CỘNG ĐỒNG' },
+  { id: 'prayers',     label: 'Cầu nguyện',       icon: HeartHandshake,  group: 'CỘNG ĐỒNG' },
+  { id: 'users',       label: 'Tín hữu',          icon: UsersRound,      group: 'CỘNG ĐỒNG' },
 ];
 
 const LIBRARY_TYPE_MAP: Record<string, string> = {
@@ -137,15 +142,15 @@ export default function AdminPanel() {
 
   /* Data */
   const [stats, setStats] = useState({ prayers: 0, sermons: 0, news: 0, profiles: 0, devotionals: 0, donations: 0 });
-  const [sermons, setSermons] = useState<Sermon[]>([]);
+  const [, setSermons] = useState<Sermon[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [prayers, setPrayers] = useState<Prayer[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [, setProfiles] = useState<Profile[]>([]);
   const [profilesPage, setProfilesPage] = useState(1);
-  const [profilesTotalPages, setProfilesTotalPages] = useState(1);
+  const [, setProfilesTotalPages] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [newsTotalPages, setNewsTotalPages] = useState(1);
-  const [recentPosts, setRecentPosts] = useState<any[]>([]);
+  const [recentPosts, setRecentPosts] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   /* Forms */
   const [newSermon, setNewSermon] = useState<Sermon>({ ...defaultSermon });
@@ -167,63 +172,42 @@ export default function AdminPanel() {
   const [confirm, setConfirm] = useState<ConfirmState>({ open: false, title: '', msg: '', onConfirm: () => {} });
   const [searchQuery, setSearchQuery] = useState('');
   const [panelSearch, setPanelSearch] = useState('');
-  const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
 
   /* ── Auth ── */
   useEffect(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('admin_bypass') === 'true') {
-      setIsAuth(true);
-      setAuthReady(true);
-      return;
-    }
-
     if (!authLoading) {
       if (user && profile?.role && canAccessAdmin(profile.role)) {
         setIsAuth(true);
+        setLoginError(false);
+        setLoginErrorMsg('');
+      } else if (user && profile && !canAccessAdmin(profile.role)) {
+        // Logged in but insufficient role — reject and sign out
+        setIsAuth(false);
+        setLoginError(true);
+        setLoginErrorMsg('Tài khoản không có quyền quản trị');
+        signOut();
       } else {
         setIsAuth(false);
       }
       setAuthReady(true);
     }
-  }, [user, profile, authLoading]);
+  }, [user, profile, authLoading, signOut]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(false);
     setLoginErrorMsg('');
 
-    const envEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const envPwd = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (envEmail && envPwd && email === envEmail && password === envPwd) {
-      sessionStorage.setItem('admin_bypass', 'true');
-      setIsAuth(true);
-      return;
-    }
-
     const { error } = await signIn(email, password);
     if (error) {
       setLoginError(true);
       setLoginErrorMsg(error);
-    } else {
-      // Check role happens in useEffect — both admin and ban dieu hanh can access
-      setTimeout(() => {
-        const storedProfile = localStorage.getItem('reach_profile');
-        if (storedProfile) {
-          try {
-            const p = JSON.parse(storedProfile);
-            if (!canAccessAdmin(p.role)) {
-               setLoginError(true);
-               setLoginErrorMsg('Tài khoản không có quyền quản trị');
-               signOut();
-            }
-          } catch {}
-        }
-      }, 1000);
     }
+    // Role check happens automatically in useEffect via AuthContext
+    // canAccessAdmin(profile.role) gates setIsAuth(true)
   };
 
   const handleLogout = async () => {
-    sessionStorage.removeItem('admin_bypass');
     await signOut();
     setIsAuth(false);
   };
@@ -311,8 +295,8 @@ export default function AdminPanel() {
       supabase.from('sermons').select('*').order('created_at', { ascending: false }).limit(3),
     ]);
     const combined = [
-      ...(nd || []).map((i: any) => ({ ...i, _source: 'news' })),
-      ...(sd || []).map((i: any) => ({ ...i, _source: 'sermon' })),
+      ...(nd || []).map((i: any) => ({ ...i, _source: 'news' })), // eslint-disable-line @typescript-eslint/no-explicit-any
+      ...(sd || []).map((i: any) => ({ ...i, _source: 'sermon' })), // eslint-disable-line @typescript-eslint/no-explicit-any
     ].sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()).slice(0, 6);
     setRecentPosts(combined);
   }, []);
@@ -390,7 +374,7 @@ export default function AdminPanel() {
       if (isEdit) setEditItem(prev => prev ? { ...prev, [field]: publicUrl } : prev);
       else setNewNews(prev => ({ ...prev, [field]: publicUrl }));
       toast('success', 'Tải lên thành công');
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       toast('error', 'Lỗi upload', err.message);
     } finally {
       setUploading(false);
@@ -398,46 +382,6 @@ export default function AdminPanel() {
   };
 
   /* ── CRUD: Sermon ── */
-  const handleAddSermon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const { error } = await supabase.from('sermons').insert([{
-        ...newSermon,
-        youtube_id: extractYtId(newSermon.youtube_url || ''),
-      }]);
-      if (error) throw error;
-
-      fetch('/api/notifications/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'REACH Church: Bài giảng mới',
-          message: newSermon.title,
-          url: `${window.location.origin}/library`,
-        })
-      }).catch(e => console.error('Push notification failed:', e));
-
-      toast('success', 'Đã thêm bài giảng');
-      setNewSermon({ ...defaultSermon });
-      setQuillKey(k => k + 1);
-      fetchSermons();
-      fetchStats();
-      fetchRecentPosts();
-    } catch (err: any) { toast('error', 'Lỗi', err.message); }
-    finally { setSaving(false); }
-  };
-
-  const handleDeleteSermon = (id?: string) => {
-    if (!id) return;
-    showConfirm('Xóa bài giảng?', 'Thao tác này không thể hoàn tác.', async () => {
-      const { error } = await supabase.from('sermons').delete().eq('id', id);
-      if (error) { toast('error', 'Lỗi xóa', error.message); return; }
-      setSermons(prev => prev.filter(s => s.id !== id));
-      toast('success', 'Đã xóa bài giảng');
-      fetchStats();
-    });
-  };
 
   /* ── CRUD: News ── */
   const handleAddNews = async (e: React.FormEvent, type: string) => {
@@ -491,7 +435,7 @@ export default function AdminPanel() {
       fetchNews();
       fetchStats();
       fetchRecentPosts();
-    } catch (err: any) { toast('error', 'Lỗi đăng bài', err.message); }
+    } catch (err: any) { toast('error', 'Lỗi đăng bài', err.message); } // eslint-disable-line @typescript-eslint/no-explicit-any
     finally { setSaving(false); }
   };
 
@@ -552,43 +496,11 @@ export default function AdminPanel() {
       setEditItem(null);
       fetchRecentPosts();
       fetchStats();
-    } catch (err: any) { toast('error', 'Lỗi cập nhật', err.message); }
+    } catch (err: any) { toast('error', 'Lỗi cập nhật', err.message); } // eslint-disable-line @typescript-eslint/no-explicit-any
     finally { setSaving(false); }
   };
 
-  /* ── CRUD: Prayer ── */
-  const handleDeletePrayer = (id?: string) => {
-    if (!id) return;
-    showConfirm('Xóa lời cầu nguyện?', 'Xác nhận xóa đề mục này?', async () => {
-      const { error } = await supabase.from('prayers').delete().eq('id', id);
-      if (error) { toast('error', 'Lỗi', error.message); return; }
-      setPrayers(prev => prev.filter(p => p.id !== id));
-      toast('success', 'Đã xóa');
-      fetchStats();
-    });
-  };
-
-  const handleCompletePrayer = async (id?: string) => {
-    if (!id) return;
-    const { error } = await supabase.from('prayers').update({ status: 'answered' }).eq('id', id);
-    if (error) { toast('error', 'Lỗi', error.message); return; }
-    setPrayers(prev => prev.map(p => p.id === id ? { ...p, status: 'answered' } : p));
-    toast('success', 'Đã đánh dấu nhậm lời 🙏');
-  };
-
   /* ── CRUD: Role ── */
-  const handleUpdateRole = async (id?: string, role?: string) => {
-    if (!id || !role) return;
-    setRoleUpdating(id);
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', id);
-    if (error) { toast('error', 'Lỗi', error.message); }
-    else {
-      setProfiles(prev => prev.map(u => u.id === id ? { ...u, role } : u));
-      toast('success', 'Đã cập nhật quyền');
-    }
-    setRoleUpdating(null);
-  };
-
 /* ════════════════════════════════════════
    RENDER HELPERS (OUTSIDE)
    ════════════════════════════════════════ */
@@ -606,7 +518,7 @@ const DataItem = ({
   onEdit?: () => void; onDelete?: () => void; thumb?: string;
 }) => (
   <div className="data-item">
-    {thumb && <img src={thumb} alt="" className="news-thumb" />}
+    {thumb && <Image src={thumb} alt="" className="news-thumb" width={100} height={100} unoptimized />}
     <div className="data-item-info">
       <p className="data-item-title">{title}</p>
       {sub && <p className="data-item-sub">{sub}</p>}
@@ -679,15 +591,15 @@ const DataItem = ({
   /* ── News/Library form ── */
   const renderNewsForm = ({
     type, isEdit = false, showImg = false, showPdf = false, showAudio = false,
-    showCats = false, showTypeSelect = false,
+    showCats = false, showCustomCats = false, showTypeSelect = false,
   }: {
     type: string; isEdit?: boolean; showImg?: boolean; showPdf?: boolean;
-    showAudio?: boolean; showCats?: boolean; showTypeSelect?: boolean;
+    showAudio?: boolean; showCats?: boolean; showCustomCats?: boolean; showTypeSelect?: boolean;
   }) => {
     const data = isEdit ? (editItem as NewsItem) : newNews;
     const set = isEdit
-      ? (k: string, v: any) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev)
-      : (k: string, v: any) => setNewNews(prev => ({ ...prev, [k]: v }));
+      ? (k: string, v: any) => setEditItem(prev => prev ? { ...prev, [k]: v } : prev) // eslint-disable-line @typescript-eslint/no-explicit-any
+      : (k: string, v: any) => setNewNews(prev => ({ ...prev, [k]: v })); // eslint-disable-line @typescript-eslint/no-explicit-any
     const cats = parseCategories(data?.categories);
 
     return (
@@ -801,6 +713,18 @@ const DataItem = ({
             </div>
           </div>
         )}
+
+        {showCustomCats && (
+          <div className="form-group">
+            <label className="form-label">Chủ đề (cách nhau bởi dấu phẩy)</label>
+            <input className="form-input" placeholder="VD: Gia đình, Đức tin, Tình yêu..."
+              value={Array.isArray(data?.categories) ? data.categories.join(', ') : (data?.categories || '')}
+              onChange={e => {
+                const parts = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                set('categories', parts);
+              }} />
+          </div>
+        )}
       </>
     );
   };
@@ -880,8 +804,6 @@ const DataItem = ({
   const newsItems = getNewsForTab(NEWS_TYPES);
   const audioItems = getNewsForTab(['Sách Nói']);
   const pdfItems = getNewsForTab(['Tài liệu']);
-  const devItems = getNewsForTab(['Dưỡng linh', 'Dưỡng Linh']);
-
   /* group nav */
   const groups = ['NỘI DUNG', 'THƯ VIỆN', 'CỘNG ĐỒNG'];
 
@@ -964,6 +886,7 @@ const DataItem = ({
                     showTypeSelect: ['Bài viết', 'Tin tức', 'Bản tin', 'Thông báo', 'Sự kiện'].includes((editItem as NewsItem).type || ''),
                     showPdf: (editItem as NewsItem).type === 'Tài liệu',
                     showAudio: (editItem as NewsItem).type === 'Sách Nói',
+                    showCustomCats: ['Tài liệu', 'Sách Nói'].includes((editItem as NewsItem).type || ''),
                   })
                 )}
                 <div className="modal-actions">
@@ -1310,10 +1233,24 @@ const DataItem = ({
               </div>
             )}
 
+            {/* ─── LIVESTREAMS TAB ─── */}
+            {activeTab === 'livestreams' && (
+              <div className="tab-page">
+                <LivestreamManager />
+              </div>
+            )}
+
             {/* ─── MINISTRIES TAB ─── */}
             {activeTab === 'ministries' && (
               <div className="tab-page">
                 <MinistryManager />
+              </div>
+            )}
+
+            {/* ─── CELL GROUPS TAB ─── */}
+            {activeTab === 'cell_groups' && (
+              <div className="tab-page">
+                <CellGroupsManager />
               </div>
             )}
 
@@ -1360,7 +1297,7 @@ const DataItem = ({
                       await handleAddNews(e, 'Sách Nói');
                       if (!saving && !uploading) setShowAudioForm(false);
                     }}>
-                      {renderNewsForm({ type: 'Sách Nói', showAudio: true })}
+                      {renderNewsForm({ type: 'Sách Nói', showAudio: true, showCustomCats: true })}
                       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                         <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.65rem 1.5rem' }} disabled={saving || uploading}>
                           <Plus size={17} /> {saving ? 'Đang lưu...' : 'Lưu sách nói'}
@@ -1441,7 +1378,7 @@ const DataItem = ({
                       await handleAddNews(e, 'Tài liệu');
                       if (!saving && !uploading) setShowPdfForm(false);
                     }}>
-                      {renderNewsForm({ type: 'Tài liệu', showPdf: true })}
+                      {renderNewsForm({ type: 'Tài liệu', showPdf: true, showCustomCats: true })}
                       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                         <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.65rem 1.5rem' }} disabled={saving || uploading}>
                           <Plus size={17} /> {saving ? 'Đang lưu...' : 'Lưu tài liệu'}

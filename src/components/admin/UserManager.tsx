@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import Pagination from '@/components/ui/Pagination';
 import {
-  ROLE_DESCRIPTIONS, ALL_ROLES, ROLE_PERMISSIONS,
-  type UserRole, type Permission,
+  ROLE_DESCRIPTIONS, ALL_ROLES, ROLE_PERMISSIONS, ALL_DEPARTMENTS,
+  type UserRole, type Permission, type Department
 } from '@/lib/permissions';
 
 interface Profile {
@@ -16,6 +16,8 @@ interface Profile {
   username: string;
   email: string;
   role: string;
+  department?: Department;
+  custom_permissions?: Permission[];
   bio?: string;
   created_at: string;
 }
@@ -90,7 +92,7 @@ export default function UserManager() {
       if (error) throw error;
       setProfiles(data || []);
       setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       showToast('Lỗi khi tải dữ liệu: ' + err.message);
     } finally {
       setLoading(false);
@@ -102,20 +104,24 @@ export default function UserManager() {
     if (!editing) return;
     setSaving(true);
     try {
-      const updateData: Record<string, string> = {
+      const updateData: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
         full_name: editing.full_name,
         username:  editing.username,
         email:     editing.email,
         bio:       editing.bio || '',
       };
-      if (canAssignRole) updateData.role = editing.role;
+      if (canAssignRole) {
+        updateData.role = editing.role;
+        updateData.department = editing.department || null;
+        updateData.custom_permissions = editing.custom_permissions || [];
+      }
 
       const { error } = await supabase.from('profiles').update(updateData).eq('id', editing.id);
       if (error) throw error;
       showToast('✅ Đã cập nhật thành công');
       setEditing(null);
       loadProfiles();
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       showToast('Lỗi: ' + err.message);
     } finally {
       setSaving(false);
@@ -130,7 +136,7 @@ export default function UserManager() {
       if (error) throw error;
       showToast('✅ Đã xóa hồ sơ');
       loadProfiles();
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       showToast('Lỗi khi xóa: ' + err.message);
     }
   };
@@ -404,10 +410,18 @@ export default function UserManager() {
                     Vai trò & Phân quyền
                   </label>
                   <select value={editing.role || 'Thành viên'} style={inputStyle}
-                    onChange={e => setEditing({ ...editing, role: e.target.value })}>
+                    onChange={e => {
+                      const newRole = e.target.value;
+                      setEditing({ 
+                        ...editing, 
+                        role: newRole,
+                        department: newRole === 'Trưởng ban' ? (editing.department || 'Ban điều hành') : undefined,
+                        custom_permissions: newRole === 'Trưởng ban' ? (editing.custom_permissions || []) : undefined
+                      });
+                    }}>
                     {ALL_ROLES.map(r => (
                       <option key={r} value={r}>
-                        {ROLE_DESCRIPTIONS[r].icon} {r}
+                        {ROLE_DESCRIPTIONS[r as UserRole].icon} {r}
                       </option>
                     ))}
                   </select>
@@ -415,6 +429,48 @@ export default function UserManager() {
                     <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: ROLE_DESCRIPTIONS[editing.role as UserRole].color }}>
                       {ROLE_DESCRIPTIONS[editing.role as UserRole].desc}
                     </p>
+                  )}
+
+                  {editing.role === 'Trưởng ban' && (
+                    <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                      <label style={labelStyle}>Ban phụ trách</label>
+                      <select value={editing.department || 'Ban điều hành'} style={inputStyle}
+                        onChange={e => setEditing({ ...editing, department: e.target.value as Department })}>
+                        {ALL_DEPARTMENTS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+
+                      <label style={{ ...labelStyle, marginTop: '16px' }}>Quyền hạn tùy chỉnh (Giới hạn tính năng)</label>
+                      <div style={{ maxHeight: '200px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {PERMISSION_GROUPS.map(group => {
+                          if (group.label === 'Hệ thống') return null; // Không cho Trưởng ban quyền Hệ thống
+                          return (
+                            <div key={group.label}>
+                              <strong style={{ fontSize: '0.8rem', color: '#48BCE1' }}>{group.label}</strong>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
+                                {group.perms.map(p => (
+                                  <label key={p} style={{ fontSize: '0.8rem', color: '#ccc', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="checkbox" 
+                                      checked={editing.custom_permissions?.includes(p) || false}
+                                      onChange={e => {
+                                        const perms = editing.custom_permissions || [];
+                                        if (e.target.checked) {
+                                          setEditing({ ...editing, custom_permissions: [...perms, p] });
+                                        } else {
+                                          setEditing({ ...editing, custom_permissions: perms.filter(x => x !== p) });
+                                        }
+                                      }}
+                                    />
+                                    {PERM_LABELS[p] || p}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (

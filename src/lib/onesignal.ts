@@ -47,24 +47,7 @@ export async function initOneSignal(): Promise<boolean> {
     autoResubscribe: false,
     notifyButton: {
       enable: false,
-      prenotify: true,
-      showCredit: false,
-      text: {
-        'tip.state.unsubscribed': 'Đăng ký nhận thông báo',
-        'tip.state.subscribed': 'Bạn đã đăng ký nhận thông báo',
-        'tip.state.blocked': 'Thông báo đã bị chặn',
-        'message.prenotify': 'Nhấn để nhận thông báo mới nhất',
-        'message.action.subscribed': 'Cảm ơn bạn đã đăng ký!',
-        'message.action.resubscribed': 'Bạn đã đăng ký lại thông báo',
-        'message.action.unsubscribed': 'Bạn sẽ không nhận thông báo nữa',
-        'message.action.subscribing': 'Đang đăng ký...',
-        'dialog.main.title': 'Quản lý thông báo',
-        'dialog.main.button.subscribe': 'ĐĂNG KÝ',
-        'dialog.main.button.unsubscribe': 'HỦY ĐĂNG KÝ',
-        'dialog.blocked.title': 'Bỏ chặn thông báo',
-        'dialog.blocked.message': 'Vui lòng cho phép nhận thông báo trong trình duyệt.'
-      }
-    },
+    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     promptOptions: {
       slidedown: {
         prompts: [

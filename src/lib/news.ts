@@ -10,7 +10,7 @@ export interface NewsPost {
   title: string;
   content: string;
   category: string;
-  featured_image_url?: string;
+  image_url?: string;
   published_at: string;
   author_id?: string;
   views_count: number;
@@ -22,7 +22,7 @@ export interface NewsPostCreateInput {
   title: string;
   content: string;
   category: string;
-  featured_image_url?: string;
+  image_url?: string;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface NewsPostCreateInput {
 export async function fetchNewsPosts(limit = 10, offset = 0): Promise<NewsPost[]> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
       .order('published_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -50,7 +50,7 @@ export async function fetchNewsPosts(limit = 10, offset = 0): Promise<NewsPost[]
 export async function fetchNewsPostById(id: string): Promise<NewsPost | null> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
       .eq('id', id)
       .single();
@@ -60,7 +60,7 @@ export async function fetchNewsPostById(id: string): Promise<NewsPost | null> {
     // Increment views
     if (data) {
       await supabase
-        .from('news_posts')
+        .from('news')
         .update({ views_count: (data.views_count || 0) + 1 })
         .eq('id', id);
     }
@@ -78,7 +78,7 @@ export async function fetchNewsPostById(id: string): Promise<NewsPost | null> {
 export async function fetchNewsPostsByCategory(category: string): Promise<NewsPost[]> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
       .eq('category', category)
       .order('published_at', { ascending: false });
@@ -99,7 +99,7 @@ export async function searchNewsPosts(query: string): Promise<NewsPost[]> {
     if (!query.trim()) return [];
 
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
       .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
       .order('published_at', { ascending: false })
@@ -119,7 +119,7 @@ export async function searchNewsPosts(query: string): Promise<NewsPost[]> {
 export async function createNewsPost(input: NewsPostCreateInput, userId?: string): Promise<NewsPost | null> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .insert([
         {
           ...input,
@@ -148,7 +148,7 @@ export async function updateNewsPost(
 ): Promise<NewsPost | null> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .update({
         ...updates,
         updated_at: new Date().toISOString(),
@@ -170,7 +170,7 @@ export async function updateNewsPost(
  */
 export async function deleteNewsPost(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from('news_posts').delete().eq('id', id);
+    const { error } = await supabase.from('news').delete().eq('id', id);
 
     if (error) throw error;
     return true;
@@ -186,7 +186,7 @@ export async function deleteNewsPost(id: string): Promise<boolean> {
 export async function getLatestNewsPosts(limit = 5): Promise<NewsPost[]> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
       .order('published_at', { ascending: false })
       .limit(limit);
@@ -205,9 +205,9 @@ export async function getLatestNewsPosts(limit = 5): Promise<NewsPost[]> {
 export async function getFeaturedNewsPost(): Promise<NewsPost | null> {
   try {
     const { data, error } = await supabase
-      .from('news_posts')
+      .from('news')
       .select('*')
-      .not('featured_image_url', 'is', null)
+      .not('image_url', 'is', null)
       .order('published_at', { ascending: false })
       .limit(1)
       .single();

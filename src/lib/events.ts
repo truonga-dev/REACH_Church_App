@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 import { formatSupabaseError } from './supabase-errors';
+import { EventVolunteer } from '@/types';
 
 export interface Event {
   id: string;
@@ -138,6 +139,28 @@ export async function fetchEventsByDepartment(departmentId: string): Promise<Eve
 }
 
 /**
+ * Get all volunteer roles for a user
+ */
+export async function getVolunteerRolesForUser(userId: string): Promise<Record<string, EventVolunteer>> {
+  try {
+    const { data, error } = await supabase
+      .from('event_volunteers')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) return {};
+    
+    const roles: Record<string, EventVolunteer> = {};
+    data?.forEach(v => {
+      roles[v.event_id] = v;
+    });
+    return roles;
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Create new event (admin only)
  */
 export async function createEvent(input: EventCreateInput): Promise<Event | null> {
@@ -265,6 +288,84 @@ export async function cancelEventRegistration(eventId: string, userId: string): 
 }
 
 /**
+ * Register user as a volunteer for an event
+ */
+export async function registerVolunteer(eventId: string, userId: string, role: string): Promise<EventVolunteer | null> {
+  try {
+    const { data, error } = await supabase
+      .from('event_volunteers')
+      .insert([{ event_id: eventId, user_id: userId, role }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error registering volunteer:', error);
+    return null;
+  }
+}
+
+/**
+ * Cancel volunteer registration
+ */
+export async function cancelVolunteer(eventId: string, userId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('event_volunteers')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error canceling volunteer:', error);
+    return false;
+  }
+}
+
+/**
+ * Get volunteer info for user and event
+ */
+export async function getVolunteerInfo(eventId: string, userId: string): Promise<EventVolunteer | null> {
+  try {
+    const { data, error } = await supabase
+      .from('event_volunteers')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */) {
+    return null;
+  }
+}
+
+/**
+ * Fetch all volunteering events for a user
+ */
+export async function fetchUserVolunteering(userId: string): Promise<EventVolunteer[]> {
+  try {
+    const { data, error } = await supabase
+      .from('event_volunteers')
+      .select(`
+        *,
+        events (*)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Check if user is registered for event
  */
 export async function isUserRegisteredForEvent(eventId: string, userId: string): Promise<boolean> {
@@ -346,6 +447,55 @@ export async function getEventRegistrations(eventId: string): Promise<EventRegis
     }));
   } catch (error) {
     console.warn('Error getting event registrations:', formatSupabaseError(error));
+    return [];
+  }
+}
+
+/**
+ * Get event volunteers
+ */
+export async function getEventVolunteers(eventId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('event_volunteers')
+      .select(`*`)
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      if (error.code === '42P01') return [];
+      throw error;
+    }
+    if (!data?.length) return [];
+
+    const userIds = [...new Set(data.map((row) => row.user_id).filter(Boolean))];
+    const profileMap = new Map<string, { full_name: string; email: string; avatar_url: string }>();
+
+    if (userIds.length > 0) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, email, avatar_url')
+        .in('id', userIds);
+
+      if (!profileError && profiles) {
+        for (const profile of profiles) {
+          const entry = {
+            full_name: profile.full_name || '',
+            email: profile.email || '',
+            avatar_url: profile.avatar_url || '',
+          };
+          if (profile.id) profileMap.set(profile.id, entry);
+          if (profile.user_id) profileMap.set(profile.user_id, entry);
+        }
+      }
+    }
+
+    return data.map((row) => ({
+      ...row,
+      profiles: profileMap.get(row.user_id),
+    }));
+  } catch (error) {
+    console.warn('Error getting event volunteers:', formatSupabaseError(error));
     return [];
   }
 }

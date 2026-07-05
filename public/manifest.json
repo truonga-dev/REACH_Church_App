@@ -1,69 +1,55 @@
 {
   "name": "REACH Church Vietnam",
   "short_name": "REACH",
-  "description": "Ứng dụng nhà thờ REACH - Dưỡng linh, Bài giảng, Tin tức, Cầu nguyện",
+  "description": "Ứng dụng nhà thờ REACH — Dưỡng linh, Bài giảng, Tin tức, Cầu nguyện",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#0EA5E9",
+  "background_color": "#0f1520",
+  "theme_color": "#48BCE1",
+  "lang": "vi",
   "icons": [
-    {
-      "src": "/logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icons/icon-72x72.png",            "sizes": "72x72",   "type": "image/png" },
+    { "src": "/icons/icon-96x96.png",            "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icons/icon-128x128.png",          "sizes": "128x128", "type": "image/png" },
+    { "src": "/icons/icon-144x144.png",          "sizes": "144x144", "type": "image/png" },
+    { "src": "/icons/icon-152x152.png",          "sizes": "152x152", "type": "image/png" },
+    { "src": "/icons/icon-192x192.png",          "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-384x384.png",          "sizes": "384x384", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png",          "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "categories": ["lifestyle", "productivity", "religion"],
-  "screenshots": [
-    {
-      "src": "/logo.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
+  "categories": ["lifestyle", "religion"],
   "shortcuts": [
     {
       "name": "Dưỡng Linh",
       "short_name": "Dưỡng Linh",
       "description": "Xem bài dưỡng linh hôm nay",
       "url": "/devotional",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Cầu Nguyện",
       "short_name": "Cầu Nguyện",
       "description": "Gửi lời cầu nguyện",
       "url": "/prayer",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Bài Giảng",
       "short_name": "Bài Giảng",
       "description": "Xem các bài giảng",
       "url": "/library",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Kinh Thánh",
+      "short_name": "Kinh Thánh",
+      "description": "Đọc Kinh Thánh tiếng Việt",
+      "url": "/bible",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
 }

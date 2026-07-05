@@ -5,6 +5,13 @@
 
 import { supabase } from './supabase';
 
+export interface CommentProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+}
+
 export interface Comment {
   id: string;
   user_id: string;
@@ -12,31 +19,49 @@ export interface Comment {
   post_id: string;
   content: string;
   likes_count: number;
+  parent_id?: string;
   created_at: string;
   updated_at?: string;
+  profile?: CommentProfile | null;
 }
 
 export interface CommentCreateInput {
   content: string;
+  parent_id?: string;
 }
 
 /**
- * Fetch comments for a specific post
+ * Fetch comments for a specific post with user profiles
  */
 export async function fetchComments(
   postType: 'devotional' | 'news_post' | 'sermon',
   postId: string,
 ): Promise<Comment[]> {
   try {
-    const { data, error } = await supabase
+    const { data: comments, error } = await supabase
       .from('comments')
       .select('*')
       .eq('post_type', postType)
       .eq('post_id', postId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true }); // Ascending so replies come after
 
     if (error) throw error;
-    return data || [];
+    if (!comments || comments.length === 0) return [];
+
+    // Fetch user profiles for the comments
+    const userIds = Array.from(new Set(comments.map(c => c.user_id)));
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url, username')
+      .in('id', userIds);
+
+    const profileMap = new Map<string, CommentProfile>();
+    profiles?.forEach(p => profileMap.set(p.id, p));
+
+    return comments.map(c => ({
+      ...c,
+      profile: profileMap.get(c.user_id) || null
+    }));
   } catch (error) {
     console.error('Error fetching comments:', error);
     return [];
@@ -80,6 +105,7 @@ export async function createComment(
           post_id: postId,
           user_id: userId,
           content: input.content,
+          parent_id: input.parent_id || null,
           likes_count: 0,
         },
       ])
@@ -87,7 +113,17 @@ export async function createComment(
       .single();
 
     if (error) throw error;
-    return data || null;
+
+    if (data) {
+      // Fetch profile for the newly created comment
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, username')
+        .eq('id', userId)
+        .single();
+      return { ...data, profile: profileData || null };
+    }
+    return null;
   } catch (error) {
     console.error('Error creating comment:', error);
     return null;
