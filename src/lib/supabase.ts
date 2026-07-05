@@ -25,8 +25,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    lock: async (name: string, acquireTimeout: number, fn: () => Promise<any>) => {
+      return await fn();
+    }
   },
   global: {
     fetch: fetchWithLogging,
   },
 });
+
+// Admin client bypasses RLS - used for admin operations (create/update/delete livestreams etc.)
+const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+export const supabaseAdmin = supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: fetchWithLogging },
+    })
+  : supabase; // Fallback to anon client if no service key

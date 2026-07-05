@@ -10,7 +10,7 @@ import {
   ArrowLeft, Lock, Shield, Search, Bell, RefreshCw, Newspaper,
   AlertTriangle, ChevronRight, TrendingUp, Eye, Calendar, Zap,
   Clock, Activity, Mail,
-  Church, BookHeart, HandCoins, AudioLines, HeartHandshake, UsersRound,
+  Church, BookHeart, HandCoins, AudioLines, HeartHandshake, UsersRound, QrCode,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { POST_CONTENT_TYPES, POST_CATEGORIES } from '@/lib/post-categories';
@@ -25,7 +25,9 @@ import UserManager from '@/components/admin/UserManager';
 import CellGroupsManager from '@/components/admin/CellGroupsManager';
 import StatsManager from '@/components/admin/StatsManager';
 import LivestreamManager from '@/components/admin/LivestreamManager';
+import NotificationsManager from '@/components/admin/NotificationsManager';
 import Pagination from '@/components/ui/Pagination';
+import { AdminPanelSkeleton, AdminTableSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessAdmin, hasPermission, TAB_PERMISSIONS, ROLE_DESCRIPTIONS, type UserRole } from '@/lib/permissions';
 import './page.css';
@@ -110,6 +112,8 @@ const TABS = [
   { id: 'donations',   label: 'Dâng hiến',        icon: HandCoins,       group: 'CỘNG ĐỒNG' },
   { id: 'prayers',     label: 'Cầu nguyện',       icon: HeartHandshake,  group: 'CỘNG ĐỒNG' },
   { id: 'users',       label: 'Tín hữu',          icon: UsersRound,      group: 'CỘNG ĐỒNG' },
+  { id: 'checkin',     label: 'Điểm danh QR',     icon: QrCode,          group: 'CỘNG ĐỒNG' },
+  { id: 'notifications', label: 'Thông báo',      icon: Bell,            group: 'CỘNG ĐỒNG' },
 ];
 
 const LIBRARY_TYPE_MAP: Record<string, string> = {
@@ -139,6 +143,16 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState(false);
   const [loginErrorMsg, setLoginErrorMsg] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tab = searchParams.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
 
   /* Data */
   const [stats, setStats] = useState({ prayers: 0, sermons: 0, news: 0, profiles: 0, devotionals: 0, donations: 0 });
@@ -172,6 +186,15 @@ export default function AdminPanel() {
   const [confirm, setConfirm] = useState<ConfirmState>({ open: false, title: '', msg: '', onConfirm: () => {} });
   const [searchQuery, setSearchQuery] = useState('');
   const [panelSearch, setPanelSearch] = useState('');
+  const [tabLoading, setTabLoading] = useState(false);
+
+  /* ── Tab Switch Loading Effect ── */
+  useEffect(() => {
+    if (!authReady || !isAuth) return;
+    setTabLoading(true);
+    const t = setTimeout(() => setTabLoading(false), 400);
+    return () => clearTimeout(t);
+  }, [activeTab, authReady, isAuth]);
 
   /* ── Auth ── */
   useEffect(() => {
@@ -733,14 +756,7 @@ const DataItem = ({
      LOADING / LOGIN
      ════════════════════════════════════════ */
   if (!authReady) {
-    return (
-      <div className="admin-root">
-        <div className="admin-loading-screen">
-          <div className="admin-spinner" />
-          <p>Đang tải...</p>
-        </div>
-      </div>
-    );
+    return <AdminPanelSkeleton />;
   }
 
   if (!isAuth) {
@@ -791,6 +807,8 @@ const DataItem = ({
   }
 
   /* ── Filter helpers ── */
+
+
   const tabBadge = (id: string) => {
     const m: Record<string, number> = {
       sermons: stats.sermons, news: stats.news, prayers: stats.prayers,
@@ -943,7 +961,13 @@ const DataItem = ({
                   {visibleTabs.map(t => (
                     <button key={t.id}
                       className={`nav-item ${activeTab === t.id ? 'active' : ''}`}
-                      onClick={() => setActiveTab(t.id)}>
+                      onClick={() => {
+                        if (t.id === 'checkin') {
+                          window.location.href = '/admin/check-in';
+                        } else {
+                          setActiveTab(t.id);
+                        }
+                      }}>
                       <t.icon size={18} />
                       {t.label}
                       {tabBadge(t.id) > 0 && (
@@ -1028,9 +1052,14 @@ const DataItem = ({
 
           {/* Content */}
           <div className="admin-content">
-
-            {/* ─── OVERVIEW ─── */}
-            {activeTab === 'overview' && (
+            {tabLoading ? (
+              <div style={{ padding: '0 10px' }}>
+                <AdminTableSkeleton rows={6} />
+              </div>
+            ) : (
+              <>
+                {/* ─── OVERVIEW ─── */}
+                {activeTab === 'overview' && (
               <div className="tab-page">
                 {/* Stats */}
                 <div className="stats-grid">
@@ -1449,6 +1478,15 @@ const DataItem = ({
               <div className="tab-page">
                 <UserManager />
               </div>
+            )}
+
+            {/* ─── NOTIFICATIONS ─── */}
+            {activeTab === 'notifications' && (
+              <div className="tab-page">
+                <NotificationsManager />
+              </div>
+            )}
+              </>
             )}
 
           </div>{/* end admin-content */}

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchUpcomingEvents, fetchPastEvents, registerForEvent, cancelEventRegistration, isUserRegisteredForEvent, getVolunteerRolesForUser, registerVolunteer, cancelVolunteer } from '@/lib/events';
 import type { Event } from '@/lib/events';
 import Link from 'next/link';
+import AddToCalendar from '@/components/ui/AddToCalendar';
 
 const Countdown = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -508,6 +509,14 @@ export default function EventsPage() {
                   {/* Action Button */}
                   {activeTab === 'upcoming' && (
                     <div style={{ padding: '0 1rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <AddToCalendar 
+                        event={{ 
+                          title: event.title, 
+                          description: event.description || '', 
+                          startDate: event.event_date, 
+                          location: event.location || '' 
+                        }} 
+                      />
                       {/* Tham gia */}
                       {isReg ? (
                         <button

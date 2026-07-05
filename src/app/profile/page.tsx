@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import {
   User, Heart, BookOpen, Settings, ChevronRight, LogOut,
   CheckCircle, Clock, Plus, X, FileText, Camera, Users, Calendar,
-  Flame, Star, Edit2, Check,
+  Flame, Star, Edit2, Check, QrCode,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/lib/supabase';
 import {
   buildPrayerInsert,
@@ -19,6 +20,7 @@ import { getReadingStreak, getTotalReadingDays } from '@/lib/reading-tracker';
 import { getSermonNotesByUser, type SermonNote } from '@/lib/livestreams';
 import { fetchUserVolunteering } from '@/lib/events';
 import SettingsPanel from '@/components/profile/SettingsPanel';
+import AddToCalendar from '@/components/ui/AddToCalendar';
 import type { Prayer } from '@/types';
 import '../login/auth.css';
 import './page.css';
@@ -80,6 +82,7 @@ export default function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState<'info' | 'prayer' | 'notes'>('info');
   const [showSettings, setShowSettings] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [showAddPrayer, setShowAddPrayer] = useState(false);
   const [newPrayer, setNewPrayer] = useState('');
 
@@ -284,6 +287,9 @@ export default function ProfilePage() {
           <button className="profile-settings-btn" onClick={() => setShowSettings(true)} title="Cài đặt">
             <Settings size={20} />
           </button>
+          <button className="profile-qr-btn" onClick={() => setShowQrModal(true)} title="Mã QR Điểm Danh" style={{ position: 'absolute', top: '16px', right: '60px', zIndex: 3, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
+            <QrCode size={18} />
+          </button>
           <button className="profile-cover-upload-btn" onClick={() => coverInputRef.current?.click()}>
             <Camera size={15} /> Thêm ảnh bìa
           </button>
@@ -437,6 +443,18 @@ export default function ProfilePage() {
                         <Users size={13} color="#8b5cf6" />
                         Vai trò: <strong>{v.role}</strong>
                       </div>
+                      {v.events && (
+                        <div style={{ marginTop: '10px' }}>
+                          <AddToCalendar 
+                            event={{
+                              title: v.events.title,
+                              description: `Vai trò phục vụ: ${v.role}`,
+                              startDate: v.events.event_date,
+                              location: v.events.location || 'Reach Church'
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -543,7 +561,7 @@ export default function ProfilePage() {
       {showSettings && (
         <div className="settings-modal-overlay">
           <SettingsPanel
-            email={user.email || ''}
+            email={user?.email || ''}
             bio={profileInfo.bio}
             fullName={profileInfo.full_name}
             avatarUrl={profileInfo.avatar_url}
@@ -556,6 +574,22 @@ export default function ProfilePage() {
             onBack={() => setShowSettings(false)}
             onOpenDonation={() => {}}
           />
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQrModal && (
+        <div className="profile-modal-overlay" onClick={() => setShowQrModal(false)}>
+          <div className="profile-modal-content" style={{ textAlign: 'center', maxWidth: '320px', padding: '30px', margin: 'auto', background: '#1a2233', borderRadius: '24px' }} onClick={e => e.stopPropagation()}>
+            <button className="modal-close-btn" style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '8px', color: '#fff', cursor: 'pointer' }} onClick={() => setShowQrModal(false)}><X size={20} /></button>
+            <h2 style={{ marginBottom: '20px', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>Mã QR Của Bạn</h2>
+            <div style={{ background: '#fff', padding: '16px', borderRadius: '16px', display: 'inline-block' }}>
+              <QRCodeSVG value={user?.id || ''} size={200} />
+            </div>
+            <p style={{ marginTop: '20px', color: '#aaa', fontSize: '0.9rem', lineHeight: '1.5' }}>
+              Đưa mã này cho nhân sự đón tiếp để điểm danh nhanh chóng khi tham gia sự kiện.
+            </p>
+          </div>
         </div>
       )}
     </div>

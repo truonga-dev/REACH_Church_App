@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Library, Users, UserCircle2, Heart } from 'lucide-react';
+import { Home, BookOpen, Library, Users, UserCircle2, Radio } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import './BottomNav.css';
 
-const navItems = [
+const baseNavItems = [
   { name: 'Trang chủ', path: '/', icon: Home },
   { name: 'Kinh Thánh', path: '/bible', icon: BookOpen },
   { name: 'Thư viện', path: '/library', icon: Library },
@@ -15,6 +17,45 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const checkLive = async () => {
+      try {
+        const { data } = await supabase
+          .from('livestreams')
+          .select('id')
+          .eq('is_live', true)
+          .limit(1);
+        setIsLive(!!data && data.length > 0);
+      } catch (err) {
+        console.error('Error checking live status', err);
+      }
+    };
+
+    checkLive();
+
+    const channel = supabase.channel(`public:livestreams_bottomnav_${Math.random()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'livestreams' }, () => {
+        checkLive();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const navItems = isLive 
+    ? [
+        baseNavItems[0],
+        baseNavItems[1],
+        { name: 'Trực tiếp', path: '/live', icon: Radio, isLiveIcon: true },
+        baseNavItems[2],
+        baseNavItems[3],
+        baseNavItems[4],
+      ]
+    : baseNavItems;
 
   return (
     <nav className="bottom-nav">
@@ -26,9 +67,12 @@ export default function BottomNav() {
           <Link 
             key={item.path} 
             href={item.path}
-            className={`nav-item ${isActive ? 'active' : ''}`}
+            className={`nav-item ${isActive ? 'active' : ''} ${(item as any).isLiveIcon ? 'live-item' : ''}`}
           >
-            <Icon className="nav-icon" size={24} />
+            <div className="nav-icon-wrap">
+              <Icon className="nav-icon" size={24} />
+              {(item as any).isLiveIcon && <div className="live-indicator-dot" />}
+            </div>
             <span className="nav-label">{item.name}</span>
           </Link>
         );

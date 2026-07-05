@@ -1,10 +1,11 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export type Livestream = {
   id: string;
   title: string;
   description: string | null;
   youtube_id: string | null;
+  facebook_url: string | null;
   is_live: boolean;
   scheduled_at: string | null;
   created_at: string;
@@ -48,14 +49,14 @@ export async function createLivestream(input: LivestreamCreateInput): Promise<Li
     await turnOffOtherLivestreams(null);
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('livestreams')
     .insert([input])
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating livestream:', error);
+    console.error('Error creating livestream:', error.message, error.details, error.hint, error.code);
     throw error;
   }
   return data as Livestream;
@@ -66,7 +67,7 @@ export async function updateLivestream(id: string, input: Partial<LivestreamCrea
     await turnOffOtherLivestreams(id);
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('livestreams')
     .update(input)
     .eq('id', id)
@@ -81,7 +82,7 @@ export async function updateLivestream(id: string, input: Partial<LivestreamCrea
 }
 
 export async function deleteLivestream(id: string): Promise<boolean> {
-  const { error } = await supabase.from('livestreams').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('livestreams').delete().eq('id', id);
   if (error) {
     console.error('Error deleting livestream:', error);
     throw error;
@@ -90,7 +91,7 @@ export async function deleteLivestream(id: string): Promise<boolean> {
 }
 
 async function turnOffOtherLivestreams(excludeId: string | null) {
-  let query = supabase.from('livestreams').update({ is_live: false }).eq('is_live', true);
+  let query = supabaseAdmin.from('livestreams').update({ is_live: false }).eq('is_live', true);
   if (excludeId) {
     query = query.neq('id', excludeId);
   }

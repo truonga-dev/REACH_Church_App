@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Loader2, Calendar, MapPin, Users, UserCheck } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Loader2, Calendar, MapPin, Users, UserCheck, Bell } from 'lucide-react';
 import { fetchAllEvents, createEvent, updateEvent, deleteEvent, getEventRegistrations, getEventVolunteers } from '@/lib/events';
 import { supabase } from '@/lib/supabase';
 import Pagination from '@/components/ui/Pagination';
@@ -342,6 +342,17 @@ export default function EventsManager() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => {
+                    const params = new URLSearchParams({
+                      tab: 'notifications',
+                      title: `Nhắc nhở sự kiện: ${ev.title}`,
+                      message: `Kính mời quý tín hữu tham dự sự kiện vào lúc ${new Date(ev.event_date).toLocaleString('vi-VN')} tại ${ev.location || 'Hội thánh'}.`,
+                      url: '/events'
+                    });
+                    window.location.href = `/admin?${params.toString()}`;
+                  }} style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(72,188,225,0.1)', border: '1px solid rgba(72,188,225,0.2)', borderRadius: '8px', color: '#48BCE1', cursor: 'pointer' }} title="Báo tin">
+                    <Bell size={16} />
+                  </button>
                   <button onClick={() => handleEdit(ev)} style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', cursor: 'pointer' }} title="Sửa">
                     <Edit2 size={16} />
                   </button>

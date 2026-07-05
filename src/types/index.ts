@@ -134,3 +134,49 @@ export const PRAYER_TOPICS: Record<string, string> = {
   faith: 'Đời sống thuộc linh',
   other: 'Khác',
 };
+
+// --- BIBLE READING PLANS & STREAKS ---
+export interface BibleReadingPlan {
+  id: string;
+  title: string;
+  description: string | null;
+  duration_days: number;
+  created_at: string;
+}
+
+export interface BiblePlanDay {
+  id: string;
+  plan_id: string;
+  day_number: number;
+  verses: string;
+  created_at: string;
+}
+
+export interface UserReadingProgress {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  day_number: number;
+  completed_at: string;
+}
+
+export interface UserStreak {
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_read_date: string | null;
+  updated_at: string;
+}
+
+export interface EventRegistration {
+  id: string;
+  event_id: string;
+  user_id: string;
+  status: 'registered' | 'attended' | 'cancelled';
+  check_in_time: string | null;
+  created_at: string;
+
+  // Optional relations
+  event?: Event;
+  profile?: Profile;
+}

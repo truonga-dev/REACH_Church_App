@@ -15,6 +15,14 @@
   min-height: 100vh;
 }
 
+/* Buttons and form elements must inherit Inter font */
+.admin-root button,
+.admin-root input,
+.admin-root select,
+.admin-root textarea {
+  font-family: inherit;
+}
+
 /* ── CSS Variables ── */
 .admin-root {
   --primary: #48bce1;
@@ -1685,3 +1693,102 @@
 
 /* topbar search highlight */
 .search-empty { color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 0.75rem; }
+
+/* ════════════════════════════════════════
+   STATUS BADGE — Livestream Table
+   ════════════════════════════════════════ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+.status-badge:hover { opacity: 0.8; }
+
+/* ĐANG LIVE */
+.status-badge.published {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Đã Tắt */
+.status-badge.draft {
+  background: rgba(100, 116, 139, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+/* Pulse animation for radio icon */
+.pulse-icon {
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ════════════════════════════════════════
+   ICON BUTTONS — Table actions
+   ════════════════════════════════════════ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--text-muted);
+}
+.icon-btn:hover { color: #fff; }
+
+.edit-btn:hover {
+  background: rgba(72, 188, 225, 0.12);
+  border-color: rgba(72, 188, 225, 0.25);
+  color: var(--primary);
+}
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+}
+
+/* actions cell */
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* item title cell */
+.item-title {
+  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+}
+.main-cell {
+  max-width: 240px;
+}
+
+/* admin-table-container */
+.admin-table-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}

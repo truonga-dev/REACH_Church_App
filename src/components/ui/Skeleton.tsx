@@ -390,3 +390,240 @@ export function BibleSkeleton() {
     </div>
   );
 }
+
+/* ─────────────────────────────────────────────────────────────
+   10. ADMIN PANEL SKELETON — Full layout (sidebar + content)
+   ───────────────────────────────────────────────────────────── */
+
+/** Skeleton cho toàn bộ admin panel khi chờ auth */
+export function AdminPanelSkeleton() {
+  return (
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      background: '#0b0e14',
+      overflow: 'hidden',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+    }}>
+      {/* ── Sidebar ── */}
+      <div style={{
+        width: 220,
+        flexShrink: 0,
+        background: '#0f1420',
+        borderRight: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '20px 14px',
+        gap: 6,
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '0 6px' }}>
+          <Sk style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <SkText width="80%" height={13} />
+            <SkText width="55%" height={10} style={{ marginTop: 5 }} />
+          </div>
+        </div>
+
+        {/* Nav items */}
+        {[80, 65, 75, 55, 70, 60, 75, 65, 55].map((w, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px',
+            borderRadius: 10,
+            background: i === 0 ? 'rgba(72,188,225,0.08)' : 'transparent',
+          }}>
+            <Sk style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0 }} />
+            <SkText width={`${w}%`} height={12} />
+          </div>
+        ))}
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
+
+        {/* Group header */}
+        <SkText width="45%" height={9} style={{ marginLeft: 12, marginBottom: 4 }} />
+        {[70, 60, 75, 55].map((w, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10 }}>
+            <Sk style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0 }} />
+            <SkText width={`${w}%`} height={12} />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Main Content ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Topbar */}
+        <div style={{
+          height: 64,
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 28px',
+          gap: 12,
+          background: '#0b0e14',
+          flexShrink: 0,
+        }}>
+          <SkBlock w={220} h={36} radius={10} />
+          <div style={{ flex: 1 }} />
+          <SkCircle size={34} />
+          <SkCircle size={34} />
+          <SkBlock w={90} h={34} radius={8} />
+        </div>
+
+        {/* Content area */}
+        <div style={{ flex: 1, padding: '28px 32px', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+          {/* Page title */}
+          <div>
+            <SkText width={200} height={22} />
+            <SkText width={340} height={13} style={{ marginTop: 8 }} />
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} style={{
+                background: '#111827',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 14,
+                padding: '18px 20px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                  <SkBlock w={40} h={40} radius={10} />
+                  <SkBlock w={50} h={22} radius={99} />
+                </div>
+                <SkText width="55%" height={26} />
+                <SkText width="75%" height={12} style={{ marginTop: 8 }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Table skeleton */}
+          <div style={{
+            background: '#111827',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            overflow: 'hidden',
+          }}>
+            {/* Table header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <SkText width={160} height={16} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <SkBlock w={120} h={34} radius={8} />
+                <SkBlock w={100} h={34} radius={8} />
+              </div>
+            </div>
+
+            {/* Table rows */}
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                padding: '14px 20px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+              }}>
+                <SkBlock w={80} h={24} radius={99} />
+                <SkText width={`${100 + (i * 40) % 140}px`} height={13} style={{ flex: '0 0 auto' }} />
+                <SkText width="30%" height={13} />
+                <div style={{ flex: 1 }} />
+                <SkText width={80} height={12} />
+                <SkBlock w={28} h={28} radius={7} />
+                <SkBlock w={28} h={28} radius={7} />
+              </div>
+            ))}
+          </div>
+
+          {/* Second row — two columns */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {[1, 2].map(col => (
+              <div key={col} style={{
+                background: '#111827',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 14,
+                padding: '20px',
+              }}>
+                <SkText width="55%" height={15} style={{ marginBottom: 16 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[1, 2, 3].map(r => (
+                    <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <SkCircle size={36} />
+                      <div style={{ flex: 1 }}>
+                        <SkText width="70%" height={13} />
+                        <SkText width="45%" height={10} style={{ marginTop: 5 }} />
+                      </div>
+                      <SkText width={50} height={12} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Skeleton nhỏ dùng cho nội dung bên trong một tab đang load */
+export function AdminTableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', marginBottom: 4 }}>
+        <SkText width={160} height={16} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <SkBlock w={120} h={34} radius={8} />
+          <SkBlock w={100} h={34} radius={8} />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 12,
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', gap: 16, padding: '12px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.02)',
+        }}>
+          {[80, 200, 100, 90, 70].map((w, i) => (
+            <SkText key={i} width={w} height={11} />
+          ))}
+        </div>
+
+        {/* Rows */}
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            padding: '13px 16px',
+            borderBottom: i < rows - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+          }}>
+            <SkBlock w={70} h={22} radius={99} />
+            <SkText width={140 + (i * 23) % 80} height={13} />
+            <SkText width={90} height={12} />
+            <div style={{ flex: 1 }} />
+            <SkText width={70} height={12} />
+            <SkBlock w={28} h={28} radius={7} />
+            <SkBlock w={28} h={28} radius={7} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+

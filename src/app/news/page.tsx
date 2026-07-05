@@ -85,7 +85,14 @@ export default function NewsPage() {
             </div>
             <div className="news-modal-body">
               {selectedNews.image_url && (
-                <img src={selectedNews.image_url} alt={selectedNews.title} className="news-modal-hero-img" />
+                <img 
+                  src={selectedNews.image_url} 
+                  alt={selectedNews.title} 
+                  className="news-modal-hero-img" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?auto=format&fit=crop&q=80';
+                  }}
+                />
               )}
               <div className="news-modal-content">
                 <div className="news-modal-meta">
@@ -178,7 +185,14 @@ export default function NewsPage() {
           {featured && (
             <div className="news-featured" onClick={() => setSelectedNews(featured)}>
               {featured.image_url && (
-                <img src={featured.image_url} alt="" className="news-featured-img" />
+                <img 
+                  src={featured.image_url} 
+                  alt="" 
+                  className="news-featured-img" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?auto=format&fit=crop&q=80';
+                  }}
+                />
               )}
               {featured.image_url && <div className="news-featured-overlay" />}
               <div className={`news-featured-body ${!featured.image_url ? 'no-img' : ''}`}>
@@ -197,7 +211,16 @@ export default function NewsPage() {
           <div className="news-list">
             {listItems.map((item) => (
               <div key={item.id} className="news-card" onClick={() => setSelectedNews(item)}>
-                {item.image_url && <img src={item.image_url} alt="" className="news-card-img" />}
+                {item.image_url && (
+                  <img 
+                    src={item.image_url} 
+                    alt="" 
+                    className="news-card-img" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?auto=format&fit=crop&q=80';
+                    }}
+                  />
+                )}
                 <div className="news-card-body">
                   <div className="news-card-top">
                     <span className={`news-type-badge ${getBadgeClass(item.type)}`}>

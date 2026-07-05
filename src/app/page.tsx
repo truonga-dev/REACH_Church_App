@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Calendar, PlayCircle, BookOpen, Heart,
+  Calendar, PlayCircle, BookOpen, Heart, Flame,
   Newspaper, ChevronRight, Bell, Sun, Music,
-  ArrowRight, FileText, X, Search, Loader2,
+  ArrowRight, FileText, X, Search, Loader2, Tv2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
@@ -73,8 +73,11 @@ export default function Home() {
   const [dbSermons, setDbSermons] = useState<any[]>([]);
   const [dbDevotionals, setDbDevotionals] = useState<any[]>([]);
   const [dbEvents, setDbEvents] = useState<any[]>([]);
+  const [dbActiveLive, setDbActiveLive] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [prayerCount, setPrayerCount] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
 
   // UI state
   const [showNotifPanel, setShowNotifPanel] = useState(false);
@@ -100,7 +103,7 @@ export default function Home() {
 
   const fetchHomeData = async () => {
     try {
-      const [newsRes, sermonsRes, prayerRes, eventsRes, devotionalsRes] = await Promise.all([
+      const [newsRes, sermonsRes, prayerRes, eventsRes, devotionalsRes, liveRes] = await Promise.all([
         supabase.from('news')
           .select('*')
           .neq('status', 'draft')
@@ -123,11 +126,14 @@ export default function Home() {
           .select('*')
           .order('published_at', { ascending: false })
           .limit(2),
+        supabase.from('livestreams')
+          .select('*')
+          .eq('is_live', true)
+          .maybeSingle(),
       ]);
 
       if (newsRes.data) {
         setDbNews(newsRes.data);
-
         // Build notifications from latest content
         const dynamicNotifs = newsRes.data.slice(0, 5).map((n: any, i: number) => {
           let icon = '🔔';
@@ -139,15 +145,27 @@ export default function Home() {
         });
         if (dynamicNotifs.length > 0) {
           const readIds = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('readNotifs') || '[]' : '[]');
-          setNotifs(dynamicNotifs.map((n: any) => ({ ...n, read: readIds.includes(n.id) })));
+          setNotifs(dynamicNotifs.map((nx: any) => ({ ...nx, read: readIds.includes(nx.id) })));
         }
       }
       if (sermonsRes.data) setDbSermons(sermonsRes.data);
       if (prayerRes.count !== null) setPrayerCount(prayerRes.count);
       if (eventsRes.data) setDbEvents(eventsRes.data);
       if (devotionalsRes.data) setDbDevotionals(devotionalsRes.data);
-    } catch (error) {
+      if (liveRes?.data) setDbActiveLive(liveRes.data);
+
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { data: streakData } = await supabase
+          .from('user_streaks')
+          .select('current_streak')
+          .eq('user_id', authData.user.id)
+          .single();
+        if (streakData) setStreak(streakData.current_streak);
+      }
+    } catch (error: any) {
       console.error('Error fetching home data:', error);
+      setFetchError(error?.message || error?.toString() || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -291,12 +309,10 @@ export default function Home() {
       (ev.location || '')?.toLowerCase().includes(searchLower)
     ).map((ev: any) => ({ ...ev, _type: 'event' })),
   ] : [];
-
   const getYoutubeEmbedId = getYoutubeId;
 
   return (
     <div className="home-container">
-
       {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#48BCE1', color: '#fff', padding: '10px 20px', borderRadius: '12px', zIndex: 9999, fontWeight: 'bold', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
@@ -344,6 +360,9 @@ export default function Home() {
           </div>
         </button>
         <div className="header-actions">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #ff7a00, #ff3366)', padding: '4px 10px', borderRadius: '20px', color: '#fff', fontSize: '0.85rem', fontWeight: 'bold' }}>
+            <Flame size={16} /> {streak}
+          </div>
           {/* Search Icon Button */}
           <button
             className="icon-btn"
@@ -352,6 +371,11 @@ export default function Home() {
           >
             <Search size={22} />
           </button>
+
+          {/* Live Button */}
+          <Link href="/live" className="icon-btn" aria-label="Trực tiếp" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Tv2 size={22} />
+          </Link>
 
           <div style={{ position: 'relative' }}>
             <button className="icon-btn" aria-label="Thông báo" onClick={() => setShowNotifPanel(!showNotifPanel)}>
@@ -549,6 +573,41 @@ export default function Home() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── Active Livestream Banner ── */}
+      {dbActiveLive && (
+        <Link href="/live" style={{ textDecoration: 'none' }}>
+          <div style={{
+            margin: '1rem 1.25rem 0',
+            padding: '1rem',
+            background: 'linear-gradient(135deg, #F12D5C, #ff5c77)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 8px 24px rgba(241, 45, 92, 0.3)',
+            animation: 'pulse 2s infinite',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{
+                width: '40px', height: '40px', background: 'rgba(255,255,255,0.2)',
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <PlayCircle size={24} color="#fff" fill="#fff" />
+              </div>
+              <div>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Đang Phát Trực Tiếp
+                </p>
+                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: 700 }}>
+                  {dbActiveLive.title || 'Sự kiện Live'}
+                </h3>
+              </div>
+            </div>
+            <ArrowRight size={20} color="#fff" />
+          </div>
+        </Link>
       )}
 
       {/* ── Daily Verse ── */}

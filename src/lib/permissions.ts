@@ -162,6 +162,9 @@ export const TAB_PERMISSIONS: Record<string, Permission> = {
   prayers:      'prayers:view',
   users:        'users:view',
   cell_groups:  'cell_groups:view',
+  checkin:      'events:view',
+  notifications:'notifications:send',
+  livestreams:  'livestreams:view',
 };
 
 /** Mô tả vai trò dùng trong UI */

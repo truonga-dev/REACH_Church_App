@@ -1,9 +1,11 @@
+/* ── Base ── */
 .live-page-container {
   min-height: 100dvh;
-  background-color: #0a0f1e;
+  background-color: #0b0e14;
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .live-page-container.center {
@@ -11,21 +13,24 @@
   justify-content: center;
 }
 
+/* ── Header ── */
 .live-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  background: rgba(10, 15, 30, 0.8);
-  backdrop-filter: blur(10px);
+  padding: 14px 16px;
+  background: rgba(11, 14, 20, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .back-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   width: 40px;
   height: 40px;
@@ -34,32 +39,38 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* ── Live badge ── */
 .live-badge {
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
-  font-size: 0.8rem;
-  font-weight: bold;
-  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 5px 12px;
   border-radius: 20px;
-  animation: pulse 2s infinite;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.6; }
-  100% { opacity: 1; }
+  0%   { opacity: 1; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4); }
+  50%  { opacity: 0.75; box-shadow: 0 2px 18px rgba(239, 68, 68, 0.65); }
+  100% { opacity: 1; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4); }
 }
 
+/* ── Video ── */
 .video-container {
   width: 100%;
-  aspect-ratio: 16/9;
+  aspect-ratio: 16 / 9;
   background: #000;
   position: relative;
 }
@@ -70,44 +81,51 @@
   left: 0;
   width: 100%;
   height: 100%;
+  border: none;
 }
 
+/* ── Info ── */
 .live-info {
-  padding: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #111827 0%, #0b0e14 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .live-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
 }
 
 .live-desc {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #94a3b8;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
+/* ── Tabs nav ── */
 .live-tabs-nav {
   display: flex;
   padding: 0 16px;
-  gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 0;
+  background: #0f1323;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 .live-tabs-nav::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
+  display: none;
 }
 
 .tab-btn {
   background: none;
   border: none;
-  color: #94a3b8;
-  padding: 16px 4px;
-  font-size: 0.95rem;
+  color: #64748b;
+  padding: 14px 16px;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -115,10 +133,17 @@
   gap: 6px;
   position: relative;
   white-space: nowrap;
+  font-family: inherit;
+  transition: color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #cbd5e1;
 }
 
 .tab-btn.active {
-  color: #48BCE1;
+  color: #48bce1;
+  font-weight: 600;
 }
 
 .tab-btn.active::after {
@@ -128,19 +153,20 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background: #48BCE1;
+  background: #48bce1;
   border-radius: 2px 2px 0 0;
 }
 
+/* ── Tab content ── */
 .live-tab-content {
   flex: 1;
-  padding: 16px;
-  background: #0f1526;
+  padding: 18px 16px;
+  background: #0b0e14;
   display: flex;
   flex-direction: column;
 }
 
-/* Note Tab */
+/* ── Note Tab ── */
 .note-tab {
   display: flex;
   flex-direction: column;
@@ -157,11 +183,13 @@
 .note-header h3 {
   margin: 0;
   font-size: 1rem;
+  color: #e2e8f0;
+  font-weight: 600;
 }
 
 .save-status {
-  font-size: 0.8rem;
-  color: #94a3b8;
+  font-size: 0.78rem;
+  color: #64748b;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -171,98 +199,121 @@
   flex: 1;
   width: 100%;
   min-height: 150px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 12px;
+  padding: 14px;
   color: #f1f5f9;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.92rem;
+  line-height: 1.65;
   resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+.note-textarea::placeholder {
+  color: #475569;
 }
 .note-textarea:focus {
   outline: none;
-  border-color: rgba(72, 188, 225, 0.5);
+  border-color: rgba(72, 188, 225, 0.4);
+  background: rgba(72, 188, 225, 0.03);
 }
 
 .auth-warning {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 18px 16px;
   border-radius: 12px;
   text-align: center;
-  color: #cbd5e1;
-}
-.auth-warning a {
-  color: #48BCE1;
-  text-decoration: underline;
-}
-
-/* Prayer Tab */
-.prayer-tab h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-}
-.prayer-tab p {
   color: #94a3b8;
   font-size: 0.9rem;
+}
+.auth-warning a {
+  color: #48bce1;
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-warning a:hover { text-decoration: underline; }
+
+/* ── Prayer Tab ── */
+.prayer-tab h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+.prayer-tab p {
+  color: #64748b;
+  font-size: 0.875rem;
   margin: 0 0 16px 0;
 }
 
 .submit-prayer-btn {
   width: 100%;
   margin-top: 12px;
-  background: #48BCE1;
+  background: linear-gradient(135deg, #48bce1 0%, #0ea5e9 100%);
   color: #fff;
   border: none;
   border-radius: 12px;
   padding: 14px;
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 4px 14px rgba(72, 188, 225, 0.3);
 }
-
+.submit-prayer-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
 .submit-prayer-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .prayer-success {
-  background: rgba(244, 63, 94, 0.1);
-  border: 1px solid rgba(244, 63, 94, 0.2);
-  padding: 24px;
-  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.18);
+  padding: 28px 20px;
+  border-radius: 14px;
   text-align: center;
   animation: fadeIn 0.3s ease;
 }
 .prayer-success h4 {
   color: #f43f5e;
-  margin: 12px 0 8px 0;
-}
-.prayer-success p {
-  color: #e2e8f0;
-  margin: 0;
-}
-
-/* Donate Tab */
-.donate-tab h3 {
-  margin: 0 0 4px 0;
+  margin: 14px 0 8px 0;
   font-size: 1.1rem;
 }
-.donate-tab p {
-  color: #94a3b8;
+.prayer-success p {
+  color: #cbd5e1;
+  margin: 0;
   font-size: 0.9rem;
+}
+
+/* ── Donate Tab ── */
+.donate-tab h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+.donate-tab p {
+  color: #64748b;
+  font-size: 0.875rem;
   margin: 0 0 16px 0;
 }
 
 .donate-action-box {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 20px;
+  border-radius: 14px;
   text-align: center;
 }
 
@@ -274,18 +325,131 @@
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #fff;
   text-decoration: none;
-  padding: 14px 24px;
+  padding: 14px 28px;
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.95rem;
   margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.go-donate-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
 }
 
 .donate-hint {
-  font-size: 0.85rem !important;
+  font-size: 0.82rem !important;
+  color: #475569 !important;
   margin: 0 !important;
 }
 
+/* ── Share Modal ── */
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.share-modal-card {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #151c2a;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 24px 36px;
+  z-index: 1001;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1);    }
+}
+
+/* share grid */
+.share-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem 0.5rem;
+}
+
+/* individual share button */
+.share-btn {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #fff;
+  padding: 4px;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+.share-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.share-btn span {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+.share-btn:hover span {
+  color: #e2e8f0;
+}
+
+/* icon circle */
+.share-icon-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, filter 0.2s;
+  flex-shrink: 0;
+}
+.share-btn:hover .share-icon-wrap {
+  transform: translateY(-3px);
+  filter: brightness(1.1);
+}
+
+/* brand colours — always visible */
+.share-icon-wrap.facebook   { background: #1877F2; }
+.share-icon-wrap.zalo       { background: #0068FF; }
+.share-icon-wrap.x          { background: #000;    border: 1px solid rgba(255,255,255,0.2); }
+.share-icon-wrap.instagram  {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+.share-icon-wrap.youtube    { background: #FF0000; }
+.share-icon-wrap.messenger  { background: linear-gradient(135deg, #0668E1, #1DA1F2); }
+.share-icon-wrap.copy       { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.15); }
+
+/* ── Spinner ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0);     }
 }

@@ -13,6 +13,7 @@ import {
 } from '@/lib/bible-highlights';
 import { buildBibleShareUrl, buildBibleShareText, getShareTargets, parseBibleLocation } from '@/lib/bible-share';
 import SharePlatformIcon from '@/components/bible/SharePlatformIcon';
+import BiblePlans from '@/components/bible/BiblePlans';
 import './page.css';
 const books = [
   'Sáng-thế Ký', 'Xuất Ê-díp-tô Ký', 'Lê-vi Ký', 'Dân-số Ký', 'Phục-truyền Luật-lệ Ký',
@@ -580,13 +581,37 @@ function BibleReader() {
 }
 
 export default function BiblePage() {
+  const [activeTab, setActiveTab] = useState<'read' | 'plans'>('read');
+  
   return (
-    <Suspense fallback={
-      <div className="bible-container">
-        <div className="bible-loading"><Loader2 size={24} className="spin" /> Đang tải Kinh Thánh...</div>
-      </div>
-    }>
-      <BibleReader />
-    </Suspense>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0f1520' }}>
+       <div style={{ display: 'flex', background: '#1a2233', padding: '10px 10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <button 
+             onClick={() => setActiveTab('read')}
+             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'read' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'read' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+          >
+             ĐỌC KINH THÁNH
+          </button>
+          <button 
+             onClick={() => setActiveTab('plans')}
+             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'plans' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'plans' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+          >
+             KẾ HOẠCH
+          </button>
+       </div>
+       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+         {activeTab === 'read' ? (
+           <Suspense fallback={
+             <div className="bible-container">
+               <div className="bible-loading"><Loader2 size={24} className="spin" /> Đang tải Kinh Thánh...</div>
+             </div>
+           }>
+             <BibleReader />
+           </Suspense>
+         ) : (
+           <BiblePlans onStartReading={() => setActiveTab('read')} />
+         )}
+       </div>
+    </div>
   );
 }

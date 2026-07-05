@@ -190,43 +190,49 @@ function DevotionalContent() {
         <CommentSection postType="devotional" postId={id} />
       </main>
 
-      {/* Share Modal Card */}
+      {/* Share Modal — Bottom Sheet */}
       {shareOpen && (
         <>
-          <div className="share-overlay" onClick={() => setShareOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, backdropFilter: 'blur(4px)' }} />
-          <div className="share-modal-card" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#1c2536', borderRadius: '16px', padding: '24px', zIndex: 1001, width: '90%', maxWidth: '360px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', animation: 'scaleIn 0.2s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', fontWeight: 'bold' }}>Chia sẻ bài viết</h3>
-              <button onClick={() => setShareOpen(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}>
-                <X size={20} />
+          <div className="share-overlay" onClick={() => setShareOpen(false)} />
+          <div className="share-modal-card">
+            {/* Handle bar */}
+            <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 4, margin: '0 auto 20px' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>Chia sẻ bài viết</h3>
+              <button
+                onClick={() => setShareOpen(false)}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', color: '#9ca3af', cursor: 'pointer', padding: 0, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={16} />
               </button>
             </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem 1rem' }}>
+
+            <div className="share-grid">
               <button className="share-btn" onClick={() => handleShareClick('facebook')}>
                 <div className="share-icon-wrap facebook">
-                  <SharePlatformIcon id="facebook" className="w-6 h-6" />
+                  <SharePlatformIcon id="facebook" />
                 </div>
                 <span>Facebook</span>
               </button>
 
               <button className="share-btn" onClick={() => handleShareClick('zalo')}>
                 <div className="share-icon-wrap zalo">
-                  <SharePlatformIcon id="zalo" className="w-6 h-6" />
+                  <SharePlatformIcon id="zalo" />
                 </div>
                 <span>Zalo</span>
               </button>
 
               <button className="share-btn" onClick={() => handleShareClick('x')}>
                 <div className="share-icon-wrap x">
-                  <SharePlatformIcon id="x" className="w-5 h-5" />
+                  <SharePlatformIcon id="x" />
                 </div>
-                <span>X</span>
+                <span>X (Twitter)</span>
               </button>
 
               <button className="share-btn" onClick={() => handleShareClick('instagram')}>
                 <div className="share-icon-wrap instagram">
-                  <SharePlatformIcon id="instagram" className="w-6 h-6" />
+                  <SharePlatformIcon id="instagram" />
                 </div>
                 <span>Instagram</span>
               </button>
@@ -235,31 +241,9 @@ function DevotionalContent() {
                 <div className="share-icon-wrap copy">
                   <Link2 size={22} color="#fff" />
                 </div>
-                <span>Sao chép</span>
+                <span>Sao chép link</span>
               </button>
             </div>
-            <style jsx>{`
-              @keyframes scaleIn {
-                from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
-                to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-              }
-              .share-btn {
-                background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; color: #fff;
-              }
-              .share-btn span {
-                font-size: 0.8rem; font-weight: 500; color: #d1d5db; transition: color 0.2s;
-              }
-              .share-btn:hover span { color: #fff; }
-              .share-icon-wrap {
-                width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #fff;
-              }
-              .share-btn:hover .share-icon-wrap { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-              .share-btn:hover .share-icon-wrap.facebook { background: #1877F2; border-color: #1877F2; }
-              .share-btn:hover .share-icon-wrap.zalo { background: #0068FF; border-color: #0068FF; }
-              .share-btn:hover .share-icon-wrap.x { background: #000; border-color: #333; }
-              .share-btn:hover .share-icon-wrap.instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-color: transparent; }
-              .share-btn:hover .share-icon-wrap.copy { background: rgba(255,255,255,0.2); }
-            `}</style>
           </div>
         </>
       )}
