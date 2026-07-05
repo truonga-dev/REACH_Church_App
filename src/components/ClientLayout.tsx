@@ -5,7 +5,7 @@ import BottomNav from '@/components/BottomNav';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from 'next-themes';
 import { LanguageProvider } from '@/contexts/LanguageContext';
-import TopHeader from '@/components/TopHeader';
+
 
 const FULL_BLEED_PATHS = ['/login', '/register', '/admin'];
 
@@ -21,7 +21,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             children
           ) : (
             <div className="app-container">
-              <TopHeader />
               <main className={`main-content${pathname?.startsWith('/profile') ? ' main-content--profile' : ''}`}>
                 {children}
               </main>

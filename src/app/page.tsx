@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   Calendar, PlayCircle, BookOpen, Heart, Flame,
   Newspaper, ChevronRight, Bell, Sun, Music,
-  ArrowRight, FileText, X, Search, Loader2, Tv2,
+  ArrowRight, FileText, X, Search, Loader2, Radio,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getYoutubeId, getYoutubeThumbnailUrl } from '@/lib/youtube';
@@ -15,6 +15,8 @@ import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import './page.css';
 
 const tagColors: Record<string, string> = {
@@ -97,9 +99,9 @@ export default function Home() {
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Chúc buổi sáng bình an ☀️');
-    else if (hour < 18) setGreeting('Chúc buổi chiều tốt lành 🌤️');
-    else setGreeting('Chúc buổi tối bình an 🌙');
+    if (hour < 12) setGreeting(t('greeting_morning'));
+    else if (hour < 18) setGreeting(t('greeting_afternoon'));
+    else setGreeting(t('greeting_evening'));
     fetchHomeData();
   }, []);
 
@@ -362,6 +364,32 @@ export default function Home() {
           </div>
         </button>
         <div className="header-actions">
+          {/* Live Button */}
+          {dbActiveLive && (
+            <Link 
+              href="/live" 
+              className="icon-btn" 
+              aria-label={t('live')} 
+              style={{ 
+                textDecoration: 'none', 
+                color: '#ef4444', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '2px',
+                background: 'none',
+                padding: 0,
+                marginRight: '4px'
+              }}
+            >
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Radio size={22} />
+                <div className="live-indicator-dot" />
+              </div>
+              <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#ef4444' }}>{t('live')}</span>
+            </Link>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #ff7a00, #ff3366)', padding: '4px 10px', borderRadius: '20px', color: '#fff', fontSize: '0.85rem', fontWeight: 'bold' }}>
             <Flame size={16} /> {streak}
           </div>
@@ -374,21 +402,16 @@ export default function Home() {
             <Search size={22} />
           </button>
 
-          {/* Live Button */}
-          <Link href="/live" className="icon-btn" aria-label="Trực tiếp" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Tv2 size={22} />
-          </Link>
-
           <div style={{ position: 'relative' }}>
-            <button className="icon-btn" aria-label="Thông báo" onClick={() => setShowNotifPanel(!showNotifPanel)}>
+            <button className="icon-btn" aria-label={t('notifications')} onClick={() => setShowNotifPanel(!showNotifPanel)}>
               <Bell size={22} />
               {unreadCount > 0 && <span className="notif-dot" />}
             </button>
             {showNotifPanel && (
               <div style={{ position: 'absolute', top: '44px', right: 0, width: '300px', background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 1000, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ fontWeight: 'bold', color: '#fff' }}>Thông báo</span>
-                  <button onClick={markAllRead} style={{ color: '#48BCE1', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>Đọc tất cả</button>
+                  <span style={{ fontWeight: 'bold', color: '#fff' }}>{t('notifications')}</span>
+                  <button onClick={markAllRead} style={{ color: '#48BCE1', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>{t('read_all')}</button>
                 </div>
                 {notifs.map((n: any) => (
                   <div key={n.id} style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(72,188,225,0.06)', cursor: 'pointer' }}
@@ -401,7 +424,7 @@ export default function Home() {
                     {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#48BCE1', flexShrink: 0, marginLeft: 'auto', alignSelf: 'center' }} />}
                   </div>
                 ))}
-                <button onClick={() => setShowNotifPanel(false)} style={{ width: '100%', padding: '10px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Đóng</button>
+                <button onClick={() => setShowNotifPanel(false)} style={{ width: '100%', padding: '10px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>{t('close')}</button>
               </div>
             )}
           </div>
@@ -441,7 +464,7 @@ export default function Home() {
               <Search size={18} style={{ color: '#48BCE1', flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Tìm kiếm bài giảng, tin tức, sự kiện..."
+                placeholder={t('search_placeholder')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 autoFocus
@@ -456,7 +479,7 @@ export default function Home() {
                 </button>
               ) : (
                 <button onClick={() => { setShowSearchModal(false); setSearchQuery(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a8599', padding: 0, fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                  Hủy
+                  {t('cancel')}
                 </button>
               )}
             </div>
@@ -469,7 +492,7 @@ export default function Home() {
           >
             {searchQuery.length === 0 ? (
               <div style={{ padding: '2rem 1.25rem' }}>
-                <p style={{ color: '#7a8599', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>Gợi ý tìm kiếm</p>
+                <p style={{ color: '#7a8599', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>{t('search_hints')}</p>
                 {['Bài giảng', 'Giăng 3:16', 'Ma-thi-ơ 5:3', 'Thờ phượng', 'Cầu nguyện'].map(hint => (
                   <button key={hint} onClick={() => setSearchQuery(hint)}
                     style={{

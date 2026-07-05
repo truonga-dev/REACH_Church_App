@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft, Bell, Globe, CreditCard, Shield, MessageSquare, BookOpen, User,
   Edit3, Trash2, ChevronRight, CheckCircle2, Home, Book, Library, Heart,
@@ -11,9 +11,9 @@ import {
   getNotificationsEnabled,
   setNotificationsEnabled,
   getLanguage,
-  setLanguage,
   type AppLanguage,
 } from '@/lib/user-preferences';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   optOutOfPushNotifications,
   promptForPushNotifications,
@@ -131,7 +131,8 @@ export default function SettingsPanel({
 }: SettingsPanelProps) {
   const [view, setView] = useState<SettingsView>('list');
   const [notificationsOn, setNotificationsOn] = useState<boolean>(() => getNotificationsEnabled());
-  const [language, setLanguageState] = useState<AppLanguage>(() => getLanguage());
+  const { language, setLanguage, t } = useLanguage();
+  const [pendingLanguage, setPendingLanguage] = useState<AppLanguage>(language as AppLanguage);
   const [feedback, setFeedback] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('bug');
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -155,9 +156,20 @@ export default function SettingsPanel({
     }
   };
 
+  // Sync pendingLanguage when view becomes 'language'
+  useEffect(() => {
+    if (view === 'language') {
+      setPendingLanguage(language as AppLanguage);
+    }
+  }, [view, language]);
+
   const selectLanguage = (lang: AppLanguage) => {
-    setLanguageState(lang);
-    setLanguage(lang);
+    setPendingLanguage(lang);
+  };
+
+  const applyLanguage = () => {
+    setLanguage(pendingLanguage as any);
+    setView('list'); // Optionally go back
   };
 
   const handleSendFeedback = () => {
@@ -187,13 +199,13 @@ export default function SettingsPanel({
   /* ── Sub-screen wrapper ───────────────────────────── */
   if (view !== 'list') {
     const titles: Record<Exclude<SettingsView, 'list'>, string> = {
-      language: 'Ngôn ngữ',
-      payment:  'Dâng hiến',
-      privacy:  'Quyền riêng tư',
-      feedback: 'Góp ý & Hỗ trợ',
-      usage:    'Hướng dẫn sử dụng',
-      account:  'Tài khoản',
-      personal: 'Thông tin cá nhân',
+      language: t('settings_panel.language'),
+      payment:  t('settings_panel.donate'),
+      privacy:  t('settings_panel.privacy'),
+      feedback: t('settings_panel.feedback'),
+      usage:    t('settings_panel.guide'),
+      account:  t('settings_panel.account'),
+      personal: t('settings_panel.personal_info'),
     };
 
     return (
@@ -209,7 +221,7 @@ export default function SettingsPanel({
             <div className="sp-avatar-block">
               <div className="sp-avatar-ring">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Ảnh đại diện" className="sp-avatar-img" />
+                  <img src={avatarUrl} alt={t('settings_panel.personal_avatar')} className="sp-avatar-img" />
                 ) : (
                   <div className="sp-avatar-placeholder"><User size={38} color="white" /></div>
                 )}
@@ -217,7 +229,7 @@ export default function SettingsPanel({
                   type="button"
                   className="sp-avatar-edit-btn"
                   onClick={() => avatarInputRef.current?.click()}
-                  aria-label="Đổi ảnh"
+                  aria-label={t('settings_panel.personal_change_avatar')}
                 >
                   <Edit3 size={13} color="white" />
                 </button>
@@ -225,55 +237,55 @@ export default function SettingsPanel({
               <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarFileChange} />
               {avatarUrl && (
                 <button type="button" className="sp-delete-avatar-btn" onClick={onDeleteAvatar}>
-                  <Trash2 size={13} /> Xóa ảnh đại diện
+                  <Trash2 size={13} /> {t('settings_panel.personal_delete_avatar')}
                 </button>
               )}
-              <p className="sp-avatar-hint">Ảnh JPG, PNG hoặc GIF · Tối đa 5MB</p>
+              <p className="sp-avatar-hint">{t('settings_panel.personal_avatar_hint')}</p>
             </div>
 
             {/* Email (read-only) */}
             <div className="sp-field-group">
-              <label className="sp-field-label"><Mail size={13} /> Email tài khoản</label>
+              <label className="sp-field-label"><Mail size={13} /> {t('settings_panel.personal_email')}</label>
               <div className="sp-readonly-field">
                 <span>{email}</span>
-                <span className="sp-verified-badge"><CheckCircle2 size={13} /> Đã xác minh</span>
+                <span className="sp-verified-badge"><CheckCircle2 size={13} /> {t('settings_panel.personal_verified')}</span>
               </div>
             </div>
 
             {/* Name */}
             <div className="sp-field-group">
-              <label htmlFor="sp-fullname" className="sp-field-label"><User size={13} /> Họ và tên</label>
+              <label htmlFor="sp-fullname" className="sp-field-label"><User size={13} /> {t('settings_panel.personal_fullname')}</label>
               <input
                 id="sp-fullname"
                 className="settings-input"
                 value={fullName}
                 onChange={e => onFullNameChange(e.target.value)}
-                placeholder="Nhập họ và tên đầy đủ"
+                placeholder={t('settings_panel.personal_fullname_placeholder')}
                 maxLength={60}
               />
-              <p className="sp-field-hint">{fullName.length}/60 ký tự</p>
+              <p className="sp-field-hint">{fullName.length}/60 {t('settings_panel.personal_chars')}</p>
             </div>
 
             {/* Bio */}
             <div className="sp-field-group">
-              <label htmlFor="sp-bio-personal" className="sp-field-label"><Edit3 size={13} /> Giới thiệu bản thân</label>
+              <label htmlFor="sp-bio-personal" className="sp-field-label"><Edit3 size={13} /> {t('settings_panel.personal_bio')}</label>
               <textarea
                 id="sp-bio-personal"
                 className="settings-bio"
                 rows={4}
-                placeholder="Chia sẻ vài dòng về bạn — đức tin, sở thích, chức vụ..."
+                placeholder={t('settings_panel.personal_bio_placeholder')}
                 value={bio}
                 onChange={e => onBioChange(e.target.value)}
                 maxLength={200}
               />
-              <p className="sp-field-hint">{bio.length}/200 ký tự</p>
+              <p className="sp-field-hint">{bio.length}/200 {t('settings_panel.personal_chars')}</p>
             </div>
 
             <button type="button" className="sp-save-btn" onClick={onSaveAccount} disabled={isSaving}>
               {isSaving ? (
-                <><span className="sp-spinner" /> Đang lưu...</>
+                <><span className="sp-spinner" /> {t('settings_panel.personal_saving')}</>
               ) : (
-                <><Check size={16} /> Lưu thay đổi</>
+                <><Check size={16} /> {t('settings_panel.personal_save_changes')}</>
               )}
             </button>
           </div>
@@ -282,29 +294,45 @@ export default function SettingsPanel({
         {/* ══ LANGUAGE ════════════════════════════════════════ */}
         {view === 'language' && (
           <div className="settings-detail">
-            <p className="sp-section-desc">Chọn ngôn ngữ hiển thị giao diện ứng dụng.</p>
+            <p className="sp-section-desc">{t('settings_panel.language_choose')}</p>
             {[
-              { code: 'vi' as AppLanguage, label: 'Tiếng Việt', sub: 'Vietnamese', flag: '🇻🇳' },
-              { code: 'en' as AppLanguage, label: 'English',    sub: 'Tiếng Anh',  flag: '🇬🇧' },
+              { code: 'vi' as AppLanguage, label: 'Tiếng Việt', sub: 'Vietnamese', flag: 'vn' },
+              { code: 'en' as AppLanguage, label: 'English',    sub: 'Tiếng Anh',  flag: 'gb' },
+              { code: 'ko' as AppLanguage, label: '한국어',      sub: 'Tiếng Hàn',  flag: 'kr' },
             ].map(l => (
               <button
                 key={l.code}
                 type="button"
-                className={`sp-lang-option ${language === l.code ? 'active' : ''}`}
+                className={`sp-lang-option ${pendingLanguage === l.code ? 'active' : ''}`}
                 onClick={() => selectLanguage(l.code)}
               >
-                <span className="sp-lang-flag">{l.flag}</span>
+                <div className="sp-lang-flag" style={{ background: 'transparent', padding: 0 }}>
+                  <img 
+                    src={`https://flagcdn.com/w40/${l.flag}.png`} 
+                    alt={l.label} 
+                    style={{ width: '24px', height: '24px', objectFit: 'cover', borderRadius: '50%' }} 
+                  />
+                </div>
                 <span className="sp-lang-text">
                   <span className="sp-lang-name">{l.label}</span>
                   <span className="sp-lang-sub">{l.sub}</span>
                 </span>
-                {language === l.code && <CheckCircle2 size={18} className="sp-lang-check" />}
+                {pendingLanguage === l.code && <CheckCircle2 size={18} className="sp-lang-check" />}
               </button>
             ))}
-            <div className="sp-info-banner">
+            <div className="sp-info-banner" style={{ marginBottom: '20px' }}>
               <Zap size={14} />
-              Một số nội dung (bài giảng, tin tức) vẫn hiển thị bằng tiếng Việt.
+              {t('settings_panel.language_info')}
             </div>
+            {pendingLanguage !== language && (
+              <button 
+                type="button" 
+                className="sp-save-btn" 
+                onClick={applyLanguage}
+              >
+                <Check size={16} /> {t('settings_panel.language_update')}
+              </button>
+            )}
           </div>
         )}
 
@@ -534,28 +562,28 @@ export default function SettingsPanel({
   return (
     <div className="settings-screen">
       <button type="button" className="settings-back" onClick={onBack}>
-        <ArrowLeft size={18} /> Cài đặt
+        <ArrowLeft size={18} /> {t('settings_panel.account')}
       </button>
 
       <div className="settings-list">
         {/* Section: Tài khoản */}
-        <p className="sp-section-title">Tài khoản</p>
+        <p className="sp-section-title">{t('settings_panel.account')}</p>
         <button type="button" className="settings-row clickable" onClick={() => setView('personal')}>
           <span className="settings-row-icon"><User size={20} /></span>
           <span className="settings-row-label">
-            Thông tin cá nhân
-            <span className="sp-row-sub">Tên, ảnh đại diện, giới thiệu</span>
+            {t('settings_panel.personal_info')}
+            <span className="sp-row-sub">{t('settings_panel.personal_info_sub')}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>
 
         {/* Section: Tuỳ chọn */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>Tuỳ chọn</p>
+        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.options')}</p>
         <div className="settings-row">
           <span className="settings-row-icon" style={{ background: 'rgba(251,146,60,0.12)', color: '#fb923c' }}><Bell size={20} /></span>
           <span className="settings-row-label">
-            Thông báo đẩy
-            <span className="sp-row-sub">{notificationsOn ? 'Đang bật' : 'Đang tắt'}</span>
+            {t('settings_panel.push_notifications')}
+            <span className="sp-row-sub">{notificationsOn ? t('settings_panel.on') : t('settings_panel.off')}</span>
           </span>
           <button
             type="button"
@@ -571,30 +599,30 @@ export default function SettingsPanel({
         <button type="button" className="settings-row clickable" onClick={() => setView('language')}>
           <span className="settings-row-icon" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}><Globe size={20} /></span>
           <span className="settings-row-label">
-            Ngôn ngữ
-            <span className="sp-row-sub">{language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}</span>
+            {t('settings_panel.language')}
+            <span className="sp-row-sub">{language === 'vi' ? '🇻🇳 Tiếng Việt' : language === 'ko' ? '🇰🇷 한국어' : '🇬🇧 English'}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>
 
         {/* Section: Hội thánh */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>Hội thánh</p>
+        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.church')}</p>
         <button type="button" className="settings-row clickable" onClick={() => setView('payment')}>
           <span className="settings-row-icon" style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa' }}><CreditCard size={20} /></span>
           <span className="settings-row-label">
-            Dâng hiến
-            <span className="sp-row-sub">Thông tin ngân hàng & VietQR</span>
+            {t('settings_panel.donate')}
+            <span className="sp-row-sub">{t('settings_panel.donate_sub')}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>
 
         {/* Section: Hỗ trợ */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>Hỗ trợ</p>
+        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.support')}</p>
         <button type="button" className="settings-row clickable" onClick={() => setView('usage')}>
           <span className="settings-row-icon" style={{ background: 'rgba(72,188,225,0.12)', color: '#48bce1' }}><BookOpen size={20} /></span>
           <span className="settings-row-label">
-            Hướng dẫn sử dụng
-            <span className="sp-row-sub">5 tính năng chính của app</span>
+            {t('settings_panel.guide')}
+            <span className="sp-row-sub">{t('settings_panel.guide_sub')}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>
@@ -602,8 +630,8 @@ export default function SettingsPanel({
         <button type="button" className="settings-row clickable" onClick={() => setView('feedback')}>
           <span className="settings-row-icon" style={{ background: 'rgba(244,114,182,0.12)', color: '#f472b6' }}><MessageSquare size={20} /></span>
           <span className="settings-row-label">
-            Góp ý & Hỗ trợ
-            <span className="sp-row-sub">Báo lỗi, đề xuất tính năng</span>
+            {t('settings_panel.feedback')}
+            <span className="sp-row-sub">{t('settings_panel.feedback_sub')}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>
@@ -611,8 +639,8 @@ export default function SettingsPanel({
         <button type="button" className="settings-row clickable" onClick={() => setView('privacy')}>
           <span className="settings-row-icon" style={{ background: 'rgba(148,163,184,0.12)', color: '#94a3b8' }}><Shield size={20} /></span>
           <span className="settings-row-label">
-            Quyền riêng tư
-            <span className="sp-row-sub">Cam kết bảo mật dữ liệu</span>
+            {t('settings_panel.privacy')}
+            <span className="sp-row-sub">{t('settings_panel.privacy_sub')}</span>
           </span>
           <ChevronRight size={16} className="settings-row-chevron" />
         </button>

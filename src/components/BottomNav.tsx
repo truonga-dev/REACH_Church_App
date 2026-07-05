@@ -50,16 +50,7 @@ export default function BottomNav() {
     };
   }, []);
 
-  const navItems = isLive 
-    ? [
-        baseNavItems[0],
-        baseNavItems[1],
-        { name: 'Trực tiếp', path: '/live', icon: Radio, isLiveIcon: true },
-        baseNavItems[2],
-        baseNavItems[3],
-        baseNavItems[4],
-      ]
-    : baseNavItems;
+  const navItems = baseNavItems;
 
   return (
     <nav className="bottom-nav">
