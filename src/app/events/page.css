@@ -99,7 +99,7 @@
   font-weight: 600;
   cursor: pointer;
   background: #10b981;
-  color: white;
+  color: var(--color-text-main);
   transition: background 0.2s;
 }
 

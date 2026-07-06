@@ -4,6 +4,7 @@ import { Users, Music, Heart, Baby, MessageCircle, ChevronRight, X, Search, Spar
 import { MinistryGridSkeleton } from '@/components/ui/Skeleton';
 import { fetchMinistries } from '@/lib/ministries';
 import type { Ministry } from '@/lib/ministries';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 const IconMap: Record<string, any> = {  
@@ -18,6 +19,7 @@ const IconMap: Record<string, any> = {
 };
 
 export default function MinistryPage() {
+  const { t } = useLanguage();
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -41,7 +43,7 @@ export default function MinistryPage() {
       const { data } = await fetchMinistries(100, 0);
       setMinistries(data);
     } catch {
-      showToast('Lỗi khi tải danh sách mục vụ');
+      showToast(t('page_ministry.error_loading'));
     } finally {
       setLoading(false);
     }
@@ -62,12 +64,12 @@ export default function MinistryPage() {
 
   const handleJoin = () => {
     if (!formName.trim() || !formPhone.trim()) {
-      showToast('⚠️ Vui lòng nhập đầy đủ tên và số điện thoại.');
+      showToast(t('page_ministry.toast_missing_info'));
       return;
     }
 
     setSubmitted(true);
-    showToast(`🎉 Cảm ơn ${formName}! Chúng tôi sẽ liên hệ bạn sớm.`);
+    showToast(t('page_ministry.toast_success').replace('{{name}}', formName));
 
     setTimeout(() => {
       setSubmitted(false);
@@ -120,13 +122,13 @@ export default function MinistryPage() {
               <>
                 {selectedMinistry.mission && (
                   <div className="info-block mission">
-                    <p className="info-block-title">Sứ mạng</p>
+                    <p className="info-block-title">{t('page_ministry.mission')}</p>
                     <p className="info-block-text">{selectedMinistry.mission}</p>
                   </div>
                 )}
                 {selectedMinistry.goal && (
                   <div className="info-block goal">
-                    <p className="info-block-title">Mục tiêu</p>
+                    <p className="info-block-title">{t('page_ministry.goal')}</p>
                     <p className="info-block-text">{selectedMinistry.goal}</p>
                   </div>
                 )}
@@ -148,39 +150,39 @@ export default function MinistryPage() {
             {/* Two columns: Leader & Location */}
             <div className="two-cols">
               <div className="col-card">
-                <p className="col-card-title">Người điều hành</p>
-                <p className="col-card-text">{selectedMinistry.leader || 'Đang cập nhật'}</p>
+                <p className="col-card-title">{t('page_ministry.leader')}</p>
+                <p className="col-card-text">{selectedMinistry.leader || t('page_ministry.updating')}</p>
               </div>
               <div className="col-card">
-                <p className="col-card-title">Địa điểm</p>
-                <p className="col-card-text">{selectedMinistry.location || 'Đang cập nhật'}</p>
+                <p className="col-card-title">{t('page_ministry.location')}</p>
+                <p className="col-card-text">{selectedMinistry.location || t('page_ministry.updating')}</p>
               </div>
             </div>
 
             {/* Registration Form */}
             {!showForm ? (
               <button className="btn-main-join" onClick={() => setShowForm(true)}>
-                Đăng ký tham gia mục vụ này
+                {t('page_ministry.join_btn')}
               </button>
             ) : (
               <div className="register-block">
-                <h3 className="register-title">Thông tin đăng ký</h3>
+                <h3 className="register-title">{t('page_ministry.form_title')}</h3>
                 {submitted ? (
                   <div className="success-msg">
                     <Heart size={40} color="#fb7185" fill="#fb7185" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-                    <p>Đăng ký đã được gửi thành công!<br/>Chúng tôi sẽ gọi lại trong thời gian sớm nhất.</p>
+                    <p dangerouslySetInnerHTML={{ __html: t('page_ministry.success_msg').replace('\\n', '<br/>') }}></p>
                   </div>
                 ) : (
                   <div>
-                    <input className="join-input" type="text" placeholder="Họ và tên" value={formName} onChange={e => setFormName(e.target.value)} />
-                    <input className="join-input" type="tel" placeholder="Số điện thoại" value={formPhone} onChange={e => setFormPhone(e.target.value)} />
-                    <textarea className="join-input" rows={3} placeholder="Bạn muốn đóng góp gì cho mục vụ?" value={formNote} onChange={e => setFormNote(e.target.value)} />
+                    <input className="join-input" type="text" placeholder={t('page_ministry.form_name')} value={formName} onChange={e => setFormName(e.target.value)} />
+                    <input className="join-input" type="tel" placeholder={t('page_ministry.form_phone')} value={formPhone} onChange={e => setFormPhone(e.target.value)} />
+                    <textarea className="join-input" rows={3} placeholder={t('page_ministry.form_note')} value={formNote} onChange={e => setFormNote(e.target.value)} />
                     <div className="btn-actions">
                       <button className="btn-action btn-cancel" onClick={() => { setShowForm(false); setFormName(''); setFormPhone(''); setFormNote(''); }}>
-                        Hủy
+                        {t('page_ministry.btn_cancel')}
                       </button>
                       <button className="btn-action btn-submit" onClick={handleJoin}>
-                        Gửi đăng ký
+                        {t('page_ministry.btn_submit')}
                       </button>
                     </div>
                   </div>
@@ -193,21 +195,21 @@ export default function MinistryPage() {
 
       {/* HEADER */}
       <header className="page-header">
-        <h1 className="page-title">Mục vụ</h1>
-        <p className="page-subtitle">Cùng nhau hầu việc Chúa, chia sẻ đức tin và xây dựng cộng đồng vững mạnh qua các mục vụ chuyên biệt.</p>
+        <h1 className="page-title">{t('page_ministry.title')}</h1>
+        <p className="page-subtitle">{t('page_ministry.subtitle')}</p>
       </header>
 
       {/* SEARCH & LIST */}
       <div className="ministry-search-bar">
         <Search size={18} />
-        <input type="search" placeholder="Tìm mục vụ theo tên hoặc mô tả..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <input type="search" placeholder={t('page_ministry.search_placeholder')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
       </div>
 
       {loading ? (
         <MinistryGridSkeleton />
       ) : displayedMinistries.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8599' }}>
-          Chưa có dữ liệu mục vụ
+          {t('page_ministry.no_data')}
         </div>
       ) : (
         <div className="ministry-list">
@@ -229,7 +231,7 @@ export default function MinistryPage() {
                   </div>
                   <p className="ministry-desc">{ministry.desc}</p>
                   <div className="ministry-meta">
-                    <span>Điều hành: {ministry.leader || 'Đang cập nhật'}</span>
+                    <span>{t('page_ministry.leader')}: {ministry.leader || t('page_ministry.updating')}</span>
                     <span>{ministry.schedule}</span>
                   </div>
                 </div>

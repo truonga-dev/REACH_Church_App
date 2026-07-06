@@ -5,7 +5,7 @@ import {
   ArrowLeft, Bell, Globe, CreditCard, Shield, MessageSquare, BookOpen, User,
   Edit3, Trash2, ChevronRight, CheckCircle2, Home, Book, Library, Heart,
   Send, Lock, Eye, EyeOff, Smartphone, Star, Zap, MapPin, Phone, Mail,
-  AlertTriangle, ExternalLink, Copy, Check,
+  AlertTriangle, ExternalLink, Copy, Check, Info,
 } from 'lucide-react';
 import {
   getNotificationsEnabled,
@@ -18,6 +18,7 @@ import {
   optOutOfPushNotifications,
   promptForPushNotifications,
 } from '@/lib/onesignal';
+import BibleSettings from './BibleSettings';
 
 type SettingsView =
   | 'list'
@@ -27,7 +28,9 @@ type SettingsView =
   | 'feedback'
   | 'usage'
   | 'account'
-  | 'personal';
+  | 'bible'
+  | 'personal'
+  | 'about';
 
 interface SettingsPanelProps {
   email: string;
@@ -45,74 +48,74 @@ interface SettingsPanelProps {
 }
 
 // ── Usage guide entries ──────────────────────────────────
-const USAGE_ITEMS = [
+const getUsageItems = (t: any) => [
   {
     icon: Home,
-    title: 'Trang chủ',
+    title: t('settings_usage.home_title'),
     color: '#48bce1',
-    desc: 'Xem tin tức mới nhất, sự kiện sắp diễn ra và thông báo từ hội thánh theo thời gian thực.',
-    tips: ['Nhấn vào bài viết để đọc đầy đủ', 'Chia sẻ nội dung qua mạng xã hội'],
+    desc: t('settings_usage.home_desc'),
+    tips: [t('settings_usage.home_tip1'), t('settings_usage.home_tip2')],
   },
   {
     icon: Book,
-    title: 'Kinh Thánh',
+    title: t('settings_usage.bible_title'),
     color: '#a78bfa',
-    desc: 'Đọc và theo dõi tiến độ Kinh Thánh. Đánh dấu chương đã đọc, ghi chú câu yêu thích.',
-    tips: ['Vuốt trái/phải để chuyển chương', 'Lịch đọc hiển thị trên trang Hồ sơ'],
+    desc: t('settings_usage.bible_desc'),
+    tips: [t('settings_usage.bible_tip1'), t('settings_usage.bible_tip2')],
   },
   {
     icon: Library,
-    title: 'Thư viện',
+    title: t('settings_usage.library_title'),
     color: '#34d399',
-    desc: 'Kho tài nguyên đức tin: bài giảng audio/video, sách nói, tài liệu PDF và dưỡng linh hàng ngày.',
-    tips: ['Lọc theo thể loại để tìm nhanh', 'Tải về để nghe offline'],
+    desc: t('settings_usage.library_desc'),
+    tips: [t('settings_usage.library_tip1'), t('settings_usage.library_tip2')],
   },
   {
     icon: Heart,
-    title: 'Cầu nguyện',
+    title: t('settings_usage.prayer_title'),
     color: '#f472b6',
-    desc: 'Gửi đề mục cầu nguyện cá nhân hoặc chia sẻ với cộng đồng. Cùng nhau nâng đỡ nhau trong đức tin.',
-    tips: ['Đề mục riêng tư chỉ mình bạn thấy', 'Nhấn ❤️ để cầu nguyện cho người khác'],
+    desc: t('settings_usage.prayer_desc'),
+    tips: [t('settings_usage.prayer_tip1'), t('settings_usage.prayer_tip2')],
   },
   {
     icon: User,
-    title: 'Hồ sơ & Cài đặt',
+    title: t('settings_usage.profile_title'),
     color: '#fb923c',
-    desc: 'Cá nhân hóa tài khoản, xem thống kê đức tin, quản lý bài giảng đã lưu và thiết lập app.',
-    tips: ['Chỉnh sửa tên bằng cách nhấn biểu tượng bút chì', 'Huy hiệu cấp độ dựa trên ngày đọc KT'],
+    desc: t('settings_usage.profile_desc'),
+    tips: [t('settings_usage.profile_tip1'), t('settings_usage.profile_tip2')],
   },
 ];
 
 // ── Privacy policy items ─────────────────────────────────
-const PRIVACY_ITEMS = [
+const getPrivacyItems = (t: any) => [
   {
     icon: Lock,
-    title: 'Bảo mật tài khoản',
-    desc: 'Email và mật khẩu được mã hóa bằng Supabase Auth. Chúng tôi không lưu mật khẩu dưới dạng văn bản.',
+    title: t('settings_privacy.acct_title'),
+    desc: t('settings_privacy.acct_desc'),
   },
   {
     icon: Eye,
-    title: 'Dữ liệu hiển thị',
-    desc: 'Chỉ tên và ảnh đại diện hiển thị công khai. Đề mục cầu nguyện riêng tư hoàn toàn ẩn khỏi người khác.',
+    title: t('settings_privacy.display_title'),
+    desc: t('settings_privacy.display_desc'),
   },
   {
     icon: Smartphone,
-    title: 'Dữ liệu thiết bị',
-    desc: 'Tiến độ đọc Kinh Thánh lưu cục bộ trên thiết bị. Xóa cache app sẽ xóa dữ liệu này.',
+    title: t('settings_privacy.device_title'),
+    desc: t('settings_privacy.device_desc'),
   },
   {
     icon: Shield,
-    title: 'Không bán dữ liệu',
-    desc: 'R.E.A.C.H Church Vietnam cam kết không chia sẻ hay bán thông tin cá nhân cho bên thứ ba.',
+    title: t('settings_privacy.sell_title'),
+    desc: t('settings_privacy.sell_desc'),
   },
 ];
 
 // ── Feedback categories ──────────────────────────────────
-const FEEDBACK_CATEGORIES = [
-  { value: 'bug',     label: '🐛 Báo lỗi',          desc: 'App bị crash, tính năng không hoạt động' },
-  { value: 'feature', label: '💡 Đề xuất tính năng', desc: 'Ý tưởng cải thiện app' },
-  { value: 'content', label: '📖 Nội dung',          desc: 'Phản hồi về bài giảng, bài viết' },
-  { value: 'other',   label: '💬 Khác',              desc: 'Góp ý chung' },
+const getFeedbackCategories = (t: any) => [
+  { value: 'bug',     label: t('settings_feedback.cat_bug'),          desc: t('settings_feedback.cat_bug_desc') },
+  { value: 'feature', label: t('settings_feedback.cat_feature'), desc: t('settings_feedback.cat_feature_desc') },
+  { value: 'content', label: t('settings_feedback.cat_content'),          desc: t('settings_feedback.cat_content_desc') },
+  { value: 'other',   label: t('settings_feedback.cat_other'),              desc: t('settings_feedback.cat_other_desc') },
 ];
 
 export default function SettingsPanel({
@@ -174,6 +177,7 @@ export default function SettingsPanel({
 
   const handleSendFeedback = () => {
     if (!feedback.trim()) return;
+    const FEEDBACK_CATEGORIES = getFeedbackCategories(t);
     const cat = FEEDBACK_CATEGORIES.find(c => c.value === feedbackCategory);
     const subject = encodeURIComponent(`[${cat?.label ?? 'Góp ý'}] REACH Church App`);
     const body = encodeURIComponent(`Loại: ${cat?.label}\n\n${feedback.trim()}\n\n---\nGửi từ REACH Church App`);
@@ -201,11 +205,13 @@ export default function SettingsPanel({
     const titles: Record<Exclude<SettingsView, 'list'>, string> = {
       language: t('settings_panel.language'),
       payment:  t('settings_panel.donate'),
+      about:    t('settings_panel.about'),
       privacy:  t('settings_panel.privacy'),
       feedback: t('settings_panel.feedback'),
       usage:    t('settings_panel.guide'),
       account:  t('settings_panel.account'),
       personal: t('settings_panel.personal_info'),
+      bible: 'Đọc Kinh Thánh',
     };
 
     return (
@@ -213,6 +219,9 @@ export default function SettingsPanel({
         <button type="button" className="settings-back" onClick={() => setView('list')}>
           <ArrowLeft size={18} /> {titles[view]}
         </button>
+
+        {/* ══ BIBLE SETTINGS ═══════════════════════════════════ */}
+        {view === 'bible' && <BibleSettings />}
 
         {/* ══ PERSONAL INFO ═══════════════════════════════════ */}
         {view === 'personal' && (
@@ -342,9 +351,9 @@ export default function SettingsPanel({
             {/* Hero */}
             <div className="sp-payment-hero">
               <div className="sp-payment-icon">💝</div>
-              <h3>Dâng Hiến Trực Tuyến</h3>
-              <p>&quot;Mỗi người nên tùy theo lòng mình đã định mà quyên ra, không phải phàn nàn hay miễn cưỡng.&quot;</p>
-              <span className="sp-payment-verse">— 2 Cô-rinh-tô 9:7</span>
+              <h3>{t('settings_payment.hero_title')}</h3>
+              <p>{t('settings_payment.hero_quote')}</p>
+              <span className="sp-payment-verse">{t('settings_payment.hero_verse')}</span>
             </div>
 
             {/* Bank info */}
@@ -352,39 +361,100 @@ export default function SettingsPanel({
               <div className="sp-bank-header">
                 <span className="sp-bank-logo">🏦</span>
                 <div>
-                  <p className="sp-bank-name">Vietcombank</p>
-                  <p className="sp-bank-sub">Ngân hàng TMCP Ngoại thương VN</p>
+                  <p className="sp-bank-name">{t('settings_payment.bank_name')}</p>
+                  <p className="sp-bank-sub">{t('settings_payment.bank_sub')}</p>
                 </div>
               </div>
               <div className="sp-bank-row">
-                <span className="sp-bank-label">Số tài khoản</span>
+                <span className="sp-bank-label">{t('settings_payment.acc_number')}</span>
                 <div className="sp-bank-value-row">
                   <strong className="sp-bank-account">1012 3456 78</strong>
                   <button type="button" className="sp-copy-btn" onClick={copyAccountNumber}>
-                    {copiedAccount ? <><Check size={12} /> Đã sao chép</> : <><Copy size={12} /> Sao chép</>}
+                    {copiedAccount ? <><Check size={12} /> {t('settings_payment.copied')}</> : <><Copy size={12} /> {t('settings_payment.copy')}</>}
                   </button>
                 </div>
               </div>
               <div className="sp-bank-row">
-                <span className="sp-bank-label">Chủ tài khoản</span>
-                <strong>HỘI THÁNH REACH VIETNAM</strong>
+                <span className="sp-bank-label">{t('settings_payment.acc_holder')}</span>
+                <strong>{t('settings_payment.acc_name')}</strong>
               </div>
               <div className="sp-bank-row">
-                <span className="sp-bank-label">Nội dung CK</span>
-                <span className="sp-bank-note">DANGHIEN [Họ tên]</span>
+                <span className="sp-bank-label">{t('settings_payment.content_label')}</span>
+                <span className="sp-bank-note">{t('settings_payment.content_note')}</span>
               </div>
             </div>
 
             <a href="/donate" className="sp-donate-btn">
               <CreditCard size={18} />
-              Dâng hiến qua MoMo / VNPay
+              {t('settings_payment.btn_ewallet')}
               <ExternalLink size={14} />
             </a>
 
             <div className="sp-info-banner">
               <Shield size={14} />
-              Giao dịch được bảo mật và xác nhận bởi Ban Tài chính hội thánh.
+              {t('settings_payment.info_secure')}
             </div>
+          </div>
+        )}
+
+        {/* ══ ABOUT US ════════════════════════════════════════ */}
+        {view === 'about' && (
+          <div className="settings-detail">
+            {/* Ảnh nền */}
+            <div style={{ position: 'relative', width: '100%', height: '280px', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px', marginTop: '10px' }}>
+              <img src="/images/church-bg.jpg" alt="Church Background" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 75%' }}
+                   onError={(e) => { e.currentTarget.src = '/logo.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.background = '#0f172a'; }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}></div>
+              <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/logo.png" alt="REACH Church" style={{ width: 50, height: 50, borderRadius: '24%', objectFit: 'cover', background: '#fff' }} 
+                     onError={(e) => { e.currentTarget.style.display='none' }} />
+                <div>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 4px', color: '#fff' }}>REACH Church</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', margin: 0 }}>{t('settings_about.subtitle')}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Lịch sử / Giới thiệu */}
+            <div className="sp-privacy-card" style={{ display: 'block', padding: '16px' }}>
+              <p style={{ margin: '0 0 12px', fontSize: '0.95rem', lineHeight: 1.6 }}>{t('settings_about.history_p1')}</p>
+              <p style={{ margin: '0 0 12px', fontSize: '0.95rem', lineHeight: 1.6 }}>{t('settings_about.history_p2')}</p>
+              <p style={{ margin: '0', fontSize: '0.95rem', lineHeight: 1.6 }}>{t('settings_about.history_p3')}</p>
+            </div>
+            
+            {/* Sứ Mạng */}
+            <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px', color: '#48bce1', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={20} /> {t('settings_about.mission_title')}
+              </h4>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>{t('settings_about.mission_intro')}</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[1, 2, 3, 4, 5].map(num => (
+                  <div key={num} style={{ background: 'rgba(72,188,225,0.05)', padding: '12px', borderRadius: '12px', borderLeft: '3px solid #48bce1' }}>
+                    <p style={{ fontWeight: 700, margin: '0 0 4px', fontSize: '0.95rem', color: '#48bce1' }}>{t(`settings_about.mission_${num}_title` as any)}</p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>{t(`settings_about.mission_${num}_desc` as any)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Giá Trị Cốt Lõi */}
+            <div style={{ marginTop: '28px', marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px', color: '#fb923c', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Star size={20} /> {t('settings_about.values_title')}
+              </h4>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  <div key={num} style={{ background: 'rgba(251,146,60,0.05)', padding: '12px', borderRadius: '12px', borderLeft: '3px solid #fb923c' }}>
+                    <p style={{ fontWeight: 700, margin: '0 0 4px', fontSize: '0.95rem', color: '#fb923c' }}>{t(`settings_about.value_${num}_title` as any)}</p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>{t(`settings_about.value_${num}_desc` as any)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
           </div>
         )}
 
@@ -393,11 +463,11 @@ export default function SettingsPanel({
           <div className="settings-detail">
             <div className="sp-privacy-hero">
               <div className="sp-privacy-icon"><Shield size={32} color="#48bce1" /></div>
-              <h3>Cam kết bảo mật</h3>
-              <p>R.E.A.C.H Church Vietnam tôn trọng và bảo vệ quyền riêng tư của bạn.</p>
+              <h3>{t('settings_privacy.title_security')}</h3>
+              <p>{t('settings_privacy.desc_security')}</p>
             </div>
 
-            {PRIVACY_ITEMS.map((item, i) => {
+            {getPrivacyItems(t).map((item, i) => {
               const Icon = item.icon;
               return (
                 <div key={i} className="sp-privacy-card">
@@ -412,11 +482,11 @@ export default function SettingsPanel({
 
             <div className="sp-danger-zone">
               <div className="sp-danger-header">
-                <AlertTriangle size={15} /> Vùng nguy hiểm
+                <AlertTriangle size={15} /> {t('settings_privacy.danger_zone')}
               </div>
-              <p>Nếu muốn xóa tài khoản và toàn bộ dữ liệu, hãy liên hệ hội thánh để được hỗ trợ.</p>
+              <p>{t('settings_privacy.danger_desc')}</p>
               <a href="mailto:reachchurch.vn@gmail.com?subject=Yêu cầu xóa tài khoản" className="sp-danger-btn">
-                <Mail size={14} /> Liên hệ xóa tài khoản
+                <Mail size={14} /> {t('settings_privacy.danger_btn')}
               </a>
             </div>
           </div>
@@ -427,16 +497,16 @@ export default function SettingsPanel({
           <div className="settings-detail">
             <div className="sp-feedback-hero">
               <span style={{ fontSize: 40 }}>💌</span>
-              <h3>Góp ý & Hỗ trợ</h3>
-              <p>Phản hồi của bạn giúp chúng tôi cải thiện REACH App mỗi ngày.</p>
+              <h3>{t('settings_feedback.hero_title')}</h3>
+              <p>{t('settings_feedback.hero_desc')}</p>
             </div>
 
             {!feedbackSent ? (
               <>
                 {/* Category selector */}
-                <p className="sp-field-label" style={{ marginBottom: 10 }}>Loại phản hồi</p>
+                <p className="sp-field-label" style={{ marginBottom: 10 }}>{t('settings_feedback.cat_label')}</p>
                 <div className="sp-feedback-cats">
-                  {FEEDBACK_CATEGORIES.map(cat => (
+                  {getFeedbackCategories(t).map(cat => (
                     <button
                       key={cat.value}
                       type="button"
@@ -452,13 +522,13 @@ export default function SettingsPanel({
                 {/* Message */}
                 <div className="sp-field-group" style={{ marginTop: 16 }}>
                   <label htmlFor="sp-feedback-text" className="sp-field-label">
-                    <MessageSquare size={13} /> Nội dung
+                    <MessageSquare size={13} /> {t('settings_feedback.content_label')}
                   </label>
                   <textarea
                     id="sp-feedback-text"
                     className="settings-bio"
                     rows={5}
-                    placeholder="Mô tả chi tiết để chúng tôi có thể hỗ trợ tốt nhất..."
+                    placeholder={t('settings_feedback.content_placeholder')}
                     value={feedback}
                     onChange={e => setFeedback(e.target.value)}
                   />
@@ -470,21 +540,21 @@ export default function SettingsPanel({
                   onClick={handleSendFeedback}
                   disabled={!feedback.trim()}
                 >
-                  <Send size={16} /> Gửi phản hồi
+                  <Send size={16} /> {t('settings_feedback.btn_send')}
                 </button>
 
                 <div className="sp-info-banner" style={{ marginTop: 14 }}>
                   <Mail size={14} />
-                  Phản hồi sẽ gửi tới reachchurch.vn@gmail.com. Phản hồi trong 1–3 ngày làm việc.
+                  {t('settings_feedback.info_email')}
                 </div>
               </>
             ) : (
               <div className="sp-feedback-success">
                 <CheckCircle2 size={48} color="#34d399" />
-                <h3>Cảm ơn bạn! 🙏</h3>
-                <p>Góp ý đã được chuyển đến ứng dụng email. Chúng tôi sẽ xem xét và phản hồi sớm nhất có thể.</p>
+                <h3>{t('settings_feedback.success_title')}</h3>
+                <p>{t('settings_feedback.success_desc')}</p>
                 <button type="button" className="sp-save-btn" onClick={() => setFeedbackSent(false)}>
-                  Gửi phản hồi khác
+                  {t('settings_feedback.btn_send_another')}
                 </button>
               </div>
             )}
@@ -497,12 +567,12 @@ export default function SettingsPanel({
             <div className="sp-usage-header">
               <Star size={20} color="#fbbf24" />
               <div>
-                <h3>Hướng dẫn sử dụng</h3>
-                <p>Khám phá đầy đủ tính năng của REACH Church App</p>
+                <h3>{t('settings_guide.title')}</h3>
+                <p>{t('settings_guide.desc')}</p>
               </div>
             </div>
 
-            {USAGE_ITEMS.map((item, i) => {
+            {getUsageItems(t).map((item, i) => {
               const Icon = item.icon;
               return (
                 <div key={i} className="sp-usage-card">
@@ -526,7 +596,7 @@ export default function SettingsPanel({
 
             <div className="sp-info-banner">
               <Phone size={14} />
-              Cần hỗ trợ thêm? Liên hệ hội thánh hoặc dùng chức năng Góp ý.
+              {t('settings_guide.info_contact')}
             </div>
           </div>
         )}
@@ -568,82 +638,108 @@ export default function SettingsPanel({
       <div className="settings-list">
         {/* Section: Tài khoản */}
         <p className="sp-section-title">{t('settings_panel.account')}</p>
-        <button type="button" className="settings-row clickable" onClick={() => setView('personal')}>
-          <span className="settings-row-icon"><User size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.personal_info')}
-            <span className="sp-row-sub">{t('settings_panel.personal_info_sub')}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
-
-        {/* Section: Tuỳ chọn */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.options')}</p>
-        <div className="settings-row">
-          <span className="settings-row-icon" style={{ background: 'rgba(251,146,60,0.12)', color: '#fb923c' }}><Bell size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.push_notifications')}
-            <span className="sp-row-sub">{notificationsOn ? t('settings_panel.on') : t('settings_panel.off')}</span>
-          </span>
-          <button
-            type="button"
-            className={`settings-toggle ${notificationsOn ? 'on' : ''}`}
-            role="switch"
-            aria-checked={notificationsOn}
-            onClick={toggleNotifications}
-          >
-            <span className="settings-toggle-thumb" />
+        <div className="sp-card-group">
+          <button type="button" className="settings-row clickable" onClick={() => setView('personal')}>
+            <span className="settings-row-icon"><User size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.personal_info')}
+              <span className="sp-row-sub">{t('settings_panel.personal_info_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
           </button>
         </div>
 
-        <button type="button" className="settings-row clickable" onClick={() => setView('language')}>
-          <span className="settings-row-icon" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}><Globe size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.language')}
-            <span className="sp-row-sub">{language === 'vi' ? '🇻🇳 Tiếng Việt' : language === 'ko' ? '🇰🇷 한국어' : '🇬🇧 English'}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
+        {/* Section: Tuỳ chọn */}
+        <p className="sp-section-title">{t('settings_panel.options')}</p>
+        <div className="sp-card-group">
+          <div className="settings-row">
+            <span className="settings-row-icon" style={{ background: 'rgba(251,146,60,0.12)', color: '#fb923c' }}><Bell size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.push_notifications')}
+              <span className="sp-row-sub">{notificationsOn ? t('settings_panel.on') : t('settings_panel.off')}</span>
+            </span>
+            <button
+              type="button"
+              className={`settings-toggle ${notificationsOn ? 'on' : ''}`}
+              role="switch"
+              aria-checked={notificationsOn}
+              onClick={toggleNotifications}
+            >
+              <span className="settings-toggle-thumb" />
+            </button>
+          </div>
+
+          <button type="button" className="settings-row clickable" onClick={() => setView('language')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}><Globe size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.language')}
+              <span className="sp-row-sub">{language === 'vi' ? '🇻🇳 Tiếng Việt' : language === 'ko' ? '🇰🇷 한국어' : '🇬🇧 English'}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
+
+          <button type="button" className="settings-row clickable" onClick={() => setView('bible')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(72,188,225,0.12)', color: '#48bce1' }}><Book size={20} /></span>
+            <span className="settings-row-label">
+              Đọc Kinh Thánh
+              <span className="sp-row-sub">Giao diện, cỡ chữ, phông chữ</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
+        </div>
 
         {/* Section: Hội thánh */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.church')}</p>
-        <button type="button" className="settings-row clickable" onClick={() => setView('payment')}>
-          <span className="settings-row-icon" style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa' }}><CreditCard size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.donate')}
-            <span className="sp-row-sub">{t('settings_panel.donate_sub')}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
+        <p className="sp-section-title">{t('settings_panel.church')}</p>
+        <div className="sp-card-group">
+          <button type="button" className="settings-row clickable" onClick={() => setView('payment')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa' }}><CreditCard size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.donate')}
+              <span className="sp-row-sub">{t('settings_panel.donate_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
+          
+          <button type="button" className="settings-row clickable" onClick={() => setView('about')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}><Info size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.about')}
+              <span className="sp-row-sub">{t('settings_panel.about_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
+        </div>
 
         {/* Section: Hỗ trợ */}
-        <p className="sp-section-title" style={{ marginTop: 20 }}>{t('settings_panel.support')}</p>
-        <button type="button" className="settings-row clickable" onClick={() => setView('usage')}>
-          <span className="settings-row-icon" style={{ background: 'rgba(72,188,225,0.12)', color: '#48bce1' }}><BookOpen size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.guide')}
-            <span className="sp-row-sub">{t('settings_panel.guide_sub')}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
+        <p className="sp-section-title">{t('settings_panel.support')}</p>
+        <div className="sp-card-group">
+          <button type="button" className="settings-row clickable" onClick={() => setView('usage')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(72,188,225,0.12)', color: '#48bce1' }}><BookOpen size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.guide')}
+              <span className="sp-row-sub">{t('settings_panel.guide_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
 
-        <button type="button" className="settings-row clickable" onClick={() => setView('feedback')}>
-          <span className="settings-row-icon" style={{ background: 'rgba(244,114,182,0.12)', color: '#f472b6' }}><MessageSquare size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.feedback')}
-            <span className="sp-row-sub">{t('settings_panel.feedback_sub')}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
+          <button type="button" className="settings-row clickable" onClick={() => setView('feedback')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(244,114,182,0.12)', color: '#f472b6' }}><MessageSquare size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.feedback')}
+              <span className="sp-row-sub">{t('settings_panel.feedback_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
 
-        <button type="button" className="settings-row clickable" onClick={() => setView('privacy')}>
-          <span className="settings-row-icon" style={{ background: 'rgba(148,163,184,0.12)', color: '#94a3b8' }}><Shield size={20} /></span>
-          <span className="settings-row-label">
-            {t('settings_panel.privacy')}
-            <span className="sp-row-sub">{t('settings_panel.privacy_sub')}</span>
-          </span>
-          <ChevronRight size={16} className="settings-row-chevron" />
-        </button>
+          <button type="button" className="settings-row clickable" onClick={() => setView('privacy')}>
+            <span className="settings-row-icon" style={{ background: 'rgba(148,163,184,0.12)', color: '#94a3b8' }}><Shield size={20} /></span>
+            <span className="settings-row-label">
+              {t('settings_panel.privacy')}
+              <span className="sp-row-sub">{t('settings_panel.privacy_sub')}</span>
+            </span>
+            <ChevronRight size={16} className="settings-row-chevron" />
+          </button>
+        </div>
 
         {/* App version */}
         <div className="sp-app-version">

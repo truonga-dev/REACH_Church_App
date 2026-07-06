@@ -15,7 +15,6 @@ import { htmlExcerpt, parseCategories } from '@/lib/html-utils';
 import { POST_CONTENT_TYPES } from '@/lib/post-categories';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import './page.css';
 
@@ -492,7 +491,7 @@ export default function Home() {
           >
             {searchQuery.length === 0 ? (
               <div style={{ padding: '2rem 1.25rem' }}>
-                <p style={{ color: '#7a8599', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>{t('search_hints')}</p>
+                <p style={{ color: '#7a8599', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>{t('page_home.search_hints') || t('search_hints')}</p>
                 {['Bài giảng', 'Giăng 3:16', 'Ma-thi-ơ 5:3', 'Thờ phượng', 'Cầu nguyện'].map(hint => (
                   <button key={hint} onClick={() => setSearchQuery(hint)}
                     style={{
@@ -512,7 +511,7 @@ export default function Home() {
                 {/* Bible result */}
                 {bibleSearch && (
                   <>
-                    <p style={{ color: '#7a8599', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.5rem', marginBottom: '0.25rem' }}>📖 Kinh Thánh</p>
+                    <p style={{ color: '#7a8599', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.5rem', marginBottom: '0.25rem' }}>{t('page_home.bible_results')}</p>
                     <div
                       onClick={() => {
                         const url = `/bible?book=${bibleSearch.bookId}&chapter=${bibleSearch.chapter}${bibleSearch.verse ? `&verse=${bibleSearch.verse}` : ''}`;
@@ -537,7 +536,7 @@ export default function Home() {
                         <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', margin: 0 }}>
                           {bibleSearch.bookName} {bibleSearch.chapter}{bibleSearch.verse ? `:${bibleSearch.verse}` : ''}
                         </p>
-                        <p style={{ color: '#48BCE1', fontSize: '0.76rem', margin: '2px 0 0', fontWeight: 600 }}>Mở trong Kinh Thánh →</p>
+                        <p style={{ color: '#48BCE1', fontSize: '0.76rem', margin: '2px 0 0', fontWeight: 600 }}>{t('page_home.open_in_bible')}</p>
                       </div>
                       <ArrowRight size={15} style={{ color: '#48BCE1', flexShrink: 0 }} />
                     </div>
@@ -547,7 +546,7 @@ export default function Home() {
                 {searchResults.length > 0 && (
                   <>
                     <p style={{ color: '#7a8599', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.5rem', marginBottom: '0.25rem' }}>
-                      {searchResults.length} kết quả khác
+                      {t('page_home.other_results').replace('{{count}}', searchResults.length.toString())}
                     </p>
                     {searchResults.map((result: any, idx: number) => (
                       <div
@@ -581,7 +580,7 @@ export default function Home() {
                             {result.title}
                           </p>
                           <p style={{ color: '#7a8599', fontSize: '0.76rem', margin: '2px 0 0' }}>
-                            {result._type === 'sermon' ? 'Bài giảng' : result._type === 'event' ? 'Sự kiện' : result.type || 'Tin tức'}
+                            {result._type === 'sermon' ? t('page_home.sermon_label') : result._type === 'event' ? t('page_home.event_label') : result.type || t('page_home.news_label')}
                           </p>
                         </div>
                         <ArrowRight size={15} style={{ color: '#48BCE1', flexShrink: 0 }} />
@@ -592,8 +591,8 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ padding: '3rem 1.25rem', textAlign: 'center' }}>
-                <p style={{ color: '#fff', fontWeight: 700, marginBottom: '0.5rem' }}>Không tìm thấy kết quả</p>
-                <p style={{ color: '#7a8599', fontSize: '0.85rem' }}>Thử tìm câu Kinh Thánh như &ldquo;Giăng 3:16&rdquo;</p>
+                <p style={{ color: '#fff', fontWeight: 700, marginBottom: '0.5rem' }}>{t('page_home.no_results')}</p>
+                <p style={{ color: '#7a8599', fontSize: '0.85rem' }}>{t('page_home.try_search')}</p>
               </div>
             )}
           </div>
@@ -623,10 +622,10 @@ export default function Home() {
               </div>
               <div>
                 <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  Đang Phát Trực Tiếp
+                  {t('page_home.live_now')}
                 </p>
                 <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: 700 }}>
-                  {getDbField(dbActiveLive, 'title') || 'Sự kiện Live'}
+                  {getDbField(dbActiveLive, 'title') || t('page_home.live_event')}
                 </h3>
               </div>
             </div>
@@ -643,7 +642,7 @@ export default function Home() {
             <section className="verse-card" style={{ cursor: 'pointer' }}>
               <div className="verse-top">
                 <BookOpen size={18} className="verse-icon" />
-                <span className="verse-label">Câu Kinh Thánh hôm nay — Chạm để đọc</span>
+                <span className="verse-label">{t('page_home.daily_verse_title')}</span>
               </div>
               <blockquote className="verse-text">
                 &ldquo;{verse.text}&rdquo;
@@ -659,9 +658,9 @@ export default function Home() {
         <div className="section-header">
           <h2 className="section-title">
             <Sun size={18} style={{ marginRight: 6, color: '#F4CC30', verticalAlign: 'middle' }} />
-            Dưỡng Linh Hằng Ngày
+            {t('page_home.daily_devotional')}
           </h2>
-          <Link href="/library" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
+          <Link href="/library" className="see-all">{t('page_home.see_more')} <ArrowRight size={14} /></Link>
         </div>
         <div className="devotional-list">
           {loading ? (
@@ -675,19 +674,19 @@ export default function Home() {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center right'
                 }}>
-                <div className="dev-day-badge" style={{ backgroundColor: i === 0 ? '#48BCE1' : '#F4CC30' }}>Mới nhất</div>
+                <div className="dev-day-badge" style={{ backgroundColor: i === 0 ? '#48BCE1' : '#F4CC30' }}>{t('page_home.latest')}</div>
                 <h3 className="dev-title">{getDbField(d, 'title')}</h3>
                 <p className="dev-text">&quot;{htmlExcerpt(d.content || '', 120)}&quot;</p>
                 <div className="dev-footer">
-                  <span className="dev-duration">5 phút đọc</span>
-                  <span className="dev-read-btn">Đọc bài →</span>
+                  <span className="dev-duration">5 {t('page_home.read_time')}</span>
+                  <span className="dev-read-btn">{t('page_home.read_article')} →</span>
                 </div>
               </div>
             </Link>
           )) : (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
               <BookOpen size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
-              <p style={{ fontSize: '0.9rem' }}>Chưa có bài dưỡng linh</p>
+              <p style={{ fontSize: '0.9rem' }}>{t('page_home.no_devotional')}</p>
             </div>
           )}
         </div>
@@ -698,9 +697,9 @@ export default function Home() {
         <div className="section-header">
           <h2 className="section-title">
             <Music size={18} style={{ marginRight: 6, color: '#48BCE1', verticalAlign: 'middle' }} />
-            Bài Giảng Mới Nhất
+            {t('page_home.latest_sermons')}
           </h2>
-          <Link href="/library" className="see-all">Xem thêm <ArrowRight size={14} /></Link>
+          <Link href="/library" className="see-all">{t('page_home.see_more')} <ArrowRight size={14} /></Link>
         </div>
         <div className="sermons-list">
           {loading ? (
@@ -731,7 +730,7 @@ export default function Home() {
           }) : (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
               <PlayCircle size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
-              <p style={{ fontSize: '0.9rem' }}>Chưa có bài giảng</p>
+              <p style={{ fontSize: '0.9rem' }}>{t('page_home.no_sermon')}</p>
             </div>
           )}
         </div>
@@ -740,8 +739,8 @@ export default function Home() {
       {/* Bản Tin & Thông Báo */}
       <section className="section">
         <div className="section-header">
-          <h2 className="section-title"><Newspaper size={20} className="mr-xs text-primary" /> Bản tin & Thông báo</h2>
-          <Link href="/news" className="see-all">Xem tất cả <ChevronRight size={14} /></Link>
+          <h2 className="section-title"><Newspaper size={20} className="mr-xs text-primary" /> {t('page_home.news_announcements')}</h2>
+          <Link href="/news" className="see-all">{t('page_home.see_all')} <ChevronRight size={14} /></Link>
         </div>
         {/* News Detail Modal */}
         {selectedNews && (
@@ -756,12 +755,12 @@ export default function Home() {
               {selectedNews.image_url && <img src={selectedNews.image_url} alt="" style={{ width: '100%', borderRadius: '12px', marginBottom: '1rem', objectFit: 'cover', maxHeight: '220px' }} />}
               <h2 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1.2rem', lineHeight: '1.4' }}>{getDbField(selectedNews, 'title')}</h2>
               <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '0.35rem' }}>{selectedNews.created_at ? new Date(selectedNews.created_at).toLocaleDateString('vi-VN') : selectedNews.date}</p>
-              {selectedNews.author && <p style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '1rem' }}>Bởi {selectedNews.author}{selectedNews.location ? ` • ${selectedNews.location}` : ''}</p>}
+              {selectedNews.author && <p style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '1rem' }}>{t('page_home.by_author').replace('{{author}}', selectedNews.author)}{selectedNews.location ? ` • ${selectedNews.location}` : ''}</p>}
               <div className="rich-text-content" style={{ color: '#ccc', lineHeight: '1.7', whiteSpace: 'normal', fontSize: '1rem', marginBottom: '1rem' }} dangerouslySetInnerHTML={{ __html: selectedNews.content || selectedNews.summary }}></div>
               {selectedNews.audio_url && <audio controls style={{ width: '100%', marginBottom: '1rem' }} src={selectedNews.audio_url} />}
               {selectedNews.pdf_url && (
                 <a href={selectedNews.pdf_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: '#F12D5C', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold' }}>
-                  <FileText size={18}/> Mở PDF đính kèm
+                  <FileText size={18}/> {t('page_home.view_pdf')}
                 </a>
               )}
             </div>
@@ -784,14 +783,14 @@ export default function Home() {
               )}
               <div className="bulletin-top" style={item.image_url ? { marginTop: 0 } : {}}>
                 <span className="bulletin-tag" style={{ backgroundColor: `${tagColors[displayTag] || '#48BCE1'}22`, color: tagColors[displayTag] || '#48BCE1' }}>
-                  {displayTag}
+                  {t('page_news.type_' + displayTag.replace(/\s+/g, '_')) || displayTag}
                 </span>
                 <span className="bulletin-date">
                   {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}
                 </span>
               </div>
               <h3 className="bulletin-title">{getDbField(item, 'title')}</h3>
-              {item.author && <p className="bulletin-meta" style={{ marginBottom: '0.35rem' }}>Bởi {item.author} • {item.location || 'REACH Church'}</p>}
+              {item.author && <p className="bulletin-meta" style={{ marginBottom: '0.35rem' }}>{t('page_home.by_author').replace('{{author}}', item.author)} • {item.location || 'REACH Church'}</p>}
               <p className="bulletin-summary">{htmlExcerpt(item.content || '', 120)}</p>
               {item.audio_url && (
                 <div style={{ marginTop: '12px' }} onClick={e => e.stopPropagation()}>
@@ -800,11 +799,11 @@ export default function Home() {
               )}
               <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                 <span style={{ flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '8px', borderRadius: '8px', background: 'rgba(72,188,225,0.1)', color: '#48BCE1', fontSize: '0.9rem' }}>
-                  Đọc thêm <ChevronRight size={14} />
+                  {t('page_home.read_more')} <ChevronRight size={14} />
                 </span>
                 {item.pdf_url && (
                   <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ flex: 1, color: '#F12D5C', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '8px', borderRadius: '8px', background: 'rgba(241,45,92,0.08)' }}>
-                    <FileText size={14} /> Xem PDF
+                    <FileText size={14} /> {t('page_home.view_pdf_short')}
                   </a>
                 )}
               </div>
@@ -812,8 +811,8 @@ export default function Home() {
           );}) : (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
               <Newspaper size={36} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
-              <p style={{ fontWeight: 600, color: '#94a3b8', marginBottom: '0.25rem' }}>Chưa có tin tức nào</p>
-              <p style={{ fontSize: '0.82rem' }}>Hội thánh chưa đăng bản tin nào</p>
+              <p style={{ fontWeight: 600, color: '#94a3b8', marginBottom: '0.25rem' }}>{t('page_home.no_news')}</p>
+              <p style={{ fontSize: '0.82rem' }}>{t('page_home.no_news_desc')}</p>
             </div>
           )}
         </div>
@@ -824,12 +823,12 @@ export default function Home() {
         <section className="prayer-banner" style={{ cursor: 'pointer' }}>
           <Heart size={28} className="prayer-banner-icon" />
           <div>
-            <p className="prayer-banner-title">Đề mục cầu nguyện của bạn</p>
+            <p className="prayer-banner-title">{t('page_home.prayer_requests')}</p>
             <p className="prayer-banner-sub">
-              {prayerCount > 0 ? `Bạn đang có ${prayerCount} đề mục đang cầu nguyện` : 'Chạm để thêm đề mục cầu nguyện mới'}
+              {prayerCount > 0 ? t('page_home.prayer_count').replace('{{count}}', prayerCount.toString()) : t('page_home.prayer_add')}
             </p>
           </div>
-          <span className="prayer-banner-btn">Xem</span>
+          <span className="prayer-banner-btn">{t('page_home.view')}</span>
         </section>
       </Link>
 
@@ -838,9 +837,9 @@ export default function Home() {
         <div className="section-header">
           <h2 className="section-title">
             <Calendar size={18} style={{ marginRight: 6, color: '#48BCE1', verticalAlign: 'middle' }} />
-            Sự Kiện Sắp Tới
+            {t('page_home.upcoming_events')}
           </h2>
-          <Link href="/events" className="see-all">Xem tất cả <ArrowRight size={14} /></Link>
+          <Link href="/events" className="see-all">{t('page_home.see_all')} <ArrowRight size={14} /></Link>
         </div>
         <div className="events-list">
           {loading ? (
@@ -866,7 +865,7 @@ export default function Home() {
           }) : (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
               <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
-              <p style={{ fontSize: '0.9rem' }}>Không có sự kiện sắp tới</p>
+              <p style={{ fontSize: '0.9rem' }}>{t('page_home.no_events')}</p>
             </div>
           )}
         </div>

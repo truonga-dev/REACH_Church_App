@@ -39,7 +39,7 @@
   width: 100%;
   max-width: 420px;
   background: #1a1d24;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   padding: 2rem 1.5rem;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
@@ -70,7 +70,7 @@
 .auth-brand h1 {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--color-text-main);
   margin-bottom: 0.35rem;
 }
 
@@ -131,8 +131,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   font-size: 0.95rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: var(--color-surface);
+  color: var(--color-text-main);
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -166,7 +166,7 @@
   margin-top: 0.5rem;
   padding: 0.95rem;
   background: linear-gradient(135deg, #48bce1 0%, #2a9fc4 100%);
-  color: #fff;
+  color: var(--color-text-main);
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -241,7 +241,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
 }
 
 .auth-switch {
@@ -319,7 +319,7 @@
   text-align: center;
   padding: 2.5rem 1.5rem;
   background: #1a1d24;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
@@ -334,13 +334,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-text-main);
 }
 
 .auth-prompt-card h2 {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--color-text-main);
   margin-bottom: 0.75rem;
 }
 

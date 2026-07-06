@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 // ─────────────────────────────────────────
@@ -19,25 +20,25 @@ const AMOUNT_PRESETS = [
 ];
 
 const CATEGORIES = [
-  { value: 'tithe',    label: 'Một phần mười', icon: '🙏' },
-  { value: 'offering', label: 'Dâng hiến',     icon: '💝' },
-  { value: 'missions', label: 'Truyền giáo',   icon: '🌏' },
-  { value: 'building', label: 'Xây dựng',      icon: '🏛️' },
-  { value: 'other',    label: 'Khác',           icon: '✨' },
+  { value: 'tithe',    key: 'cat_tithe', icon: '🙏' },
+  { value: 'offering', key: 'cat_offering', icon: '💝' },
+  { value: 'missions', key: 'cat_missions', icon: '🌏' },
+  { value: 'building', key: 'cat_building', icon: '🏛️' },
+  { value: 'other',    key: 'cat_other', icon: '✨' },
 ];
 
 const PAYMENT_METHODS = [
   {
     value: 'ewallet',
-    name: 'MoMo / VNPay',
+    nameKey: 'method_ewallet',
     icon: '📱',
-    desc: 'Quét mã QR qua app ngân hàng. Xác nhận tự động.',
+    descKey: 'method_ewallet_desc',
   },
   {
     value: 'manual',
-    name: 'Chuyển khoản',
+    nameKey: 'method_manual',
     icon: '🏦',
-    desc: 'Chuyển khoản thủ công & gửi biên lai.',
+    descKey: 'method_manual_desc',
   },
 ];
 
@@ -50,6 +51,7 @@ function formatVND(amount: number): string {
 // ─────────────────────────────────────────
 function DonateContent() {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const cancelledFromUrl = searchParams.get('status') === 'cancel';
@@ -73,7 +75,7 @@ function DonateContent() {
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(cancelledFromUrl ? 'Giao dịch đã bị huỷ.' : null);
+  const [error, setError] = useState<string | null>(cancelledFromUrl ? t('page_donate.error_cancelled') : null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -108,7 +110,7 @@ function DonateContent() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError('File quá lớn. Tối đa 5MB.');
+      setError(t('page_donate.error_file_large'));
       return;
     }
     setReceiptFile(file);
@@ -140,7 +142,7 @@ function DonateContent() {
         user?.id,
       );
 
-      if (!donation?.id) throw new Error('Không thể tạo giao dịch. Thử lại.');
+      if (!donation?.id) throw new Error(t('page_donate.error_create_failed'));
       setCurrentDonationId(donation.id);
 
       // 2. Tạo Static QR Code từ VietQR.io
@@ -191,7 +193,7 @@ function DonateContent() {
         user?.id,
       );
 
-      if (!donation?.id) throw new Error('Không thể tạo giao dịch. Thử lại.');
+      if (!donation?.id) throw new Error(t('page_donate.error_create_failed'));
 
       setCurrentDonationId(donation.id);
 
@@ -203,7 +205,7 @@ function DonateContent() {
         form.append('file', receiptFile);
         const upRes = await fetch('/api/donations/upload-receipt', { method: 'POST', body: form });
         const upData = await upRes.json();
-        if (!upRes.ok) throw new Error(upData.error ?? 'Lỗi upload biên lai');
+        if (!upRes.ok) throw new Error(upData.error ?? t('page_donate.error_upload'));
       }
 
       setReceiptUploaded(true);
@@ -217,7 +219,7 @@ function DonateContent() {
 
   const handleSubmit = () => {
     if (finalAmount < 1000) {
-      setError('Số tiền dâng hiến tối thiểu là 1,000 VND');
+      setError(t('page_donate.error_min_amount'));
       return;
     }
     if (paymentMethod === 'ewallet') handleEwalletSubmit();
@@ -234,14 +236,14 @@ function DonateContent() {
       <div className="donate-page">
         <div className="donate-hero">
           <span className="donate-hero-icon">📲</span>
-          <h1>Quét mã MoMo / VNPay / Bank App</h1>
-          <p>Mở ứng dụng ngân hàng hoặc ví điện tử của bạn và quét mã QR bên dưới.</p>
+          <h1>{t('page_donate.checkout_title')}</h1>
+          <p>{t('page_donate.checkout_desc')}</p>
         </div>
 
         <div className="checkout-panel" style={{ textAlign: 'center' }}>
           <h3>💳 {formatVND(finalAmount)} VND</h3>
           <p>
-            Mục đích: <strong>{CATEGORIES.find(c => c.value === category)?.label}</strong>
+            {t('page_donate.checkout_purpose')}: <strong>{CATEGORIES.find(c => c.value === category)?.key ? t(`page_donate.${CATEGORIES.find(c => c.value === category)?.key}`) : category}</strong>
           </p>
           
           <div style={{ margin: '20px auto', background: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block' }}>
@@ -250,7 +252,7 @@ function DonateContent() {
           </div>
 
           <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: 20 }}>
-            Hệ thống đã ghi nhận giao dịch của bạn. Vui lòng nhấn hoàn tất sau khi đã chuyển khoản thành công.
+            {t('page_donate.checkout_note')}
           </p>
 
           <button
@@ -258,14 +260,14 @@ function DonateContent() {
             style={{ width: '100%', marginBottom: 12, display: 'flex', justifyContent: 'center' }}
             onClick={() => router.push('/profile')}
           >
-            ✅ Tôi đã chuyển khoản thành công
+            {t('page_donate.checkout_done_btn')}
           </button>
           <button
             className="checkout-cancel-btn"
             style={{ width: '100%' }}
             onClick={() => { setCheckoutUrl(null); setCurrentDonationId(null); }}
           >
-            Huỷ và quay lại
+            {t('page_donate.checkout_cancel_btn')}
           </button>
         </div>
       </div>
@@ -280,14 +282,14 @@ function DonateContent() {
       <div className="donate-page">
         <div className="donate-hero">
           <span className="donate-hero-icon">🙏</span>
-          <h1>Cảm ơn bạn!</h1>
-          <p>Thông tin dâng hiến đã được ghi nhận. Ban tài chính sẽ xác nhận trong thời gian sớm nhất.</p>
+          <h1>{t('page_donate.success_title')}</h1>
+          <p>{t('page_donate.success_desc')}</p>
         </div>
         <div className="donate-card">
           <div className="receipt-submitted">
-            <p>✅ Đã nhận thông tin dâng hiến</p>
-            <small>Số tiền: {formatVND(finalAmount)} VND · {CATEGORIES.find(c => c.value === category)?.label}</small>
-            {receiptFile && <small>Biên lai đã được đính kèm.</small>}
+            <p>{t('page_donate.success_received')}</p>
+            <small>{t('page_donate.success_amount').replace('{{amount}}', formatVND(finalAmount)).replace('{{category}}', CATEGORIES.find(c => c.value === category)?.key ? t(`page_donate.${CATEGORIES.find(c => c.value === category)?.key}`) : category)}</small>
+            {receiptFile && <small>{t('page_donate.success_receipt')}</small>}
           </div>
           <button
             className="donate-submit-btn"
@@ -301,7 +303,7 @@ function DonateContent() {
               setSelectedPreset(100000);
             }}
           >
-            Dâng hiến thêm
+            {t('page_donate.success_more_btn')}
           </button>
         </div>
       </div>
@@ -321,8 +323,8 @@ function DonateContent() {
       {/* Hero */}
       <div className="donate-hero">
         <span className="donate-hero-icon">💝</span>
-        <h1>Dâng Hiến</h1>
-        <p>Mỗi đồng dâng hiến là một hạt giống được gieo trồng trong Nước Chúa</p>
+        <h1>{t('page_donate.hero_title')}</h1>
+        <p>{t('page_donate.hero_desc')}</p>
       </div>
 
       {/* Status banners */}
@@ -334,7 +336,7 @@ function DonateContent() {
 
       {/* Step 1: Số tiền */}
       <div className="donate-card">
-        <p className="donate-card-title">Bước 1 – Số tiền dâng hiến</p>
+        <p className="donate-card-title">{t('page_donate.step1_title')}</p>
 
         {finalAmount > 0 && (
           <div className="amount-display">
@@ -350,8 +352,8 @@ function DonateContent() {
               className={`amount-btn ${selectedPreset === preset.value && preset.value > 0 ? 'active' : ''} ${preset.value === 0 && selectedPreset === 0 ? 'active' : ''}`}
               onClick={() => handlePresetClick(preset.value)}
             >
-              {preset.label}
-              <small>{preset.sub}</small>
+              {preset.value === 0 ? t('page_donate.preset_other') : preset.label}
+              <small>{preset.value === 0 ? t('page_donate.preset_custom') : preset.sub}</small>
             </button>
           ))}
         </div>
@@ -361,7 +363,7 @@ function DonateContent() {
             className="amount-custom-input"
             type="text"
             inputMode="numeric"
-            placeholder="Nhập số tiền (VND)..."
+            placeholder={t('page_donate.step1_placeholder')}
             value={customAmount ? formatVND(Number(customAmount)) : ''}
             onChange={handleCustomAmountChange}
             autoFocus
@@ -371,7 +373,7 @@ function DonateContent() {
 
       {/* Step 2: Mục đích */}
       <div className="donate-card">
-        <p className="donate-card-title">Bước 2 – Mục đích dâng hiến</p>
+        <p className="donate-card-title">{t('page_donate.step2_title')}</p>
         <div className="category-grid">
           {CATEGORIES.map((cat) => (
             <button
@@ -380,7 +382,7 @@ function DonateContent() {
               onClick={() => setCategory(cat.value)}
             >
               <span className="category-icon">{cat.icon}</span>
-              <span className="category-label">{cat.label}</span>
+              <span className="category-label">{t(`page_donate.${cat.key}`)}</span>
             </button>
           ))}
         </div>
@@ -388,11 +390,11 @@ function DonateContent() {
 
       {/* Step 3: Ghi chú (tuỳ chọn) */}
       <div className="donate-card">
-        <p className="donate-card-title">Ghi chú (tuỳ chọn)</p>
+        <p className="donate-card-title">{t('page_donate.step3_title')}</p>
         <textarea
           className="donate-textarea"
           rows={2}
-          placeholder="Ví dụ: Dâng hiến cho dự án xây dựng nhà thờ..."
+          placeholder={t('page_donate.step3_placeholder')}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -400,7 +402,7 @@ function DonateContent() {
 
       {/* Step 4: Phương thức */}
       <div className="donate-card">
-        <p className="donate-card-title">Bước 3 – Phương thức thanh toán</p>
+        <p className="donate-card-title">{t('page_donate.step4_title')}</p>
         <div className="payment-methods">
           {PAYMENT_METHODS.map((m) => (
             <div
@@ -409,8 +411,8 @@ function DonateContent() {
               onClick={() => setPaymentMethod(m.value as 'ewallet' | 'manual')}
             >
               <span className="method-icon">{m.icon}</span>
-              <div className="method-name">{m.name}</div>
-              <div className="method-desc">{m.desc}</div>
+              <div className="method-name">{t(`page_donate.${m.nameKey}`)}</div>
+              <div className="method-desc">{t(`page_donate.${m.descKey}`)}</div>
             </div>
           ))}
         </div>
@@ -420,42 +422,42 @@ function DonateContent() {
           <div className="bank-info-block">
             <div className="bank-info-header">
               <span>🏦</span>
-              <span>Thông tin chuyển khoản</span>
+              <span>{t('page_donate.bank_header')}</span>
             </div>
             <div className="bank-row">
-              <span className="bank-row-label">Ngân hàng</span>
+              <span className="bank-row-label">{t('page_donate.bank_name')}</span>
               <span className="bank-row-value">{bankName}</span>
             </div>
             <div className="bank-row">
-              <span className="bank-row-label">Số tài khoản</span>
+              <span className="bank-row-label">{t('page_donate.bank_account')}</span>
               <span className="bank-account-number">{bankAccount}</span>
             </div>
             <div className="bank-row">
-              <span className="bank-row-label">Chủ tài khoản</span>
+              <span className="bank-row-label">{t('page_donate.bank_holder')}</span>
               <span className="bank-row-value">{bankHolder}</span>
             </div>
             {bankBranch && (
               <div className="bank-row">
-                <span className="bank-row-label">Chi nhánh</span>
+                <span className="bank-row-label">{t('page_donate.bank_branch')}</span>
                 <span className="bank-row-value">{bankBranch}</span>
               </div>
             )}
             {finalAmount > 0 && (
               <div className="bank-row">
-                <span className="bank-row-label">Số tiền</span>
+                <span className="bank-row-label">{t('page_donate.bank_amount')}</span>
                 <span className="bank-row-value" style={{ color: '#48bce1' }}>
                   {formatVND(finalAmount)} VND
                 </span>
               </div>
             )}
             <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopyAccount}>
-              {copied ? '✅ Đã sao chép!' : '📋 Sao chép số tài khoản'}
+              {copied ? t('page_donate.bank_copied_btn') : t('page_donate.bank_copy_btn')}
             </button>
 
             {/* Upload biên lai */}
             <div className="upload-section">
               <span className="upload-label">
-                📎 Upload ảnh biên lai (tuỳ chọn – để Admin xác nhận nhanh hơn)
+                {t('page_donate.upload_label')}
               </span>
               {!receiptPreview ? (
                 <div className="upload-zone">
@@ -466,7 +468,7 @@ function DonateContent() {
                     onChange={handleFileChange}
                   />
                   <span className="upload-icon">📷</span>
-                  <p className="upload-hint">Chụp ảnh màn hình hoặc biên lai ngân hàng<br/>Tối đa 5MB</p>
+                  <p className="upload-hint" dangerouslySetInnerHTML={{ __html: t('page_donate.upload_hint') }}></p>
                 </div>
               ) : (
                 <div className="upload-preview">
@@ -489,12 +491,12 @@ function DonateContent() {
         {loading ? (
           <>
             <span className="spinner" />
-            {uploadingReceipt ? 'Đang upload biên lai...' : 'Đang xử lý...'}
+            {uploadingReceipt ? t('page_donate.submit_uploading') : t('page_donate.submit_loading')}
           </>
         ) : paymentMethod === 'payos' ? (
-          <>📱 Thanh toán qua VietQR {finalAmount > 0 && `– ${formatVND(finalAmount)}đ`}</>
+          <>{t('page_donate.submit_payos').replace('{{amount}}', finalAmount > 0 ? `– ${formatVND(finalAmount)}đ` : '')}</>
         ) : (
-          <>✅ Xác nhận dâng hiến {finalAmount > 0 && `– ${formatVND(finalAmount)}đ`}</>
+          <>{t('page_donate.submit_manual').replace('{{amount}}', finalAmount > 0 ? `– ${formatVND(finalAmount)}đ` : '')}</>
         )}
       </button>
     </div>

@@ -79,7 +79,7 @@ export default function NewsPage() {
             <div className="news-modal-handle d-block d-sm-none" />
             <div className="news-modal-header">
               <div className={`news-type-badge ${getBadgeClass(selectedNews.type)}`}>
-                {selectedNews.type}
+                {t(`page_news.type_${selectedNews.type.replace(/\s+/g, '_')}`)}
               </div>
               <button className="news-modal-close" onClick={() => setSelectedNews(null)}>
                 <X size={20} />
@@ -114,7 +114,7 @@ export default function NewsPage() {
                 
                 {selectedNews.pdf_url && (
                   <a href={selectedNews.pdf_url} target="_blank" rel="noopener noreferrer" className="news-modal-pdf-btn">
-                    <FileText size={18} /> Xem tài liệu đính kèm (PDF)
+                    <FileText size={18} /> {t('page_news.pdf_btn')}
                   </a>
                 )}
                 {selectedNews.audio_url && (
@@ -135,7 +135,7 @@ export default function NewsPage() {
           </Link>
           <div className="news-header-title-wrap">
             <h1 className="news-page-title">{t('news')}</h1>
-            <p className="news-page-sub">Tin tức, thông báo & sự kiện mới nhất</p>
+            <p className="news-page-sub">{t('page_news.subtitle')}</p>
           </div>
         </div>
 
@@ -154,7 +154,7 @@ export default function NewsPage() {
               className={`news-filter-tab ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab}
+              {tab === 'Tất cả' ? t('page_news.tab_all') : t(`page_news.type_${tab.replace(/\s+/g, '_')}`)}
             </button>
           ))}
         </div>
@@ -164,7 +164,7 @@ export default function NewsPage() {
         <Search size={18} />
         <input
           type="text"
-          placeholder="Tìm kiếm tin tức..."
+          placeholder={t('page_news.search_placeholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -178,8 +178,8 @@ export default function NewsPage() {
             <FileText size={24} />
           </div>
           <div>
-            <h3>Không tìm thấy tin tức</h3>
-            <p>Không có bài viết nào khớp với tìm kiếm của bạn.</p>
+            <h3>{t('page_news.empty_title')}</h3>
+            <p>{t('page_news.empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -199,7 +199,7 @@ export default function NewsPage() {
               {featured.image_url && <div className="news-featured-overlay" />}
               <div className={`news-featured-body ${!featured.image_url ? 'no-img' : ''}`}>
                 <div className={`news-featured-badge ${getBadgeClass(featured.type)}`}>
-                  {featured.type}
+                  {t(`page_news.type_${featured.type.replace(/\s+/g, '_')}`)}
                 </div>
                 <h2 className="news-featured-title">{getDbField(featured, 'title')}</h2>
                 <p className="news-featured-excerpt">{htmlExcerpt(getDbField(featured, 'content'), 100)}</p>
@@ -227,7 +227,7 @@ export default function NewsPage() {
                 <div className="news-card-body">
                   <div className="news-card-top">
                     <span className={`news-type-badge ${getBadgeClass(item.type)}`}>
-                      {item.type}
+                      {t(`page_news.type_${item.type.replace(/\s+/g, '_')}`)}
                     </span>
                     <span className="news-date">
                       <Calendar size={12} style={{ marginBottom: '1px' }} />
@@ -238,9 +238,9 @@ export default function NewsPage() {
                   <p className="news-card-excerpt">{htmlExcerpt(getDbField(item, 'content'), 80)}</p>
                   <div className="news-card-footer">
                     <span className="news-card-author">
-                      <User size={12} /> {item.author || 'Admin'}
+                      <User size={12} /> {item.author || t('page_news.admin')}
                     </span>
-                    <span className="news-read-btn">Đọc tiếp</span>
+                    <span className="news-read-btn">{t('page_news.read_more')}</span>
                   </div>
                 </div>
               </div>

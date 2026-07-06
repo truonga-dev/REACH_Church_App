@@ -11,6 +11,8 @@ export interface Profile {
   email?: string;
   cover_url?: string;
   custom_permissions?: string[];
+  bible_font_size?: number;
+  bible_font_family?: string;
 }
 
 export interface Prayer {

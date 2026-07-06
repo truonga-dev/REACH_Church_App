@@ -19,17 +19,6 @@ import './page.css';
 
 type Tab = 'sermons' | 'audiobooks' | 'pdfs' | 'devotionals' | 'events';
 
-const TABS: { id: Tab; label: string; icon: any }[] = [  
-  { id: 'sermons',    label: 'Bài giảng', icon: Video      },
-  { id: 'audiobooks', label: 'Sách nói',  icon: Headphones },
-  { id: 'pdfs',       label: 'Sách PDF',  icon: FileText   },
-  { id: 'devotionals',label: 'Dưỡng linh',icon: BookOpen   },
-  { id: 'events',     label: 'Sự kiện',   icon: Calendar   },
-];
-
-const SERMON_FILTERS = ['Tất cả', 'Pastor David Tô', 'Mục sư Tín', 'Mục sư An', 'Mục sư Bích', 'Chấp Sự Phục Sinh'];
-const CONTENT_FILTERS = ['Tất cả', 'Gia đình', 'Thánh Linh', 'Hôn nhân đắc thắng', 'Đức tin', 'Khác'];
-
 export default function Library() {
   const router = useRouter();
   const [activeTab, setActiveTab]           = useState<Tab>('sermons');
@@ -44,6 +33,17 @@ export default function Library() {
   const [activeFilter, setActiveFilter]     = useState('Tất cả');
   const { user } = useAuth();
   const { t, getDbField } = useLanguage();
+
+  const TABS = [
+    { id: 'sermons',    label: t('page_library.tab_sermons'), icon: Video      },
+    { id: 'audiobooks', label: t('page_library.tab_audiobooks'),  icon: Headphones },
+    { id: 'pdfs',       label: t('page_library.tab_pdfs'),  icon: FileText   },
+    { id: 'devotionals',label: t('page_library.tab_devotionals'),icon: BookOpen   },
+    { id: 'events',     label: t('page_library.tab_events'),   icon: Calendar   },
+  ];
+
+  const SERMON_FILTERS = [t('page_library.filter_all'), 'Pastor David Tín', 'Mục sư Tín', 'Mục sư An', 'Mục sư Bích', 'Chấp Sự Phúc Sinh'];
+  const CONTENT_FILTERS = [t('page_library.filter_all'), t('page_library.filter_family'), t('page_library.filter_spirit'), t('page_library.filter_marriage'), t('page_library.filter_faith'), t('page_library.filter_other')];
   const [likedSermon, setLikedSermon]       = useState(false);
   const [likedPdf, setLikedPdf]             = useState(false);
 
@@ -60,7 +60,7 @@ export default function Library() {
   }, [user, playingPdf]);
 
   const handleFavoriteSermon = async () => {
-    if (!user || !playingSermon) return alert('Vui lòng đăng nhập');
+    if (!user || !playingSermon) return alert(t('page_library.login_required'));
     if (likedSermon) {
       const ok = await removeFavorite(user.id, 'sermon', playingSermon.id);
       if (ok) setLikedSermon(false);
@@ -71,7 +71,7 @@ export default function Library() {
   };
 
   const handleFavoritePdf = async () => {
-    if (!user || !playingPdf) return alert('Vui lòng đăng nhập');
+    if (!user || !playingPdf) return alert(t('page_library.login_required'));
     if (likedPdf) {
       const ok = await removeFavorite(user.id, 'pdf', playingPdf.id);
       if (ok) setLikedPdf(false);
@@ -116,25 +116,25 @@ export default function Library() {
       return;
     }
     setActiveTab(id);
-    setActiveFilter('Tất cả');
+    setActiveFilter(t('page_library.filter_all'));
   };
 
   const filters = activeTab === 'sermons' ? SERMON_FILTERS : CONTENT_FILTERS;
 
   /* ── Filter logic ── */
-  const filteredSermons = activeFilter === 'Tất cả'
+  const filteredSermons = activeFilter === t('page_library.filter_all')
     ? sermons
     : sermons.filter(s => (s.preacher || s.speaker || '').includes(activeFilter) || (s.series || '').includes(activeFilter));
 
-  const filteredAudio = activeFilter === 'Tất cả'
+  const filteredAudio = activeFilter === t('page_library.filter_all')
     ? audiobooks
     : audiobooks.filter(a => a.title.includes(activeFilter) || (a.content || '').includes(activeFilter));
 
-  const filteredPdfs = activeFilter === 'Tất cả'
+  const filteredPdfs = activeFilter === t('page_library.filter_all')
     ? pdfs
     : pdfs.filter(p => p.title.includes(activeFilter) || (p.content || '').includes(activeFilter));
 
-  const filteredDev = activeFilter === 'Tất cả'
+  const filteredDev = activeFilter === t('page_library.filter_all')
     ? devotionals
     : devotionals.filter(d => d.title.includes(activeFilter) || (d.content || '').includes(activeFilter));
 
@@ -143,7 +143,7 @@ export default function Library() {
 
     /* SERMONS */
     if (activeTab === 'sermons') {
-      if (filteredSermons.length === 0) return <p className="lib-empty">Chưa có bài giảng nào trong danh mục này.</p>;
+      if (filteredSermons.length === 0) return <p className="lib-empty">{t('page_library.empty_sermons')}</p>;
       return (
         <div className="sermon-grid">
           {filteredSermons.map(s => {
@@ -183,7 +183,7 @@ export default function Library() {
 
     /* AUDIOBOOKS */
     if (activeTab === 'audiobooks') {
-      if (filteredAudio.length === 0) return <p className="lib-empty">Chưa có sách nói nào trong danh mục này.</p>;
+      if (filteredAudio.length === 0) return <p className="lib-empty">{t('page_library.empty_audiobooks')}</p>;
       return (
         <div className="audio-grid">
           {filteredAudio.map(a => (
@@ -192,7 +192,7 @@ export default function Library() {
                 <div className="audio-icon-wrap"><Headphones size={22} /></div>
                 <div className="audio-card-info">
                   <p className="audio-card-title">{getDbField(a, 'title')}</p>
-                  <p className="audio-card-type">Sách Nói</p>
+                  <p className="audio-card-type">{t('page_library.audio_type')}</p>
                 </div>
               </div>
               {a.audio_url
@@ -200,12 +200,11 @@ export default function Library() {
                   <button 
                     className="btn-read" 
                     onClick={() => setPlayingMedia({ id: a.id, title: getDbField(a, 'title'), url: a.audio_url, type: 'audio' })}
-                    style={{ marginTop: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
                   >
-                    <PlayCircle size={16} /> Nghe sách
+                    <PlayCircle size={16} /> {t('page_library.play_audio')}
                   </button>
                 )
-                : <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>Chưa có file audio</p>
+                : <p className="lib-empty">{t('page_library.empty_audio')}</p>
               }
             </div>
           ))}
@@ -215,7 +214,7 @@ export default function Library() {
 
     /* PDFs */
     if (activeTab === 'pdfs') {
-      if (filteredPdfs.length === 0) return <p className="lib-empty">Chưa có tài liệu PDF nào trong danh mục này.</p>;
+      if (filteredPdfs.length === 0) return <p className="lib-empty">{t('page_library.empty_pdfs')}</p>;
       return (
         <div className="pdf-grid">
           {filteredPdfs.map(pdf => (
@@ -224,16 +223,16 @@ export default function Library() {
                 <div className="pdf-icon-wrap"><FileText size={20} /></div>
                 <div className="pdf-card-info">
                   <p className="pdf-card-title">{getDbField(pdf, 'title')}</p>
-                  <p className="pdf-card-type">{pdf.type || 'Tài liệu'}</p>
+                  <p className="pdf-card-type">{pdf.type || t('page_library.pdf_type')}</p>
                 </div>
               </div>
               <button
                 type="button"
                 className="btn-read"
-                onClick={() => pdf.pdf_url ? setPlayingPdf(pdf) : alert('Tài liệu chưa có file PDF.')}
+                onClick={() => pdf.pdf_url ? setPlayingPdf(pdf) : alert(t('page_library.no_pdf'))}
               >
                 <ExternalLink size={14} />
-                Đọc tài liệu
+                {t('page_library.view_pdf')}
               </button>
             </div>
           ))}
@@ -242,7 +241,7 @@ export default function Library() {
     }
 
     /* DEVOTIONALS */
-    if (filteredDev.length === 0) return <p className="lib-empty">Chưa có bài dưỡng linh nào trong danh mục này.</p>;
+    if (filteredDev.length === 0) return <p className="lib-empty">{t('page_library.empty_devotionals')}</p>;
     return (
       <div className="dev-grid">
         {filteredDev.map(d => (
@@ -254,7 +253,7 @@ export default function Library() {
             <div className="dev-icon-wrap"><BookOpen size={22} /></div>
             <div className="dev-card-info">
               <p className="dev-card-title">{getDbField(d, 'title')}</p>
-              <p className="dev-card-type">{d.type || 'Dưỡng linh'}</p>
+              <p className="dev-card-type">{d.type || t('page_library.tab_devotionals')}</p>
             </div>
             <ChevronRight size={18} className="dev-card-arrow" />
           </Link>
@@ -268,8 +267,8 @@ export default function Library() {
       {/* ── Header ── */}
       <header className="lib-header">
         <div className="lib-header-bg" />
-        <h1 className="lib-title">Thư viện</h1>
-        <p className="lib-subtitle">Tài nguyên thuộc linh của REACH Church</p>
+        <h1 className="lib-title">{t('page_library.title')}</h1>
+        <p className="lib-subtitle">{t('page_library.subtitle')}</p>
       </header>
 
       {/* ── Tabs ── */}
@@ -287,7 +286,7 @@ export default function Library() {
             key={id}
             type="button"
             className={`lib-tab ${activeTab === id ? 'active' : ''}`}
-            onClick={() => handleTabChange(id)}
+            onClick={() => handleTabChange(id as Tab)}
           >
             <Icon size={16} />
             {label}
@@ -350,7 +349,7 @@ export default function Library() {
                 />
               </div>
             ) : (
-              <p className="lib-empty">Không có video YouTube cho bài giảng này.</p>
+              <p className="lib-empty">{t('page_library.no_youtube')}</p>
             )}
 
             {playingSermon.content && (
@@ -372,7 +371,7 @@ export default function Library() {
             <div className="sermon-modal-handle" />
             <div className="sermon-modal-header">
               <div>
-                <p className="sermon-modal-series">{playingPdf.type || 'Tài liệu PDF'}</p>
+                <p className="sermon-modal-series">{playingPdf.type || t('page_library.pdf_type')}</p>
                 <h3 className="sermon-modal-title">{getDbField(playingPdf, 'title')}</h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

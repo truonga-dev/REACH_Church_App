@@ -69,66 +69,68 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
         borderRadius: '16px', 
         padding: '20px', 
         color: 'white',
-        marginBottom: '24px',
+        marginBottom: '32px',
         display: 'flex',
         alignItems: 'center',
         gap: '16px',
-        boxShadow: '0 8px 32px rgba(255,122,0,0.3)'
+        boxShadow: '0 8px 24px rgba(255,122,0,0.25)'
       }}>
         <div style={{ 
-          background: 'rgba(255,255,255,0.2)', 
+          background: 'rgba(255,255,255,0.25)', 
           borderRadius: '50%', 
-          width: '60px', 
-          height: '60px', 
+          width: '64px', 
+          height: '64px', 
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'center' 
+          justifyContent: 'center',
+          backdropFilter: 'blur(10px)'
         }}>
           <Flame size={32} color="#fff" />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.2rem', margin: '0 0 4px', fontWeight: 800 }}>Chuỗi ngày đọc (Streak)</h2>
-          <p style={{ margin: 0, opacity: 0.9 }}>
-            Hiện tại: <strong>{streak?.current_streak || 0} ngày</strong> • Kỷ lục: {streak?.longest_streak || 0} ngày
+          <h2 style={{ fontSize: '1.25rem', margin: '0 0 6px', fontWeight: 800 }}>Chuỗi ngày đọc</h2>
+          <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem' }}>
+            Hiện tại: <strong>{streak?.current_streak || 0} ngày</strong> • Kỷ lục: {streak?.longest_streak || 0}
           </p>
         </div>
       </div>
 
-      <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '16px', fontWeight: 700 }}>
+      <h3 style={{ color: 'var(--color-text-main)', fontSize: '1.25rem', marginBottom: '20px', fontWeight: 800 }}>
         Kế Hoạch Khuyến Nghị
       </h3>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {plans.map(plan => {
           const planProgress = progress.filter(p => p.plan_id === plan.id);
           const percent = plan.duration_days > 0 ? Math.round((planProgress.length / plan.duration_days) * 100) : 0;
 
           return (
             <div key={plan.id} style={{ 
-              background: 'rgba(255,255,255,0.05)', 
-              borderRadius: '16px', 
-              padding: '20px',
-              border: '1px solid rgba(255,255,255,0.1)'
+              background: 'var(--color-surface)', 
+              borderRadius: '20px', 
+              padding: '24px',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div>
-                  <h4 style={{ color: '#48BCE1', margin: '0 0 8px', fontSize: '1.1rem' }}>{plan.title}</h4>
-                  <p style={{ color: '#aaa', margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ flex: 1, paddingRight: '16px' }}>
+                  <h4 style={{ color: 'var(--color-text-main)', margin: '0 0 8px', fontSize: '1.15rem', fontWeight: 800 }}>{plan.title}</h4>
+                  <p style={{ color: 'var(--color-text-dim)', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
                     {plan.description}
                   </p>
                 </div>
-                <div style={{ background: 'rgba(72,188,225,0.1)', color: '#48BCE1', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                <div style={{ background: 'rgba(72,188,225,0.1)', color: '#48BCE1', padding: '6px 14px', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {plan.duration_days} ngày
                 </div>
               </div>
 
-              <div style={{ marginTop: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#888' }}>Tiến độ</span>
-                  <span style={{ color: '#fff', fontWeight: 'bold' }}>{percent}%</span>
+              <div style={{ marginTop: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
+                  <span style={{ color: 'var(--color-text-dim)', fontWeight: 600 }}>Tiến độ</span>
+                  <span style={{ color: 'var(--color-text-main)', fontWeight: 800 }}>{percent}%</span>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ background: '#48BCE1', width: `${percent}%`, height: '100%', borderRadius: '4px' }} />
+                <div style={{ background: 'var(--color-border)', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ background: '#48BCE1', width: `${percent}%`, height: '100%', borderRadius: '5px', transition: 'width 0.5s ease-out' }} />
                 </div>
               </div>
 
@@ -141,27 +143,31 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
                   background: '#48BCE1',
                   color: '#fff',
                   border: 'none',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  marginTop: '20px',
+                  padding: '16px',
+                  borderRadius: '16px',
+                  marginTop: '24px',
                   fontWeight: 700,
-                  fontSize: '1rem',
+                  fontSize: '1.05rem',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  transition: 'transform 0.1s, opacity 0.2s'
                 }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                Tiếp Tục Đọc <ChevronRight size={18} />
+                Tiếp Tục Đọc <ChevronRight size={20} strokeWidth={3} />
               </button>
             </div>
           );
         })}
         {plans.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-            <BookOpen size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
-            <p>Hiện chưa có kế hoạch nào được tạo.</p>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--color-text-dim)', background: 'var(--color-surface)', borderRadius: '20px', border: '1px solid var(--color-border)' }}>
+            <BookOpen size={48} style={{ opacity: 0.3, margin: '0 auto 16px', color: 'var(--color-text-main)' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>Hiện chưa có kế hoạch nào được tạo.</p>
           </div>
         )}
       </div>

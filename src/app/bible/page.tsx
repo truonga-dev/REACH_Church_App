@@ -14,6 +14,9 @@ import {
 import { buildBibleShareUrl, buildBibleShareText, getShareTargets, parseBibleLocation } from '@/lib/bible-share';
 import SharePlatformIcon from '@/components/bible/SharePlatformIcon';
 import BiblePlans from '@/components/bible/BiblePlans';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import './page.css';
 const books = [
   'Sáng-thế Ký', 'Xuất Ê-díp-tô Ký', 'Lê-vi Ký', 'Dân-số Ký', 'Phục-truyền Luật-lệ Ký',
@@ -87,13 +90,37 @@ function buildHighlightSegments(text: string, highlights: VerseHighlight[]) {
 function BibleReader() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const initial = parseBibleLocation(searchParams.toString());
+
+  
+  const { user } = useAuth();
+  const [fontSize, setFontSize] = useState<number>(18);
+  const [fontFamily, setFontFamily] = useState<string>('Inter');
+
+  useEffect(() => {
+    async function loadPreferences() {
+      if (!user) {
+        const savedSize = localStorage.getItem('bibleFontSize');
+        const savedFamily = localStorage.getItem('bibleFontFamily');
+        if (savedSize) setFontSize(Number(savedSize));
+        if (savedFamily) setFontFamily(savedFamily);
+        return;
+      }
+      const { data } = await supabase.from('profiles').select('bible_font_size, bible_font_family').eq('id', user.id).single();
+      if (data) {
+        if (data.bible_font_size) setFontSize(data.bible_font_size);
+        if (data.bible_font_family) setFontFamily(data.bible_font_family);
+      }
+    }
+    loadPreferences();
+  }, [user]);
 
   const [bookIndex, setBookIndex] = useState(initial.book || 1);
   const [chapter, setChapter] = useState(initial.chapter || 1);
   const [verses, setVerses] = useState<{ verse: number; text: string }[]>([]);
   const [version, setVersion] = useState('VIE1925');
-  const [versionLabel, setVersionLabel] = useState('Kinh Thánh Tiếng Việt Bản Truyền Thống Hiệu Đính (VIE1925)');
+  const [versionLabel, setVersionLabel] = useState(t('page_bible.version_label'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [highlights, setHighlights] = useState<VerseHighlight[]>([]);
@@ -112,12 +139,29 @@ function BibleReader() {
   const [navSelectedBook, setNavSelectedBook] = useState<number>(initial.book || 1);
   const [navSelectedChapter, setNavSelectedChapter] = useState<number>(initial.chapter || 1);
 
+  const isVietnameseVersion = version === 'VIE1925' || version === 'NVB';
+  const currentBookName = isVietnameseVersion 
+    ? books[bookIndex - 1] 
+    : (metadata[bookIndex - 1]?.name || books[bookIndex - 1]);
   const readerRef = useRef<HTMLElement>(null);
   const pendingScrollRef = useRef<number | null>(initial.startVerse || null);
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2500);
   };
+
+  const { language } = useLanguage();
+  const prevLangRef = useRef(language);
+  useEffect(() => {
+    if (prevLangRef.current !== language) {
+      if (language === 'en' && (version === 'VIE1925' || version === 'NVB')) {
+        setVersion('NKJV');
+      } else if (language === 'vi' && version === 'NKJV') {
+        setVersion('VIE1925');
+      }
+      prevLangRef.current = language;
+    }
+  }, [language, version]);
 
   useEffect(() => {
     const loc = parseBibleLocation(searchParams.toString());
@@ -130,7 +174,6 @@ function BibleReader() {
       if (changed || loading) {
         pendingScrollRef.current = loc.startVerse;
       } else {
-        // Same chapter and already loaded, scroll immediately
         requestAnimationFrame(() => {
           const el = readerRef.current?.querySelector(`[data-verse="${loc.startVerse}"]`);
           el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -139,7 +182,6 @@ function BibleReader() {
         return () => clearTimeout(timer);
       }
     }
-     
   }, [searchParams]);
 
   const refreshHighlights = useCallback(() => {
@@ -152,16 +194,16 @@ function BibleReader() {
   }, [bookIndex, chapter]);
 
   useEffect(() => {
-    fetch('/api/bible/metadata')
+    fetch(`/api/bible/metadata?version=${version}`)
       .then(res => res.json())
       .then(data => setMetadata(data))
       .catch(console.error);
-  }, []);
+  }, [version]);
 
   useEffect(() => {
-    fetchChapter(bookIndex, chapter);
+    fetchChapter(bookIndex, chapter, version);
     refreshHighlights();
-  }, [bookIndex, chapter, refreshHighlights]);
+  }, [bookIndex, chapter, version, refreshHighlights]);
 
   useEffect(() => {
     if (loading || !pendingScrollRef.current) return;
@@ -186,7 +228,34 @@ function BibleReader() {
     }
     router.replace(url.pathname + url.search, { scroll: false });
   }, [router]);
-  const fetchChapter = async (bIndex: number, cIndex: number) => {
+
+  const handlePrevChapter = () => {
+    if (chapter > 1) {
+      updateUrl(bookIndex, chapter - 1);
+      setChapter(chapter - 1);
+    } else if (bookIndex > 1) {
+      const prevBookMeta = metadata[bookIndex - 2];
+      const prevBookChapterCount = prevBookMeta ? prevBookMeta.chapterCount : 50;
+      updateUrl(bookIndex - 1, prevBookChapterCount);
+      setBookIndex(bookIndex - 1);
+      setChapter(prevBookChapterCount);
+    }
+  };
+
+  const handleNextChapter = () => {
+    const currentBookMeta = metadata[bookIndex - 1];
+    const chapterCount = currentBookMeta ? currentBookMeta.chapterCount : 50;
+    if (chapter < chapterCount) {
+      updateUrl(bookIndex, chapter + 1);
+      setChapter(chapter + 1);
+    } else if (bookIndex < 66) {
+      updateUrl(bookIndex + 1, 1);
+      setBookIndex(bookIndex + 1);
+      setChapter(1);
+    }
+  };
+
+  const fetchChapter = async (bIndex: number, cIndex: number, ver: string) => {
     setLoading(true);
     setError(false);
     setSelectedVerses([]);
@@ -194,7 +263,7 @@ function BibleReader() {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(`/api/bible?book=${bIndex}&chapter=${cIndex}`, { signal: controller.signal });
+      const res = await fetch(`/api/bible?book=${bIndex}&chapter=${cIndex}&version=${ver}`, { signal: controller.signal });
       clearTimeout(timeout);
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
@@ -220,10 +289,9 @@ function BibleReader() {
     const sorted = [...selectedVerses].sort((a, b) => a - b);
     const startVerse = sorted[0];
     const endVerse = sorted[sorted.length - 1];
-    const bookName = books[bookIndex - 1];
 
     const vLabel = sorted.length === 1 ? `${startVerse}` : `${startVerse}-${endVerse}`;
-    const label = `${bookName} ${chapter}:${vLabel} ${version}`;
+    const label = `${currentBookName} ${chapter}:${vLabel} ${version}`;
 
     const textParts = [];
     const ranges: VerseRange[] = [];
@@ -348,9 +416,9 @@ function BibleReader() {
     <div className="bible-container">
       {toast && <div className="bible-toast">{toast}</div>}
 
-      <main className="bible-reader" ref={readerRef}>
+      <main className="bible-reader" ref={readerRef} style={{ fontSize: `${fontSize}px`, fontFamily }}>
         <div className="bible-sticky-header">
-          <header className="bible-header">
+          <header className="bible-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '0 8px' }}>
             <div 
               className="bible-header-title" 
               onClick={() => {
@@ -364,33 +432,57 @@ function BibleReader() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
-                background: 'rgba(255,255,255,0.08)',
+                background: 'var(--color-surface)',
                 borderRadius: '99px',
                 cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid var(--color-border)',
                 transition: 'all 0.2s',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }}
             >
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>
-                {books[bookIndex - 1]} {chapter}
+              <span style={{ color: 'var(--color-text-main)', fontWeight: 800, fontSize: '1.1rem', whiteSpace: 'nowrap' }}>
+                {currentBookName} {chapter}
               </span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </div>
+            
+            <select
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              style={{
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-main)',
+                border: '1px solid var(--color-border)',
+                padding: '8px 32px 8px 16px',
+                borderRadius: '99px',
+                fontWeight: 700,
+                outline: 'none',
+                appearance: 'none',
+                cursor: 'pointer',
+                backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 12 15 18 9"></polyline></svg>')`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '12px',
+                maxWidth: '160px',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              <option value="VIE1925" style={{color: '#000'}}>{t('page_bible.version_vie1925')}</option>
+              <option value="NVB" style={{color: '#000'}}>{t('page_bible.version_nvb')}</option>
+              <option value="NKJV" style={{color: '#000'}}>{t('page_bible.version_nkjv')}</option>
+            </select>
           </header>
-
-          <p className="bible-version-badge">{versionLabel}</p>
         </div>
 
         <h2 className="bible-chapter-title">
-          {books[bookIndex - 1]} {chapter}
+          {currentBookName} {chapter}
         </h2>
 
         {loading && (
           <div className="bible-loading">
-            <Loader2 size={24} className="spin" /> Đang tải Kinh Thánh...
+            <Loader2 size={24} className="spin" /> {t('page_bible.loading')}
           </div>
         )}
 
@@ -428,6 +520,24 @@ function BibleReader() {
           );
         })}
       </main>
+
+      {/* Floating chapter navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', position: 'fixed', bottom: 'calc(65px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, zIndex: 10, pointerEvents: 'none' }}>
+        <button 
+          onClick={handlePrevChapter} 
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '50%', cursor: 'pointer', padding: '12px', color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (bookIndex === 1 && chapter === 1) ? 0.3 : 1, pointerEvents: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+          disabled={bookIndex === 1 && chapter === 1}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button 
+          onClick={handleNextChapter} 
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '50%', cursor: 'pointer', padding: '12px', color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (bookIndex === 66 && chapter === (metadata[65]?.chapterCount || 22)) ? 0.3 : 1, pointerEvents: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+          disabled={bookIndex === 66 && chapter === (metadata[65]?.chapterCount || 22)}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
 
       {selection && (
         <div className="bible-selection-sheet">
@@ -474,9 +584,9 @@ function BibleReader() {
 
       {shareOpen && selection && (
         <div className="bible-share-overlay" onClick={closeShareCard} role="presentation">
-          <div className="bible-share-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Chia sẻ đoạn Kinh Thánh">
+          <div className="bible-share-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={t('page_bible.share_title')}>
             <div className="bible-share-header">
-              <h3>Chia sẻ đoạn Kinh Thánh</h3>
+              <h3>{t('page_bible.share_title')}</h3>
               <button type="button" className="bible-sheet-close" onClick={closeShareCard} aria-label="Đóng">
                 <X size={18} />
               </button>
@@ -517,34 +627,34 @@ function BibleReader() {
 
       {/* Navigator Modal */}
       {navOpen && (
-        <div className="sermon-modal-overlay" onClick={() => setNavOpen(false)} style={{ zIndex: 10000 }}>
-          <div className="sermon-modal" onClick={e => e.stopPropagation()} style={{ height: '85vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="sermon-modal-handle" />
-            <div className="bible-nav-tabs" style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem', padding: '0 1rem' }}>
+        <div className="bible-nav-overlay" onClick={() => setNavOpen(false)}>
+          <div className="bible-nav-modal" onClick={e => e.stopPropagation()}>
+            <div className="bible-nav-handle" />
+            <div className="bible-nav-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem', padding: '0 1rem' }}>
               <button 
                 onClick={() => setNavTab('book')} 
-                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'book' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'book' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-              >SÁCH</button>
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'book' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'book' ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+              >{t('page_bible.select_book')}</button>
               <button 
                 onClick={() => setNavTab('chapter')} 
-                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'chapter' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'chapter' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-              >CHƯƠNG</button>
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'chapter' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'chapter' ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+              >{t('page_bible.select_chapter')}</button>
               <button 
                 onClick={() => setNavTab('verse')} 
-                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'verse' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'verse' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', borderBottom: navTab === 'verse' ? '2px solid #48bce1' : '2px solid transparent', color: navTab === 'verse' ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
               >CÂU</button>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '0 1rem 1rem' }}>
               {navTab === 'book' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a8599', marginBottom: '8px', marginTop: '4px' }}>CỰU ƯỚC</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', marginBottom: '8px', marginTop: '4px' }}>{t('page_bible.old_testament')}</div>
                   {books.slice(0, 39).map((b, idx) => (
-                    <button key={idx} onClick={() => { setNavSelectedBook(idx + 1); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 1 ? 'rgba(72,188,225,0.1)' : 'transparent', color: navSelectedBook === idx + 1 ? '#48bce1' : '#fff', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
+                    <button key={idx} onClick={() => { setNavSelectedBook(idx + 1); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 1 ? 'var(--color-primary-light, rgba(72,188,225,0.1))' : 'transparent', color: navSelectedBook === idx + 1 ? 'var(--color-primary)' : 'var(--color-text-main)', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
                   ))}
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a8599', marginBottom: '8px', marginTop: '16px' }}>TÂN ƯỚC</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', marginBottom: '8px', marginTop: '16px' }}>{t('page_bible.new_testament')}</div>
                   {books.slice(39).map((b, idx) => (
-                    <button key={idx + 39} onClick={() => { setNavSelectedBook(idx + 40); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 40 ? 'rgba(72,188,225,0.1)' : 'transparent', color: navSelectedBook === idx + 40 ? '#48bce1' : '#fff', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
+                    <button key={idx + 39} onClick={() => { setNavSelectedBook(idx + 40); setNavSelectedChapter(1); setNavTab('chapter'); }} style={{ background: navSelectedBook === idx + 40 ? 'var(--color-primary-light, rgba(72,188,225,0.1))' : 'transparent', color: navSelectedBook === idx + 40 ? 'var(--color-primary)' : 'var(--color-text-main)', padding: '12px', textAlign: 'left', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{b}</button>
                   ))}
                 </div>
               )}
@@ -552,14 +662,14 @@ function BibleReader() {
               {navTab === 'chapter' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
                   {Array.from({ length: metadata[navSelectedBook - 1]?.chapterCount || 1 }).map((_, i) => (
-                    <button key={i} onClick={() => { setNavSelectedChapter(i + 1); setNavTab('verse'); }} style={{ aspectRatio: '1', background: navSelectedChapter === i + 1 ? '#48bce1' : 'rgba(255,255,255,0.06)', color: navSelectedChapter === i + 1 ? '#fff' : '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
+                    <button key={i} onClick={() => { setNavSelectedChapter(i + 1); setNavTab('verse'); }} style={{ aspectRatio: '1', background: navSelectedChapter === i + 1 ? 'var(--color-primary)' : 'var(--color-surface)', color: navSelectedChapter === i + 1 ? 'var(--color-text-main)' : '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
                   ))}
                 </div>
               )}
 
               {navTab === 'verse' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                  <button onClick={() => { setNavOpen(false); setBookIndex(navSelectedBook); setChapter(navSelectedChapter); setFocusVerses(null); updateUrl(navSelectedBook, navSelectedChapter); }} style={{ gridColumn: 'span 5', padding: '12px', background: 'rgba(72,188,225,0.1)', color: '#48bce1', borderRadius: '8px', border: '1px solid rgba(72,188,225,0.3)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', marginBottom: '8px' }}>Đọc cả chương</button>
+                  <button onClick={() => { setNavOpen(false); setBookIndex(navSelectedBook); setChapter(navSelectedChapter); setFocusVerses(null); updateUrl(navSelectedBook, navSelectedChapter); }} style={{ gridColumn: 'span 5', padding: '12px', background: 'var(--color-primary-light, rgba(72,188,225,0.1))', color: 'var(--color-primary)', borderRadius: '8px', border: '1px solid var(--color-primary-light, rgba(72,188,225,0.3))', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', marginBottom: '8px' }}>Đọc cả chương</button>
                   {Array.from({ length: metadata[navSelectedBook - 1]?.chapters[navSelectedChapter - 1] || 1 }).map((_, i) => (
                     <button key={i} onClick={() => {
                       setNavOpen(false);
@@ -568,7 +678,7 @@ function BibleReader() {
                       setFocusVerses({ start: i + 1, end: i + 1 });
                       pendingScrollRef.current = i + 1;
                       updateUrl(navSelectedBook, navSelectedChapter, i + 1);
-                    }} style={{ aspectRatio: '1', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
+                    }} style={{ aspectRatio: '1', background: 'var(--color-surface)', color: '#e5e7eb', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>{i + 1}</button>
                   ))}
                 </div>
               )}
@@ -581,29 +691,30 @@ function BibleReader() {
 }
 
 export default function BiblePage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'read' | 'plans'>('read');
   
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0f1520' }}>
-       <div style={{ display: 'flex', background: '#1a2233', padding: '10px 10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--color-background)' }}>
+       <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '10px 10px 0', borderBottom: '1px solid var(--color-border)' }}>
           <button 
              onClick={() => setActiveTab('read')}
-             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'read' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'read' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'read' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'read' ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
           >
-             ĐỌC KINH THÁNH
+             {t('page_bible.read_title')}
           </button>
           <button 
              onClick={() => setActiveTab('plans')}
-             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'plans' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'plans' ? '#fff' : '#7a8599', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+             style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: activeTab === 'plans' ? '2px solid #48bce1' : '2px solid transparent', color: activeTab === 'plans' ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
           >
              KẾ HOẠCH
           </button>
        </div>
-       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', position: 'relative' }}>
          {activeTab === 'read' ? (
            <Suspense fallback={
              <div className="bible-container">
-               <div className="bible-loading"><Loader2 size={24} className="spin" /> Đang tải Kinh Thánh...</div>
+               <div className="bible-loading"><Loader2 size={24} className="spin" /> {t('page_bible.loading')}</div>
              </div>
            }>
              <BibleReader />

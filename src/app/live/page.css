@@ -22,16 +22,16 @@
   background: rgba(11, 14, 20, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .back-btn {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-text-main);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -50,7 +50,7 @@
 /* ── Live badge ── */
 .live-badge {
   background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: #fff;
+  color: var(--color-text-main);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -88,7 +88,7 @@
 .live-info {
   padding: 14px 16px;
   background: linear-gradient(180deg, #111827 0%, #0b0e14 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .live-title {
@@ -101,7 +101,7 @@
 
 .live-desc {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin: 0;
   line-height: 1.55;
 }
@@ -112,7 +112,7 @@
   padding: 0 16px;
   gap: 0;
   background: #0f1323;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -123,7 +123,7 @@
 .tab-btn {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--color-text-muted);
   padding: 14px 16px;
   font-size: 0.9rem;
   font-weight: 500;
@@ -183,13 +183,13 @@
 .note-header h3 {
   margin: 0;
   font-size: 1rem;
-  color: #e2e8f0;
+  color: var(--color-text-main);
   font-weight: 600;
 }
 
 .save-status {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -199,8 +199,8 @@
   flex: 1;
   width: 100%;
   min-height: 150px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 14px;
   color: #f1f5f9;
@@ -220,12 +220,12 @@
 }
 
 .auth-warning {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 18px 16px;
   border-radius: 12px;
   text-align: center;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 .auth-warning a {
@@ -239,11 +239,11 @@
 .prayer-tab h3 {
   margin: 0 0 4px 0;
   font-size: 1.05rem;
-  color: #e2e8f0;
+  color: var(--color-text-main);
   font-weight: 600;
 }
 .prayer-tab p {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
   margin: 0 0 16px 0;
 }
@@ -252,7 +252,7 @@
   width: 100%;
   margin-top: 12px;
   background: linear-gradient(135deg, #48bce1 0%, #0ea5e9 100%);
-  color: #fff;
+  color: var(--color-text-main);
   border: none;
   border-radius: 12px;
   padding: 14px;
@@ -300,18 +300,18 @@
 .donate-tab h3 {
   margin: 0 0 4px 0;
   font-size: 1.05rem;
-  color: #e2e8f0;
+  color: var(--color-text-main);
   font-weight: 600;
 }
 .donate-tab p {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
   margin: 0 0 16px 0;
 }
 
 .donate-action-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 24px 20px;
   border-radius: 14px;
   text-align: center;
@@ -323,7 +323,7 @@
   justify-content: center;
   gap: 8px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
+  color: var(--color-text-main);
   text-decoration: none;
   padding: 14px 28px;
   border-radius: 12px;
@@ -395,22 +395,22 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #fff;
+  color: var(--color-text-main);
   padding: 4px;
   border-radius: 12px;
   transition: background 0.2s;
 }
 .share-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
 }
 .share-btn span {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   transition: color 0.2s;
 }
 .share-btn:hover span {
-  color: #e2e8f0;
+  color: var(--color-text-main);
 }
 
 /* icon circle */

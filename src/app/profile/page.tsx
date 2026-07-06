@@ -15,6 +15,7 @@ import {
   isPrayerAnswered,
   prayerBody,
 } from '@/lib/prayer-helpers';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getReadingStreak, getTotalReadingDays } from '@/lib/reading-tracker';
 import { getSermonNotesByUser, type SermonNote } from '@/lib/livestreams';
@@ -78,6 +79,7 @@ function ProfileSkeleton() {
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<'info' | 'prayer' | 'notes'>('info');
@@ -92,7 +94,7 @@ export default function ProfilePage() {
 
   const [dataLoading, setDataLoading] = useState(true);
   const [profileInfo, setProfileInfo] = useState({
-    full_name: '', username: '', role: 'Hội viên', avatar_url: '', bio: '', cover_url: ''
+    full_name: '', username: '', role: t('page_profile.role_member'), avatar_url: '', bio: '', cover_url: ''
   });
 
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' }>({ msg: '', type: 'success' });
@@ -136,7 +138,7 @@ export default function ProfilePage() {
       setProfileInfo({
         full_name: profile.full_name || '',
         username: profile.username || '',
-        role: profile.role || 'Hội viên',
+        role: profile.role || t('page_profile.role_member'),
         avatar_url: profile.avatar_url || '',
         bio: profile.bio || '',
         cover_url: profile.cover_url || '',
@@ -194,18 +196,18 @@ export default function ProfilePage() {
         setPrayers([data[0] as Prayer, ...prayers]);
         setNewPrayer('');
         setShowAddPrayer(false);
-        showToast('Đã thêm đề mục cầu nguyện!');
+        showToast(t('page_profile.toast_add_prayer_success'));
       }
     } catch {
-      showToast('Không thêm được đề mục.', 'error');
+      showToast(t('page_profile.toast_add_prayer_fail'), 'error');
     }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('Ảnh tối đa 5MB.', 'error'); return; }
-    showToast('Đang tải ảnh lên...');
+    if (file.size > 5 * 1024 * 1024) { showToast(t('page_profile.toast_file_too_large'), 'error'); return; }
+    showToast(t('page_profile.toast_uploading'));
     const reader = new FileReader();
     reader.onload = async () => {
       const base64Data = reader.result as string;
@@ -215,7 +217,7 @@ export default function ProfilePage() {
       } else {
         setProfileInfo(p => ({ ...p, cover_url: base64Data }));
       }
-      showToast('Tải ảnh thành công!');
+      showToast(t('page_profile.toast_upload_success'));
     };
     reader.readAsDataURL(file);
   };
@@ -236,13 +238,13 @@ export default function ProfilePage() {
       <div className="profile-container auth-prompt">
         <div className="auth-prompt-card">
           <div className="auth-prompt-avatar"><User size={32} /></div>
-          <h2>Đăng nhập để xem hồ sơ</h2>
-          <p>Tạo tài khoản để lưu đề mục cầu nguyện, theo dõi tiến độ đọc Kinh Thánh và cá nhân hóa trải nghiệm.</p>
+          <h2>{t('page_profile.login_required')}</h2>
+          <p>{t('page_profile.login_desc')}</p>
           <div className="auth-prompt-actions">
-            <Link href="/login" className="auth-btn-primary">Đăng nhập</Link>
-            <Link href="/register" className="auth-btn-outline">Đăng ký</Link>
+            <Link href="/login" className="auth-btn-primary">{t('page_profile.login_btn')}</Link>
+            <Link href="/register" className="auth-btn-outline">{t('page_profile.register_btn')}</Link>
           </div>
-          <p className="auth-prompt-guest">Tiếp tục khám phá? <Link href="/">Về trang chủ</Link></p>
+          <p className="auth-prompt-guest">{t('page_profile.guest_prompt')} <Link href="/">{t('page_profile.back_home')}</Link></p>
         </div>
       </div>
     );
@@ -252,10 +254,10 @@ export default function ProfilePage() {
 
   /* ── Level system ── */
   const getLevel = (days: number) => {
-    if (days >= 100) return { label: 'Cột Trụ', color: '#a78bfa', ring: 'ring-pillar' };
-    if (days >= 30)  return { label: 'Trung Kiên', color: '#48bce1', ring: 'ring-faithful' };
-    if (days >= 7)   return { label: 'Tín Hữu', color: '#34d399', ring: 'ring-believer' };
-    return             { label: 'Thành Viên Mới', color: '#94a3b8', ring: 'ring-new' };
+    if (days >= 100) return { label: t('page_profile.level_pillar'), color: '#a78bfa', ring: 'ring-pillar' };
+    if (days >= 30)  return { label: t('page_profile.level_faithful'), color: '#48bce1', ring: 'ring-faithful' };
+    if (days >= 7)   return { label: t('page_profile.level_believer'), color: '#34d399', ring: 'ring-believer' };
+    return             { label: t('page_profile.level_new'), color: '#94a3b8', ring: 'ring-new' };
   };
   const level = getLevel(readingDays);
 
@@ -264,7 +266,7 @@ export default function ProfilePage() {
     await supabase.from('profiles').update({ full_name: nameInput.trim() }).eq('id', user.id);
     setProfileInfo(p => ({ ...p, full_name: nameInput.trim() }));
     setEditingName(false);
-    showToast('Đã cập nhật tên!');
+    showToast(t('page_profile.toast_update_name_success'));
   };
 
   /* ── Main render ── */
@@ -291,7 +293,7 @@ export default function ProfilePage() {
             <QrCode size={18} />
           </button>
           <button className="profile-cover-upload-btn" onClick={() => coverInputRef.current?.click()}>
-            <Camera size={15} /> Thêm ảnh bìa
+            <Camera size={15} /> {t('page_profile.upload_cover')}
           </button>
           <input type="file" accept="image/*" hidden ref={coverInputRef} onChange={e => handleImageUpload(e, 'cover')} />
         </div>
@@ -301,7 +303,7 @@ export default function ProfilePage() {
             <div className={`avatar ${level.ring}`}>
               {profileInfo.avatar_url
                 ? <img src={profileInfo.avatar_url} alt="Avatar" className="avatar-img" />
-                : <div className="avatar-placeholder"><User size={40} color="white" /></div>
+                : <div className="avatar-placeholder"><User size={40} color="currentColor" /></div>
               }
             </div>
             <button className="avatar-upload-btn" onClick={() => avatarInputRef.current?.click()}>
@@ -332,7 +334,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="profile-name-row">
-              <h1 className="profile-name">{profileInfo.full_name || 'Thành viên REACH'}</h1>
+              <h1 className="profile-name">{profileInfo.full_name || t('page_profile.default_name')}</h1>
               <button className="profile-name-edit-btn" onClick={() => { setNameInput(profileInfo.full_name); setEditingName(true); }} title="Sửa tên">
                 <Edit2 size={13} />
               </button>
@@ -345,7 +347,7 @@ export default function ProfilePage() {
           {readingStreak > 0 && (
             <div className="profile-streak-badge">
               <Flame size={14} />
-              {readingStreak} ngày liên tiếp
+              {t('page_profile.streak_days').replace('{{days}}', String(readingStreak))}
             </div>
           )}
 
@@ -353,17 +355,17 @@ export default function ProfilePage() {
           <div className="profile-stats">
             <div className="stat-item">
               <span className="stat-num stat-animated">{animatedDays}</span>
-              <span className="stat-label">Ngày đọc KT</span>
+              <span className="stat-label">{t('page_profile.stat_days')}</span>
             </div>
             <div className="stat-divider" />
             <div className="stat-item">
               <span className="stat-num stat-animated">{prayers.length}</span>
-              <span className="stat-label">Đề mục CN</span>
+              <span className="stat-label">{t('page_profile.stat_prayers')}</span>
             </div>
             <div className="stat-divider" />
             <div className="stat-item">
               <span className="stat-num stat-animated">{sermonNotes.length}</span>
-              <span className="stat-label">Bài học</span>
+              <span className="stat-label">{t('page_profile.stat_notes')}</span>
             </div>
           </div>
         </div>
@@ -377,7 +379,7 @@ export default function ProfilePage() {
             className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
           >
-            {tab === 'info' ? 'Thông tin' : tab === 'notes' ? 'Ghi chú' : 'Cầu nguyện'}
+            {tab === 'info' ? t('page_profile.tab_info') : tab === 'notes' ? t('page_profile.tab_notes') : t('page_profile.tab_prayer')}
           </button>
         ))}
       </div>
@@ -394,8 +396,8 @@ export default function ProfilePage() {
                 <BookOpen size={18} color="#fb923c" />
               </div>
               <div>
-                <h3>Chuỗi dưỡng linh</h3>
-                <p>Bạn đang đọc Kinh Thánh liên tục <strong>{readingStreak} ngày</strong> 🔥</p>
+                <h3>{t('page_profile.streak_title')}</h3>
+                <p dangerouslySetInnerHTML={{ __html: t('page_profile.streak_desc').replace('{{days}}', String(readingStreak)) }}></p>
               </div>
             </div>
 
@@ -405,8 +407,8 @@ export default function ProfilePage() {
                 <Users size={18} color="#f59e0b" />
               </div>
               <div style={{ flex: 1 }}>
-                <h3>Nhóm nhỏ của tôi</h3>
-                <p>Khám phá và tham gia nhóm nhỏ để gắn kết hơn.</p>
+                <h3>{t('page_profile.group_title')}</h3>
+                <p>{t('page_profile.group_desc')}</p>
               </div>
               <ChevronRight size={18} color="#64748b" />
             </Link>
@@ -415,16 +417,16 @@ export default function ProfilePage() {
             {volunteering.length === 0 ? (
               <div className="info-card empty-state-card">
                 <Calendar size={28} style={{ margin: '0 auto 10px', opacity: 0.35 }} />
-                <h3>Lịch phục vụ sắp tới</h3>
-                <p>Bạn chưa có lịch phục vụ nào trong thời gian tới.</p>
+                <h3>{t('page_profile.volunteering_empty_title')}</h3>
+                <p>{t('page_profile.volunteering_empty_desc')}</p>
               </div>
             ) : (
               <div className="info-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Star size={16} color="#a78bfa" /> Lịch phục vụ sắp tới
+                    <Star size={16} color="#a78bfa" /> {t('page_profile.volunteering_title')}
                   </h3>
-                  <Link href="/events" className="profile-link-sm">Xem tất cả</Link>
+                  <Link href="/events" className="profile-link-sm">{t('page_profile.view_all')}</Link>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {volunteering.map(v => (
@@ -432,7 +434,7 @@ export default function ProfilePage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <h4 className="volunteer-title">{v.events?.title}</h4>
                         <span className={`vol-badge vol-badge--${v.status}`}>
-                          {v.status === 'approved' ? 'Đã duyệt' : v.status === 'pending' ? 'Chờ duyệt' : 'Từ chối'}
+                          {v.status === 'approved' ? t('page_profile.status_approved') : v.status === 'pending' ? t('page_profile.status_pending') : t('page_profile.status_rejected')}
                         </span>
                       </div>
                       <div className="volunteer-meta">
@@ -441,7 +443,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="volunteer-meta">
                         <Users size={13} color="#8b5cf6" />
-                        Vai trò: <strong>{v.role}</strong>
+                        {t('page_profile.role_label')} <strong>{v.role}</strong>
                       </div>
                       {v.events && (
                         <div style={{ marginTop: '10px' }}>
@@ -469,8 +471,8 @@ export default function ProfilePage() {
             {sermonNotes.length === 0 ? (
               <div className="empty-state-card">
                 <FileText size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <p>Bạn chưa có ghi chú nào.</p>
-                <p style={{ fontSize: '0.85rem' }}>Hãy tham gia xem Livestream và ghi chép những điều Chúa soi sáng.</p>
+                <p>{t('page_profile.notes_empty_title')}</p>
+                <p style={{ fontSize: '0.85rem' }}>{t('page_profile.notes_empty_desc')}</p>
               </div>
             ) : (
               <div className="notes-list">
@@ -493,37 +495,37 @@ export default function ProfilePage() {
           <div className="prayer-tab">
             <div className="prayer-tab-header">
               <h2 style={{ fontSize: '1.05rem', margin: 0 }}>
-                Đề mục của tôi
+                {t('page_profile.prayer_title')}
                 {answeredCount > 0 && (
-                  <span className="prayer-answered-badge">✓ {answeredCount} đáp lời</span>
+                  <span className="prayer-answered-badge">{t('page_profile.prayer_answered').replace('{{count}}', String(answeredCount))}</span>
                 )}
               </h2>
               <button className="btn-add-prayer" onClick={() => setShowAddPrayer(true)}>
-                <Plus size={15} /> Thêm mới
+                <Plus size={15} /> {t('page_profile.prayer_add_new')}
               </button>
             </div>
 
             {showAddPrayer && (
               <div className="add-prayer-card">
                 <div className="add-prayer-header">
-                  <span>Đề mục mới (riêng tư)</span>
+                  <span>{t('page_profile.prayer_new_title')}</span>
                   <button onClick={() => setShowAddPrayer(false)}><X size={18} /></button>
                 </div>
                 <textarea
                   className="prayer-input"
-                  placeholder="Bạn muốn cầu nguyện điều gì?"
+                  placeholder={t('page_profile.prayer_placeholder')}
                   value={newPrayer}
                   onChange={e => setNewPrayer(e.target.value)}
                 />
-                <button className="btn-primary" onClick={handleAddPrayer}>Lưu đề mục</button>
+                <button className="btn-primary" onClick={handleAddPrayer}>{t('page_profile.prayer_save')}</button>
               </div>
             )}
 
             {prayers.length === 0 ? (
               <div className="empty-state-card">
                 <Heart size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <p>Chưa có đề mục nào.</p>
-                <p style={{ fontSize: '0.85rem' }}>Hãy ghi xuống những điều bạn muốn cầu nguyện.</p>
+                <p>{t('page_profile.prayer_empty_title')}</p>
+                <p style={{ fontSize: '0.85rem' }}>{t('page_profile.prayer_empty_desc')}</p>
               </div>
             ) : (
               <div className="my-prayers-list">
@@ -540,7 +542,7 @@ export default function ProfilePage() {
                       <p className="prayer-item-date">{new Date(p.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
                     <span className={`prayer-badge ${p.status}`}>
-                      {isPrayerAnswered(p.status) ? 'Đáp lời' : 'Đang cầu'}
+                      {isPrayerAnswered(p.status) ? t('page_profile.status_answered') : t('page_profile.status_ongoing')}
                     </span>
                   </div>
                 ))}
@@ -553,7 +555,7 @@ export default function ProfilePage() {
       {/* ── Logout ── */}
       <div style={{ padding: '4px 20px 40px', display: 'flex', justifyContent: 'center' }}>
         <button onClick={handleLogout} className="profile-logout-btn">
-          <LogOut size={17} /> Đăng xuất
+          <LogOut size={17} /> {t('page_profile.logout')}
         </button>
       </div>
 
@@ -582,12 +584,12 @@ export default function ProfilePage() {
         <div className="profile-modal-overlay" onClick={() => setShowQrModal(false)}>
           <div className="profile-modal-content" style={{ textAlign: 'center', maxWidth: '320px', padding: '30px', margin: 'auto', background: '#1a2233', borderRadius: '24px' }} onClick={e => e.stopPropagation()}>
             <button className="modal-close-btn" style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '8px', color: '#fff', cursor: 'pointer' }} onClick={() => setShowQrModal(false)}><X size={20} /></button>
-            <h2 style={{ marginBottom: '20px', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>Mã QR Của Bạn</h2>
+            <h2 style={{ marginBottom: '20px', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>{t('page_profile.qr_title')}</h2>
             <div style={{ background: '#fff', padding: '16px', borderRadius: '16px', display: 'inline-block' }}>
               <QRCodeSVG value={user?.id || ''} size={200} />
             </div>
             <p style={{ marginTop: '20px', color: '#aaa', fontSize: '0.9rem', lineHeight: '1.5' }}>
-              Đưa mã này cho nhân sự đón tiếp để điểm danh nhanh chóng khi tham gia sự kiện.
+              {t('page_profile.qr_desc')}
             </p>
           </div>
         </div>

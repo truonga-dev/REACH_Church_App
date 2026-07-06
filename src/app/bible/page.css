@@ -125,7 +125,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-main);
   padding: 0.65rem 1.25rem;
   border-radius: 10px;
   z-index: 2000;
@@ -249,7 +249,7 @@
 .verse-selected .verse-text {
   text-decoration: underline;
   text-decoration-style: dashed;
-  text-decoration-color: #94a3b8;
+  text-decoration-color: var(--color-text-muted);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
 }
@@ -355,7 +355,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-text-main);
   flex-shrink: 0;
 }
 
@@ -390,7 +390,7 @@
 .bible-share-btn-primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-main);
 }
 
 .spin {
@@ -413,4 +413,41 @@
   .bible-share-card {
     border-radius: 16px;
   }
+}
+
+/* Bible Navigation Modal */
+.bible-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bible-nav-modal {
+  width: 100%;
+  max-width: 600px;
+  height: 85vh;
+  background: var(--color-surface);
+  border-radius: 24px 24px 0 0;
+  padding: 1.5rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  animation: bible-nav-slide 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+}
+
+.bible-nav-handle {
+  width: 40px;
+  height: 5px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  margin: -0.5rem auto 1.5rem;
+}
+
+@keyframes bible-nav-slide {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }

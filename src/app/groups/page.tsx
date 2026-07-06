@@ -10,9 +10,11 @@ import { Users, MapPin, Clock, Search, Shield, ArrowLeft } from 'lucide-react';
 import './page.css';
 import BottomNav from '@/components/BottomNav';
 import { GroupsSkeleton } from '@/components/ui/Skeleton';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function GroupsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'discover' | 'my-group'>('discover');
   const [groups, setGroups] = useState<CellGroup[]>([]);
   const [myMemberships, setMyMemberships] = useState<CellGroupMember[]>([]);
@@ -71,11 +73,11 @@ export default function GroupsPage() {
 
     // Check if already requested or joined
     if (myMemberships.some(m => m.group_id === groupId)) {
-      showToast('Bạn đã gửi yêu cầu hoặc đã tham gia nhóm này.');
+      showToast(t('page_groups.toast_req_sent'));
       return;
     }
 
-    showToast('Đang gửi yêu cầu...');
+    showToast(t('page_groups.toast_sending'));
     const { error } = await supabase
       .from('cell_group_members')
       .insert({
@@ -86,28 +88,28 @@ export default function GroupsPage() {
       });
 
     if (error) {
-      showToast('Có lỗi xảy ra, vui lòng thử lại.');
+      showToast(t('page_groups.toast_error'));
       console.error(error);
     } else {
-      showToast('Đã gửi yêu cầu tham gia thành công!');
+      showToast(t('page_groups.toast_join_success'));
       loadData(); // Reload to update UI
     }
   };
 
   const handleLeaveGroup = async (groupId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn rời nhóm này?')) return;
+    if (!confirm(t('page_groups.confirm_leave'))) return;
     
-    showToast('Đang rời nhóm...');
+    showToast(t('page_groups.toast_leaving'));
     const { error } = await supabase
       .from('cell_group_members')
       .delete()
       .match({ group_id: groupId, user_id: user?.id });
 
     if (error) {
-      showToast('Có lỗi xảy ra.');
+      showToast(t('page_groups.toast_leave_error'));
       console.error(error);
     } else {
-      showToast('Đã rời nhóm.');
+      showToast(t('page_groups.toast_left'));
       setActiveTab('discover');
       loadData();
     }
@@ -126,8 +128,8 @@ export default function GroupsPage() {
         <Link href="/" className="groups-back-btn">
           <ArrowLeft size={24} />
         </Link>
-        <h1>Nhóm nhỏ</h1>
-        <p className="groups-subtitle">Kết nối và phát triển tâm linh cùng nhau</p>
+        <h1>{t('page_groups.title')}</h1>
+        <p className="groups-subtitle">{t('page_groups.subtitle')}</p>
       </div>
 
       <div className="groups-tabs">
@@ -135,7 +137,7 @@ export default function GroupsPage() {
           className={`groups-tab ${activeTab === 'discover' ? 'active' : ''}`}
           onClick={() => setActiveTab('discover')}
         >
-          Khám phá
+          {t('page_groups.tab_discover')}
         </button>
         <button 
           className={`groups-tab ${activeTab === 'my-group' ? 'active' : ''}`}
@@ -144,7 +146,7 @@ export default function GroupsPage() {
             else setActiveTab('my-group');
           }}
         >
-          Nhóm của tôi
+          {t('page_groups.tab_my_group')}
         </button>
       </div>
 
@@ -157,7 +159,7 @@ export default function GroupsPage() {
               <Search size={18} className="search-icon" />
               <input 
                 type="text" 
-                placeholder="Tìm kiếm tên nhóm, khu vực..." 
+                placeholder={t('page_groups.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -166,7 +168,7 @@ export default function GroupsPage() {
             {filteredGroups.length === 0 ? (
               <div className="empty-state">
                 <Users size={48} />
-                <p>Không tìm thấy nhóm nào.</p>
+                <p>{t('page_groups.empty_search')}</p>
               </div>
             ) : (
               <div className="groups-list">
@@ -179,7 +181,7 @@ export default function GroupsPage() {
                         <h2>{group.name}</h2>
                         {myMembership && (
                           <span className={`status-badge ${myMembership.status}`}>
-                            {myMembership.status === 'pending' ? 'Chờ duyệt' : 'Thành viên'}
+                            {myMembership.status === 'pending' ? t('page_groups.status_pending') : t('page_groups.status_member')}
                           </span>
                         )}
                       </div>
@@ -189,10 +191,10 @@ export default function GroupsPage() {
                       )}
                       
                       <div className="group-info-row">
-                        <Clock size={16} /> <span>{group.meeting_time || 'Chưa cập nhật thời gian'}</span>
+                        <Clock size={16} /> <span>{group.meeting_time || t('page_groups.time_not_updated')}</span>
                       </div>
                       <div className="group-info-row">
-                        <MapPin size={16} /> <span>{group.location || 'Chưa cập nhật địa điểm'}</span>
+                        <MapPin size={16} /> <span>{group.location || t('page_groups.location_not_updated')}</span>
                       </div>
                       
                       {group.leader && (
@@ -204,13 +206,13 @@ export default function GroupsPage() {
                             height={32}
                             unoptimized
                           />
-                          <span>Đ/c {(group.leader as any).full_name}</span> // eslint-disable-line @typescript-eslint/no-explicit-any
+                          <span>{t('page_groups.leader_prefix')} {(group.leader as any).full_name}</span> // eslint-disable-line @typescript-eslint/no-explicit-any
                         </div>
                       )}
 
                       {!myMembership && (
                         <button className="btn-join" onClick={() => handleJoinGroup(group.id)}>
-                          Xin tham gia
+                          {t('page_groups.btn_join')}
                         </button>
                       )}
                     </div>
@@ -224,9 +226,9 @@ export default function GroupsPage() {
             {myMemberships.length === 0 ? (
               <div className="empty-state">
                 <Users size={48} />
-                <p>Bạn chưa tham gia nhóm nào.</p>
+                <p>{t('page_groups.empty_my_groups')}</p>
                 <button className="btn-primary" onClick={() => setActiveTab('discover')}>
-                  Khám phá ngay
+                  {t('page_groups.btn_discover')}
                 </button>
               </div>
             ) : (
@@ -240,13 +242,13 @@ export default function GroupsPage() {
                       <div className="my-group-header">
                         <h2>{group.name}</h2>
                         <span className={`role-badge ${membership.role}`}>
-                          {membership.role === 'leader' ? 'Trưởng nhóm' : membership.role === 'co_leader' ? 'Phó nhóm' : 'Thành viên'}
+                          {membership.role === 'leader' ? t('page_groups.role_leader') : membership.role === 'co_leader' ? t('page_groups.role_co_leader') : t('page_groups.role_member')}
                         </span>
                       </div>
                       
                       {membership.status === 'pending' && (
                         <div className="pending-notice">
-                          <Shield size={16} /> Yêu cầu tham gia của bạn đang chờ trưởng nhóm phê duyệt.
+                          <Shield size={16} /> {t('page_groups.pending_notice')}
                         </div>
                       )}
 
@@ -254,22 +256,22 @@ export default function GroupsPage() {
                         <div className="detail-item">
                           <Clock size={18} />
                           <div>
-                            <strong>Thời gian nhóm lại</strong>
-                            <p>{group.meeting_time || 'Chưa cập nhật'}</p>
+                            <strong>{t('page_groups.time_label')}</strong>
+                            <p>{group.meeting_time || t('page_groups.time_not_updated')}</p>
                           </div>
                         </div>
                         <div className="detail-item">
                           <MapPin size={18} />
                           <div>
-                            <strong>Địa điểm</strong>
-                            <p>{group.location || 'Chưa cập nhật'}</p>
+                            <strong>{t('page_groups.location_label')}</strong>
+                            <p>{group.location || t('page_groups.location_not_updated')}</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="my-group-actions">
                         <button className="btn-danger" onClick={() => handleLeaveGroup(group.id)}>
-                          Rời nhóm
+                          {t('page_groups.btn_leave')}
                         </button>
                       </div>
                     </div>

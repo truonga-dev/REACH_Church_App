@@ -185,7 +185,7 @@
 /* ── Navigation Tabs (Segmented Control) ── */
 .dash-tabs {
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
   border-radius: 100px;
   padding: 4px;
   gap: 4px;
@@ -269,7 +269,7 @@
   border: none;
   border-radius: 8px;
   padding: 6px 10px;
-  color: #fff;
+  color: var(--color-text-main);
   cursor: pointer;
   display: flex;
   align-items: center;

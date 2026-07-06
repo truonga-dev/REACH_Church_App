@@ -10,23 +10,25 @@ import CommentSection from '@/components/CommentSection';
 import SharePlatformIcon from '@/components/bible/SharePlatformIcon';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkIsFavorite, addFavorite, removeFavorite } from '@/lib/favorites';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './page.css';
 
 function DevotionalContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   const [liked, setLiked] = useState(false);
   const [toast, setToast] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
   const [devotionalData, setDevotionalData] = useState<any>(null);  
 
-  const title = searchParams.get('title') || 'Sống trong ân điển';
-  const verse = searchParams.get('verse') || 'Giăng 1:16';
-  const text = searchParams.get('text') || 'Vì từ sự đầy dẫy của Ngài, chúng ta đã nhận được ân sủng chồng chất ân sủng.';
-  const day = searchParams.get('day') || 'Hôm nay';
-  const duration = searchParams.get('duration') || '5 phút đọc';
+  const title = searchParams.get('title') || t('page_devotional.default_title');
+  const verse = searchParams.get('verse') || t('page_devotional.default_verse');
+  const text = searchParams.get('text') || t('page_devotional.default_text');
+  const day = searchParams.get('day') || t('page_devotional.default_day');
+  const duration = searchParams.get('duration') || t('page_devotional.default_duration');
   const id = searchParams.get('id') || btoa(encodeURIComponent(title));
 
   useEffect(() => {
@@ -62,7 +64,7 @@ function DevotionalContent() {
 
   const handleFavorite = async () => {
     if (!user) {
-      showToastMsg('Vui lòng đăng nhập để lưu yêu thích');
+      showToastMsg(t('page_devotional.toast_login'));
       return;
     }
     if (liked) {
@@ -80,14 +82,14 @@ function DevotionalContent() {
 
     if (platform === 'copy') {
       await navigator.clipboard.writeText(url);
-      showToastMsg('Đã sao chép liên kết');
+      showToastMsg(t('page_devotional.toast_copied'));
       setShareOpen(false);
       return;
     }
     
     if (platform === 'instagram') {
       await navigator.clipboard.writeText(url);
-      showToastMsg('Đã chép link. Mở Instagram để dán!');
+      showToastMsg(t('page_devotional.toast_copied_ig'));
       setTimeout(() => {
         window.open('https://instagram.com', '_blank');
       }, 1000);
@@ -111,8 +113,16 @@ function DevotionalContent() {
   const getFormattedDate = () => {
     if (devotionalData?.published_at) {
       const d = new Date(devotionalData.published_at);
-      const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-      return `${days[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
+      const days = [
+        t('page_devotional.days.sun'),
+        t('page_devotional.days.mon'),
+        t('page_devotional.days.tue'),
+        t('page_devotional.days.wed'),
+        t('page_devotional.days.thu'),
+        t('page_devotional.days.fri'),
+        t('page_devotional.days.sat')
+      ];
+      return `${days[d.getDay()]}, ${d.getDate()} ${t('page_devotional.month_prefix')} ${d.getMonth() + 1}, ${d.getFullYear()}`;
     }
     return day;
   };
@@ -128,7 +138,7 @@ function DevotionalContent() {
 
       <header className="devotional-reader-header">
         <button onClick={() => router.back()} className="back-btn">
-          <ChevronLeft size={24} /> Quay lại
+          <ChevronLeft size={24} /> {t('page_devotional.btn_back')}
         </button>
         <div className="header-actions">
           <button className="action-btn" onClick={handleFavorite}>
@@ -148,7 +158,7 @@ function DevotionalContent() {
           </div>
           {devotionalData?.author && (
             <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
-              Người đăng: {devotionalData.author}
+              {t('page_devotional.author_prefix')} {devotionalData.author}
             </span>
           )}
         </div>
@@ -174,16 +184,14 @@ function DevotionalContent() {
 
         <div className="dev-content">
           <p>
-            Kính thưa Hội Thánh, câu Kinh Thánh hôm nay nhắc nhở chúng ta về ân điển dư dật mà Đức Chúa Trời ban cho mỗi người.
-            Trong cuộc sống hằng ngày, chúng ta thường đối mặt với những áp lực và mệt mỏi, nhưng ân sủng của Ngài luôn đủ cho chúng ta.
+            {t('page_devotional.content_p1')}
           </p>
           <p>
-            Hãy dành vài phút hôm nay để tĩnh lặng, suy ngẫm về những phước hạnh bạn đã nhận được. 
-            Đôi khi, ân điển không phải là việc mọi khó khăn biến mất, mà là sự bình an và sức mạnh Chúa ban để chúng ta vượt qua chúng.
+            {t('page_devotional.content_p2')}
           </p>
           <p>
-            <strong>Cầu nguyện:</strong><br/>
-            Lạy Chúa, con cảm tạ Ngài vì ân sủng không kể xiết của Ngài. Xin giúp con luôn biết sống trong sự biết ơn và chia sẻ tình yêu thương đó cho những người xung quanh. Nhân danh Chúa Jesus Christ, Amen!
+            <strong>{t('page_devotional.prayer_label')}</strong><br/>
+            {t('page_devotional.prayer_text')}
           </p>
         </div>
         
@@ -199,7 +207,7 @@ function DevotionalContent() {
             <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 4, margin: '0 auto 20px' }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>Chia sẻ bài viết</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>{t('page_devotional.share_title')}</h3>
               <button
                 onClick={() => setShareOpen(false)}
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', color: '#9ca3af', cursor: 'pointer', padding: 0, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -241,7 +249,7 @@ function DevotionalContent() {
                 <div className="share-icon-wrap copy">
                   <Link2 size={22} color="#fff" />
                 </div>
-                <span>Sao chép link</span>
+                <span>{t('page_devotional.copy_link')}</span>
               </button>
             </div>
           </div>
@@ -252,8 +260,9 @@ function DevotionalContent() {
 }
 
 export default function DevotionalReader() {
+  const { t } = useLanguage();
   return (
-    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải bài đọc...</div>}>
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>{t('page_devotional.loading')}</div>}>
       <DevotionalContent />
     </Suspense>
   );

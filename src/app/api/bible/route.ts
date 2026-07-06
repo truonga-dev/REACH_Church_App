@@ -2,36 +2,72 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import { promises as fs } from 'fs';
 
-const VERSION = 'VIE1925';
-const VERSION_LABEL = 'Kinh Thánh Tiếng Việt Bản Truyền Thống Hiệu Đính (VIE1925)';
+const VERSION_MAP: Record<string, { file: string, label: string }> = {
+  'VIE1925': { file: 'bible_vie1925.json', label: 'Kinh Thánh Tiếng Việt Bản Truyền Thống Hiệu Đính (VIE1925)' },
+  'NVB': { file: 'bible_nvb.json', label: 'Bản Dịch Mới (NVB)' },
+  'NKJV': { file: 'bible_nkjv.json', label: 'New King James Version (NKJV)' },
+};
 
-let cachedBible: unknown[] | null = null;
+const cachedBibles: Record<string, unknown[]> = {};
 
-async function loadBibleData() {
-  if (cachedBible) return cachedBible;
+async function loadBibleData(version: string) {
+  // Always try to load the actual version file fresh (no stale fallback cache)
+  const versionInfo = VERSION_MAP[version] || VERSION_MAP['VIE1925'];
+  const dataPath = path.join(process.cwd(), 'public', versionInfo.file);
 
-  const vie1925Path = path.join(process.cwd(), 'public', 'bible_vie1925.json');
-  let filePath = vie1925Path;
+  let filePath: string;
+  let isExactFile = false;
 
   try {
-    await fs.access(vie1925Path);
+    await fs.access(dataPath);
+    filePath = dataPath;
+    isExactFile = true;
+
+    // If we have it cached AND it was the correct file, return cached
+    if (cachedBibles[version]) return cachedBibles[version];
   } catch {
-    filePath = path.join(process.cwd(), 'public', 'bible_vie.json');
+    // File doesn't exist — clear any stale cache for this version
+    delete cachedBibles[version];
+
+    // Fallback to VIE1925 or bible_vie.json
+    try {
+      filePath = path.join(process.cwd(), 'public', 'bible_vie1925.json');
+      await fs.access(filePath);
+    } catch {
+      filePath = path.join(process.cwd(), 'public', 'bible_vie.json');
+    }
   }
 
-  let fileContent = await fs.readFile(filePath, 'utf-8');
-  if (fileContent.charCodeAt(0) === 0xfeff) {
-    fileContent = fileContent.slice(1);
-  }
+  try {
+    let fileContent = await fs.readFile(filePath, 'utf-8');
+    if (fileContent.charCodeAt(0) === 0xfeff) {
+      fileContent = fileContent.slice(1);
+    }
 
-  cachedBible = JSON.parse(fileContent) as unknown[];
-  return cachedBible;
+    const parsed = JSON.parse(fileContent) as unknown[];
+
+    // Only cache if we loaded the exact file for this version
+    if (isExactFile) {
+      cachedBibles[version] = parsed;
+    }
+
+    return parsed;
+  } catch (e) {
+    throw new Error(`Failed to load bible data for version ${version}: ${e}`);
+  }
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const bookParam = searchParams.get('book') || '1';
   const chapterParam = searchParams.get('chapter') || '1';
+  let versionParam = searchParams.get('version');
+  
+  if (!versionParam || !VERSION_MAP[versionParam]) {
+    versionParam = 'VIE1925';
+  }
+
+  const versionInfo = VERSION_MAP[versionParam];
 
   try {
     const bookIndex = parseInt(bookParam, 10) - 1;
@@ -41,7 +77,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid book or chapter' }, { status: 400 });
     }
 
-    const bibleData = await loadBibleData();
+    const bibleData = await loadBibleData(versionParam);
 
     if (bookIndex >= bibleData.length) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
@@ -60,8 +96,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       verses: formattedVerses,
-      version: VERSION,
-      versionLabel: VERSION_LABEL,
+      version: versionParam,
+      versionLabel: versionInfo.label,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
