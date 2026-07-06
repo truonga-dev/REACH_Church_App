@@ -43,12 +43,16 @@
 
 ## Tính năng
 
+- **Đa ngôn ngữ (i18n):** Ứng dụng hỗ trợ thay đổi ngôn ngữ linh hoạt với 3 ngôn ngữ chính: Tiếng Việt, Tiếng Anh (English) và Tiếng Hàn (한국어).
+- **Trải nghiệm Kinh Thánh hiện đại:** Giao diện tối ưu chuẩn YouVersion với thanh công cụ điều hướng thông minh, tính năng Streak đọc hàng ngày và nhiều bản dịch.
+
+
 ### Trang người dùng
 
 | Trang | Đường dẫn | Mô tả |
 | ----- | --------- | ----- |
 | **Trang chủ** | `/` | Bản tin, sự kiện sắp tới, bài giảng, dưỡng linh, thông báo |
-| **Kinh Thánh** | `/bible` | Đọc Kinh Thánh tiếng Việt theo sách & chương |
+| **Kinh Thánh** | `/bible` | Đọc Kinh Thánh theo sách & chương, hỗ trợ nhiều bản dịch (VIE1925, NVB, NKJV), điều chỉnh cỡ chữ/nền, và theo dõi Kế hoạch/Streak. |
 | **Thư viện** | `/library` | Tài liệu PDF, sách nói, video (tích hợp Supabase) |
 | **Mục vụ** | `/ministry` | Danh sách các ban ngành và hoạt động mục vụ |
 | **Hồ sơ** | `/profile` | Thông tin cá nhân, lịch sử quyên góp, đề mục cầu nguyện |
