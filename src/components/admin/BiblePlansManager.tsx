@@ -308,7 +308,9 @@ export default function BiblePlansManager() {
                           Nhập theo mảng JSON để hỗ trợ nhiều phân đoạn đọc trong 1 ngày.<br/>
                           Ví dụ 1: <code>["Sáng thế 1-3"]</code><br/>
                           Ví dụ 2: <code>["Sáng thế 1", "Thi Thiên 2:1-5"]</code><br/>
-                          <em>(Bỏ trống và nhấp ra ngoài để xóa một ngày đọc)</em>
+                          <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(244,204,48,0.1)', color: '#d97706', borderRadius: '6px', fontWeight: 500 }}>
+                            💡 <strong>Lưu ý:</strong> Hệ thống sẽ <strong>TỰ ĐỘNG LƯU</strong> khi bạn nhấp chuột ra ngoài ô nhập hoặc nhấn phím <strong>Enter</strong>. (Bỏ trống để xóa)
+                          </div>
                         </div>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
@@ -327,6 +329,14 @@ export default function BiblePlansManager() {
                                 onBlur={(e) => {
                                   if (e.target.value !== (existingDay?.verses || '')) {
                                     handleSaveDay(plan.id, dayNum, e.target.value);
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (e.currentTarget.value !== (existingDay?.verses || '')) {
+                                      handleSaveDay(plan.id, dayNum, e.currentTarget.value);
+                                    }
+                                    e.currentTarget.blur();
                                   }
                                 }}
                                 style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'var(--color-background)', color: 'var(--color-text-main)', fontSize: '0.95rem', outline: 'none' }}
