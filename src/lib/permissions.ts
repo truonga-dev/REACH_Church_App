@@ -157,6 +157,7 @@ export const TAB_PERMISSIONS: Record<string, Permission> = {
   sermons:      'sermons:view',
   audiobooks:   'library:view',
   pdfs:         'library:view',
+  bible_plans:  'library:view',
   devotionals:  'devotionals:view',
   donations:    'donations:view',
   prayers:      'prayers:view',
