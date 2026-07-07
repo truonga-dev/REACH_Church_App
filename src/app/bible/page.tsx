@@ -693,6 +693,7 @@ function BibleReader() {
 export default function BiblePage() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'read' | 'plans'>('read');
+  const router = useRouter();
   
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--color-background)' }}>
@@ -722,7 +723,7 @@ export default function BiblePage() {
          ) : (
             <BiblePlans onStartReading={(book, chapter) => {
               if (book && chapter) {
-                const params = new URLSearchParams(searchParams.toString());
+                const params = new URLSearchParams(window.location.search);
                 params.set('book', book.toString());
                 params.set('chapter', chapter.toString());
                 router.push(`/bible?${params.toString()}`);
