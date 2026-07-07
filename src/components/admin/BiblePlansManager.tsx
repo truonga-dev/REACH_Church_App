@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, Save, X, Loader2, Book, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BibleReadingPlan, BiblePlanDay } from '@/types';
+import { saveBiblePlanDay, deleteBiblePlanDay } from '@/app/actions/bible-plans';
 
 interface EditingPlanState {
   id: string | null;
@@ -130,23 +131,20 @@ export default function BiblePlansManager() {
       // If empty, delete the day if it exists
       const existing = planDays[planId]?.find(d => d.day_number === dayNumber);
       if (existing) {
-        await handleDeleteDay(planId, existing.id);
+        await deleteBiblePlanDay(planId, existing.id);
+        setPlanDays(prev => ({
+          ...prev,
+          [planId]: prev[planId].filter(d => d.id !== existing.id)
+        }));
       }
       return;
     }
 
     try {
-      // Check if day exists
-      const existing = planDays[planId]?.find(d => d.day_number === dayNumber);
-      if (existing) {
-        const { error } = await supabase.from('bible_plan_days').update({ verses }).eq('id', existing.id);
-        if (error) throw error;
-        showToast(`Đã lưu Ngày ${dayNumber}`);
-      } else {
-        const { error } = await supabase.from('bible_plan_days').insert([{ plan_id: planId, day_number: dayNumber, verses }]);
-        if (error) throw error;
-        showToast(`Đã thêm Ngày ${dayNumber}`);
-      }
+      const result = await saveBiblePlanDay(planId, dayNumber, verses);
+      if (result.error) throw new Error(result.error);
+      
+      showToast(`Đã lưu Ngày ${dayNumber}`);
       
       // Update local state by forcing reload of days
       setPlanDays(prev => ({ ...prev, [planId]: [] })); // Clear cache to reload
@@ -159,8 +157,8 @@ export default function BiblePlansManager() {
 
   const handleDeleteDay = async (planId: string, dayId: string) => {
     try {
-      const { error } = await supabase.from('bible_plan_days').delete().eq('id', dayId);
-      if (error) throw error;
+      const result = await deleteBiblePlanDay(planId, dayId);
+      if (result.error) throw new Error(result.error);
       setPlanDays(prev => ({
         ...prev,
         [planId]: prev[planId].filter(d => d.id !== dayId)
