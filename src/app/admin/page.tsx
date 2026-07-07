@@ -9,7 +9,7 @@ import {
   File, CheckCircle, Edit2, Headphones, BookOpen, X, LogOut,
   ArrowLeft, Lock, Shield, Search, Bell, RefreshCw, Newspaper,
   AlertTriangle, ChevronRight, TrendingUp, Eye, Calendar, Zap,
-  Clock, Activity, Mail,
+  Clock, Activity, Mail, Book,
   Church, BookHeart, HandCoins, AudioLines, HeartHandshake, UsersRound, QrCode,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,7 @@ import CellGroupsManager from '@/components/admin/CellGroupsManager';
 import StatsManager from '@/components/admin/StatsManager';
 import LivestreamManager from '@/components/admin/LivestreamManager';
 import NotificationsManager from '@/components/admin/NotificationsManager';
+import BiblePlansManager from '@/components/admin/BiblePlansManager';
 import Pagination from '@/components/ui/Pagination';
 import { AdminPanelSkeleton, AdminTableSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,6 +109,7 @@ const TABS = [
   { id: 'sermons',     label: 'Bài giảng',        icon: Video,           group: 'THƯ VIỆN' },
   { id: 'audiobooks',  label: 'Sách Nói',         icon: AudioLines,      group: 'THƯ VIỆN' },
   { id: 'pdfs',        label: 'Sách PDF',         icon: File,            group: 'THƯ VIỆN' },
+  { id: 'bible_plans', label: 'Kế hoạch KT',      icon: Book,            group: 'THƯ VIỆN' },
   { id: 'devotionals', label: 'Dưỡng Linh',       icon: BookHeart,       group: 'THƯ VIỆN' },
   { id: 'donations',   label: 'Dâng hiến',        icon: HandCoins,       group: 'CỘNG ĐỒNG' },
   { id: 'prayers',     label: 'Cầu nguyện',       icon: HeartHandshake,  group: 'CỘNG ĐỒNG' },
@@ -1283,10 +1285,17 @@ const DataItem = ({
               </div>
             )}
 
-            {/* ─── SERMONS TAB ─── */}
+            {/* 🎥 SERMONS TAB 🎥 */}
             {activeTab === 'sermons' && (
               <div className="tab-page">
                 <SermonManager />
+              </div>
+            )}
+
+            {/* 📖 BIBLE PLANS TAB 📖 */}
+            {activeTab === 'bible_plans' && (
+              <div className="tab-page">
+                <BiblePlansManager />
               </div>
             )}
 

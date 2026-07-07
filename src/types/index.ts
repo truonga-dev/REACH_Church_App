@@ -141,7 +141,11 @@ export const PRAYER_TOPICS: Record<string, string> = {
 export interface BibleReadingPlan {
   id: string;
   title: string;
+  title_en?: string | null;
+  title_ko?: string | null;
   description: string | null;
+  description_en?: string | null;
+  description_ko?: string | null;
   duration_days: number;
   created_at: string;
 }
