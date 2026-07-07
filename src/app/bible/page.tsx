@@ -720,7 +720,15 @@ export default function BiblePage() {
              <BibleReader />
            </Suspense>
          ) : (
-           <BiblePlans onStartReading={() => setActiveTab('read')} />
+            <BiblePlans onStartReading={(book, chapter) => {
+              if (book && chapter) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('book', book.toString());
+                params.set('chapter', chapter.toString());
+                router.push(`/bible?${params.toString()}`);
+              }
+              setActiveTab('read');
+            }} />
          )}
        </div>
     </div>
