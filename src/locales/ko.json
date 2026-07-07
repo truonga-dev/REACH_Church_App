@@ -11,6 +11,17 @@
   "system": "시스템",
   "news": "뉴스",
   "devotionals": "묵상",
+  "bible_plans": {
+    "loading": "계획을 불러오는 중...",
+    "streak": "연속 읽기",
+    "current": "현재:",
+    "days": "일",
+    "record": "기록:",
+    "recommended": "추천 읽기 계획",
+    "progress": "진행률",
+    "continue": "계속 읽기",
+    "no_plans": "사용 가능한 읽기 계획이 없습니다."
+  },
   "sermons": "설교",
   "library": "라이브러리",
   "view_map": "지도 보기",

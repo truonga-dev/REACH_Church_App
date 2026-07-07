@@ -11,6 +11,17 @@
   "system": "Hệ thống",
   "news": "Tin tức",
   "devotionals": "Dưỡng linh",
+  "bible_plans": {
+    "loading": "Đang tải kế hoạch...",
+    "streak": "Chuỗi ngày đọc",
+    "current": "Hiện tại:",
+    "days": "ngày",
+    "record": "Kỷ lục:",
+    "recommended": "Kế Hoạch Khuyến Nghị",
+    "progress": "Tiến độ",
+    "continue": "Tiếp Tục Đọc",
+    "no_plans": "Hiện chưa có kế hoạch nào được tạo."
+  },
   "sermons": "Bài giảng",
   "library": "Thư viện",
   "view_map": "Xem bản đồ",

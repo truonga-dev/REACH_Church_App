@@ -59,7 +59,7 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
         <Loader2 className="spin" size={24} style={{ margin: '0 auto 10px' }} />
-        <p>{t('bible.plans.loading') || 'Đang tải kế hoạch...'}</p>
+        <p>{t('bible_plans.loading') || 'Đang tải kế hoạch...'}</p>
       </div>
     );
   }
@@ -90,15 +90,15 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
           <Flame size={32} color="#fff" />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.25rem', margin: '0 0 6px', fontWeight: 800 }}>{t('bible.plans.streak') || 'Chuỗi ngày đọc'}</h2>
+          <h2 style={{ fontSize: '1.25rem', margin: '0 0 6px', fontWeight: 800 }}>{t('bible_plans.streak') || 'Chuỗi ngày đọc'}</h2>
           <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem' }}>
-            {t('bible.plans.current') || 'Hiện tại:'} <strong>{streak?.current_streak || 0} {t('bible.plans.days') || 'ngày'}</strong> • {t('bible.plans.record') || 'Kỷ lục:'} {streak?.longest_streak || 0}
+            {t('bible_plans.current') || 'Hiện tại:'} <strong>{streak?.current_streak || 0} {t('bible_plans.days') || 'ngày'}</strong> • {t('bible_plans.record') || 'Kỷ lục:'} {streak?.longest_streak || 0}
           </p>
         </div>
       </div>
 
       <h3 style={{ color: 'var(--color-text-main)', fontSize: '1.25rem', marginBottom: '20px', fontWeight: 800 }}>
-        {t('bible.plans.recommended') || 'Kế Hoạch Khuyến Nghị'}
+        {t('bible_plans.recommended') || 'Kế Hoạch Khuyến Nghị'}
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -122,13 +122,13 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
                   </p>
                 </div>
                 <div style={{ background: 'rgba(72,188,225,0.1)', color: '#48BCE1', padding: '6px 14px', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {plan.duration_days} {t('bible.plans.days') || 'ngày'}
+                  {plan.duration_days} {t('bible_plans.days') || 'ngày'}
                 </div>
               </div>
 
               <div style={{ marginTop: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
-                  <span style={{ color: 'var(--color-text-dim)', fontWeight: 600 }}>{t('bible.plans.progress') || 'Tiến độ'}</span>
+                  <span style={{ color: 'var(--color-text-dim)', fontWeight: 600 }}>{t('bible_plans.progress') || 'Tiến độ'}</span>
                   <span style={{ color: 'var(--color-text-main)', fontWeight: 800 }}>{percent}%</span>
                 </div>
                 <div style={{ background: 'var(--color-border)', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
@@ -161,7 +161,7 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
                 onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {t('bible.plans.continue') || 'Tiếp Tục Đọc'} <ChevronRight size={20} />
+                {t('bible_plans.continue') || 'Tiếp Tục Đọc'} <ChevronRight size={20} />
               </button>
             </div>
           );
@@ -169,7 +169,7 @@ export default function BiblePlans({ onStartReading }: BiblePlansProps = {}) {
         {plans.length === 0 && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--color-text-dim)', background: 'var(--color-surface)', borderRadius: '20px', border: '1px solid var(--color-border)' }}>
             <BookOpen size={48} style={{ opacity: 0.3, margin: '0 auto 16px', color: 'var(--color-text-main)' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>{t('bible.plans.no_plans') || 'Hiện chưa có kế hoạch nào được tạo.'}</p>
+            <p style={{ margin: 0, fontWeight: 500 }}>{t('bible_plans.no_plans') || 'Hiện chưa có kế hoạch nào được tạo.'}</p>
           </div>
         )}
       </div>

@@ -11,6 +11,17 @@
   "system": "System",
   "news": "News",
   "devotionals": "Devotionals",
+  "bible_plans": {
+    "loading": "Loading plans...",
+    "streak": "Reading Streak",
+    "current": "Current:",
+    "days": "days",
+    "record": "Record:",
+    "recommended": "Recommended Plans",
+    "progress": "Progress",
+    "continue": "Continue Reading",
+    "no_plans": "No reading plans available."
+  },
   "sermons": "Sermons",
   "library": "Library",
   "view_map": "View Map",
